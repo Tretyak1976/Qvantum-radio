@@ -4,10 +4,10 @@
     <meta charset="UTF-8">
     <title>3D Symbiosis - Infinite Evolution (Live Radio)</title>
     <style>
-        body { margin: 0; overflow: hidden; background-color: #000000; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #fff; user-select: none; }
+        body { margin: 0; overflow: hidden; background-color: #000000; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #fff; }
         #canvas-container { width: 100vw; height: 100vh; position: absolute; top: 0; left: 0; z-index: 1; cursor: grab; }
         #canvas-container:active { cursor: grabbing; }
-        
+
         #ui-layer {
             position: absolute; top: 20px; left: 20px; z-index: 10;
             background: rgba(10, 10, 15, 0.75); padding: 25px; border-radius: 20px;
@@ -18,128 +18,82 @@
         #ui-layer.idle { opacity: 0; transform: translateX(-20px); pointer-events: none; }
         #ui-layer:hover { opacity: 1.0; transform: translateX(0); }
 
-        h2 { margin-top: 0; font-size: 1.2rem; color: #3b82f6; text-transform: uppercase; letter-spacing: 2px; font-weight: 800; text-shadow: 0 0 15px rgba(59, 130, 246, 0.6);}
         .control-group { margin-bottom: 20px; }
-        label { display: block; font-size: 0.7rem; margin-bottom: 8px; color: #aaa; text-transform: uppercase; letter-spacing: 1px;}
-        
+        h2 { margin-top: 0; font-size: 1.2rem; color: #3b82f6; text-transform: uppercase; letter-spacing: 2px; }
+        label { display: block; font-size: 0.7rem; margin-bottom: 8px; color: #aaa; text-transform: uppercase; }
+
         button {
-            width: 100%; background: rgba(59, 130, 246, 0.15); border: 1px solid rgba(59, 130, 246, 0.4);
+            width: 100%; background: rgba(59, 130, 246, 0.15); border: 1px solid #3b82f6;
             color: #3b82f6; padding: 12px; border-radius: 10px; box-sizing: border-box;
-            outline: none; cursor: pointer; transition: all 0.3s; font-weight: bold; margin-top: 5px;
+            outline: none; cursor: pointer; transition: all 0.3s; font-weight: bold;
         }
-        button:hover { background: rgba(59, 130, 246, 0.2); border-color: #3b82f6; box-shadow: 0 0 20px rgba(59, 130, 246, 0.4); }
-        
+        button:hover { background: rgba(59, 130, 246, 0.2); border-color: #3b82f6; }
+
         #playlist { margin-top: 15px; max-height: 180px; overflow-y: auto; font-size: 0.85rem; }
-        .track-item { padding: 10px; border-bottom: 1px solid rgba(255,255,255,0.05); cursor: pointer; border-radius: 8px; transition: background 0.2s;}
+        .track-item { padding: 10px; border-bottom: 1px solid rgba(255,255,255,0.08); cursor: pointer; transition: 0.2s; }
         .track-item:hover { background: rgba(255,255,255,0.08); }
-        .track-item.active { color: #3b82f6; background: rgba(59, 130, 246, 0.1); border-color: transparent; font-weight: bold; box-shadow: 0 0 15px rgba(59, 130, 246, 0.2);}
-        
+        .track-item.active { color: #3b82f6; background: rgba(59, 130, 246, 0.1); }
+
         ::-webkit-scrollbar { width: 4px; }
         ::-webkit-scrollbar-thumb { background: #3b82f6; border-radius: 2px; }
-        
-        #status { font-size: 0.8rem; color: #aaa; margin-top: 10px; text-align: center; }
+
+        #status { font-size: 0.8rem; color: #aaa; margin-top: 10px; }
     </style>
 </head>
 <body>
-
     <div id="ui-layer">
-        <h2>QUANTUM SYMBIOSIS</h2>
-        <button id="start-radio-btn">CONNECT TO SERVER</button>
-        <div id="status">Waiting for connection...</div>
-        <div id="playlist"></div>
+        <h2>3D Symbiosis</h2>
+        <div class="control-group">
+            <button id="connectBtn">CONNECT TO SERVER</button>
+            <div id="status">Ready</div>
+        </div>
+        <div class="control-group">
+            <label>Channels / Tracks</label>
+            <div id="playlist"></div>
+        </div>
     </div>
 
     <div id="canvas-container"></div>
+    <audio id="audioPlayer" crossorigin="anonymous"></audio>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
-    
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/EffectComposer.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/RenderPass.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/ShaderPass.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/CopyShader.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/LuminosityHighPassShader.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/UnrealBloomPass.js"></script>
-
     <script>
-        // --- 1. АВТО-СКРЫТИЕ ИНТЕРФЕЙСА ---
-        let uiTimeout;
-        const uiLayer = document.getElementById('ui-layer');
-        function resetUiTimer() {
-            uiLayer.classList.remove('idle');
-            clearTimeout(uiTimeout);
-            uiTimeout = setTimeout(() => { if (isPlaying) uiLayer.classList.add('idle'); }, 3000);
-        }
-        window.addEventListener('mousemove', resetUiTimer);
-        window.addEventListener('click', resetUiTimer);
+        const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwYE4H9ZmfDTUOWYH_aFj6OoNQW3yt1X7TGyZZaMWMWY8fWQDZhHQBjCHpZk/exec";
+        const PROXIED_URL = "https://corsproxy.io/?" + encodeURIComponent(APPS_SCRIPT_URL);
 
-        // --- 2. АУДИО ДВИЖОК И ИНТЕГРАЦИЯ С GOOGLE APPS SCRIPT ---
-        let audioContext, analyser, dataArray, timeDataArray;
-        let audioElement = new Audio();
-        audioElement.crossOrigin = "anonymous"; // Важно для загрузки файлов с Google Drive
-        let isPlaying = false, playlist = [];
+        let playlist = [];
         let currentTrackIndex = 0;
+        let audioContext, analyser, source, dataArray;
+        const audio = document.getElementById('audioPlayer');
 
-        // ТВОЙ API URL ИЗ GOOGLE APPS SCRIPT
-        const API_URL = "https://script.google.com/macros/s/AKfycbwjEjhO-zlf9tBBynsPjQDpEJ1fzVb429ghl3knI6qmX56cO8T3FIauKg7RZlplKhM/exec";
+        document.getElementById('connectBtn').onclick = () => {
+            initAudio();
+            fetchPlaylist();
+        };
 
         async function fetchPlaylist() {
-            document.getElementById('status').innerText = "Loading tracks from Drive...";
+            const statusEl = document.getElementById('status');
+            statusEl.innerText = "Loading tracks from Drive...";
             try {
-                const response = await fetch(API_URL);
+                const response = await fetch(PROXIED_URL);
                 const data = await response.json();
-                
+
                 if (data.error) {
-                     document.getElementById('status').innerText = "Error: " + data.error;
-                     return;
+                    statusEl.innerText = "Error: " + data.error;
+                    return;
                 }
 
-                playlist = data; // Заполняем плейлист данными с Google Drive
-                
+                playlist = data;
                 if (playlist.length > 0) {
-                     document.getElementById('status').innerText = `Loaded ${playlist.length} tracks`;
-                     updatePlaylistUI();
+                    statusEl.innerText = `Loaded ${playlist.length} tracks`;
+                    updatePlaylistUI();
                 } else {
-                     document.getElementById('status').innerText = "No tracks found in Drive";
+                    statusEl.innerText = "No tracks found in folder";
                 }
             } catch (err) {
                 console.error("Ошибка загрузки плейлиста:", err);
-                document.getElementById('status').innerText = "Failed to load tracks";
+                statusEl.innerText = "Failed to load tracks";
             }
-        }
-
-        function initAudio() {
-            if (audioContext) return;
-            audioContext = new (window.AudioContext || window.webkitAudioContext)();
-            analyser = audioContext.createAnalyser();
-            analyser.fftSize = 2048;
-            analyser.smoothingTimeConstant = 0.85; // Идеально для оркестровой музыки
-            
-            const source = audioContext.createMediaElementSource(audioElement);
-            source.connect(analyser);
-            analyser.connect(audioContext.destination);
-            
-            dataArray = new Uint8Array(analyser.frequencyBinCount);
-            timeDataArray = new Uint8Array(analyser.fftSize);
-            
-            // Автопереключение на следующий трек
-            audioElement.onended = () => {
-                currentTrackIndex = (currentTrackIndex + 1) % playlist.length;
-                playTrack(currentTrackIndex);
-            };
-        }
-
-        function playTrack(index) {
-            if (playlist.length === 0) return;
-            currentTrackIndex = index;
-            const track = playlist[currentTrackIndex];
-            
-            audioElement.src = track.url;
-            audioElement.play().then(() => {
-                isPlaying = true;
-                resetUiTimer();
-                updateActiveTrackUI();
-            }).catch(e => console.error("Ошибка воспроизведения:", e));
         }
 
         function updatePlaylistUI() {
@@ -148,7 +102,7 @@
             playlist.forEach((track, index) => {
                 const trackEl = document.createElement('div');
                 trackEl.className = 'track-item';
-                trackEl.innerText = `${track.name} (${track.genre})`;
+                trackEl.innerText = `${track.name} [${track.genre}]`;
                 trackEl.onclick = () => {
                     initAudio();
                     playTrack(index);
@@ -160,336 +114,154 @@
 
         function updateActiveTrackUI() {
             const items = document.querySelectorAll('.track-item');
-            items.forEach(el => el.classList.remove('active'));
-            if (items.length > 0 && items[currentTrackIndex]) {
-                 items[currentTrackIndex].classList.add('active');
-            }
+            items.forEach((item, idx) => {
+                item.classList.toggle('active', idx === currentTrackIndex);
+            });
         }
 
-        document.getElementById('start-radio-btn').onclick = async () => {
-            initAudio();
-            if (audioContext.state === 'suspended') await audioContext.resume();
-            
-            if (playlist.length === 0) {
-                await fetchPlaylist(); // Загружаем треки при первом нажатии
-                if(playlist.length > 0) playTrack(0);
-            } else {
-                 if (isPlaying) audioElement.pause(); else audioElement.play();
-                 isPlaying = !isPlaying;
-            }
+        function initAudio() {
+            if (audioContext) return;
+            audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            analyser = audioContext.createAnalyser();
+            analyser.fftSize = 2048;
+            analyser.smoothingTimeConstant = 0.85;
+            dataArray = new Uint8Array(analyser.frequencyBinCount);
+
+            source = audioContext.createMediaElementSource(audio);
+            source.connect(analyser);
+            analyser.connect(audioContext.destination);
+        }
+
+        function playTrack(index) {
+            if (!playlist[index]) return;
+            currentTrackIndex = index;
+            updateActiveTrackUI();
+
+            audio.src = playlist[index].url;
+            audio.play().catch(e => console.warn("Audio autoplay blocked:", e));
+        }
+
+        audio.onended = () => {
+            currentTrackIndex = (currentTrackIndex + 1) % playlist.length;
+            playTrack(currentTrackIndex);
         };
 
-        // Периодическое обновление плейлиста (каждые 5 минут), чтобы находить новые треки
-        setInterval(fetchPlaylist, 300000); 
-
-        // --- 3. 3D СЦЕНА (Оставляем как было, с нашими последними улучшениями) ---
+        // 3D Scene Initialization
         const container = document.getElementById('canvas-container');
         const scene = new THREE.Scene();
-        scene.fog = new THREE.FogExp2(0x020205, 0.002);
+        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.z = 40;
 
-        const baseFov = 50;
-        const camera = new THREE.PerspectiveCamera(baseFov, window.innerWidth / window.innerHeight, 0.1, 2000);
-        camera.position.set(0, 10, 55); 
-
-        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, powerPreference: "high-performance" });
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+        renderer.setPixelRatio(window.devicePixelRatio);
         container.appendChild(renderer.domElement);
 
-        const controls = new THREE.OrbitControls(camera, renderer.domElement);
-        controls.enableDamping = true; controls.dampingFactor = 0.05; controls.minDistance = 20; controls.maxDistance = 150;
+        // Particle sphere visualizer setup
+        const gridDim = 50;
+        const particleCount = gridDim * gridDim;
+        const geometry = new THREE.BufferGeometry();
+        const positions = new Float32Array(particleCount * 3);
+        const colors = new Float32Array(particleCount * 3);
 
-        const renderScene = new THREE.RenderPass(scene, camera);
-        const bloomPass = new THREE.UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
-        bloomPass.threshold = 0.15; bloomPass.strength = 1.0; bloomPass.radius = 0.5;
+        const radius = 12;
+        let pIdx = 0;
+        for (let i = 0; i < gridDim; i++) {
+            const u = (i / (gridDim - 1)) * Math.PI * 2;
+            for (let j = 0; j < gridDim; j++) {
+                const v = (j / (gridDim - 1)) * Math.PI;
+                positions[pIdx * 3] = radius * Math.sin(v) * Math.cos(u);
+                positions[pIdx * 3 + 1] = radius * Math.sin(v) * Math.sin(u);
+                positions[pIdx * 3 + 2] = radius * Math.cos(v);
 
-        const composer = new THREE.EffectComposer(renderer);
-        composer.addPass(renderScene); composer.addPass(bloomPass);
-
-        const globeGroup = new THREE.Group(); scene.add(globeGroup);
-        const shockwaves = new THREE.Group(); scene.add(shockwaves);
-
-        // Квантовая Сетка (48x48)
-        const gridDim = 48; const pCount = gridDim * gridDim;
-        const pOrig = new Float32Array(pCount * 3);
-        const pPos = new Float32Array(pCount * 3);
-        const pColor = new Float32Array(pCount * 3);
-        const lineIndices = [];
-
-        for(let i=0; i<gridDim; i++){
-            for(let j=0; j<gridDim; j++){
-                let idx = i*gridDim + j;
-                if (j < gridDim - 1) lineIndices.push(idx, idx + 1);
-                if (i < gridDim - 1) lineIndices.push(idx, idx + gridDim);
-                
-                let u = (j / (gridDim - 1)) * Math.PI * 2;
-                let v = (i / (gridDim - 1)) * Math.PI;
-                let r = 10.3; 
-                
-                pOrig[idx*3] = r * Math.cos(u) * Math.sin(v);
-                pOrig[idx*3+1] = r * Math.cos(v);
-                pOrig[idx*3+2] = r * Math.sin(u) * Math.sin(v);
-                
-                pPos[idx*3] = pOrig[idx*3]; pPos[idx*3+1] = pOrig[idx*3+1]; pPos[idx*3+2] = pOrig[idx*3+2];
+                colors[pIdx * 3] = 0.2;
+                colors[pIdx * 3 + 1] = 0.5;
+                colors[pIdx * 3 + 2] = 1.0;
+                pIdx++;
             }
         }
 
-        const pGeo = new THREE.BufferGeometry();
-        pGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
-        pGeo.setAttribute('color', new THREE.BufferAttribute(pColor, 3));
-        pGeo.setIndex(lineIndices);
+        geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
 
-        const pCanvas = document.createElement('canvas'); pCanvas.width = 16; pCanvas.height = 16; 
-        const pCtx = pCanvas.getContext('2d'); const pGrad = pCtx.createRadialGradient(8, 8, 0, 8, 8, 8);
-        pGrad.addColorStop(0, 'rgba(255,255,255,1)'); pGrad.addColorStop(0.2, 'rgba(255,255,255,0.8)'); pGrad.addColorStop(1, 'rgba(0,0,0,0)'); 
-        pCtx.fillStyle = pGrad; pCtx.fillRect(0,0,16,16);
-
-        const quantumPoints = new THREE.Points(pGeo, new THREE.PointsMaterial({ size: 0.6, map: new THREE.CanvasTexture(pCanvas), vertexColors: true, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false }));
-        const quantumLines = new THREE.LineSegments(pGeo, new THREE.LineBasicMaterial({ vertexColors: true, transparent: true, opacity: 0.35, blending: THREE.AdditiveBlending, depthWrite: false }));
-        globeGroup.add(quantumPoints); globeGroup.add(quantumLines);
-
-        // Лазеры
-        const laserGroup = new THREE.Group();
-        const laserMat = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0, blending: THREE.AdditiveBlending });
-        for(let i=0; i<100; i++) {
-            const points = [new THREE.Vector3(0, 10, 0), new THREE.Vector3(0, 250, 0)];
-            const laser = new THREE.Line(new THREE.BufferGeometry().setFromPoints(points), laserMat.clone());
-            const phi = Math.acos(-1 + (2 * i) / 100); const theta = Math.sqrt(100 * Math.PI) * phi;
-            laser.rotation.set(phi, theta, 0); 
-            laser.userData = { phase: Math.random() * Math.PI * 2, speed: 0.02 + Math.random() * 0.03, basex: phi, basey: theta };
-            laserGroup.add(laser);
-        }
-        globeGroup.add(laserGroup);
-
-        // Ударные волны
-        const waveGeo = new THREE.RingGeometry(1, 1.2, 32);
-        const waveMat = new THREE.MeshBasicMaterial({ color: 0x3b82f6, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, side: THREE.DoubleSide });
-
-        const strobeLight = new THREE.AmbientLight(0xffffff, 0); scene.add(strobeLight);
-        const sunLight = new THREE.DirectionalLight(0xffffff, 1.0); sunLight.position.set(50, 20, 30); scene.add(sunLight);
-        scene.add(new THREE.AmbientLight(0x050510, 2.0));
-
-        window.addEventListener('resize', () => { 
-            camera.aspect = window.innerWidth / window.innerHeight; camera.updateProjectionMatrix(); 
-            renderer.setSize(window.innerWidth, window.innerHeight); 
-            if(composer) composer.setSize(window.innerWidth, window.innerHeight);
+        const material = new THREE.PointsMaterial({
+            size: 0.35,
+            vertexColors: true,
+            transparent: true,
+            opacity: 0.8,
+            blending: THREE.AdditiveBlending
         });
 
-        // --- 4. НАКОПИТЕЛЬНАЯ ЭВОЛЮЦИЯ И ГЕНЕРАТИВНОСТЬ ---
-        const colorObj = new THREE.Color();
-        let currentBassLevel = 0, smoothedCentroid = 0.5, beatThreshold = 0.5;
-        let evolveBass = 0, evolveMid = 0, evolveTreble = 0;
-        let targetRotX = 0.001, targetRotY = 0.002, targetRotZ = 0.001;
-        let currentRotX = 0.001, currentRotY = 0.002, currentRotZ = 0.001;
+        const quantumPoints = new THREE.Points(geometry, material);
+        scene.add(quantumPoints);
 
+        // Interaction
+        let isDragging = false;
+        let prevMousePos = { x: 0, y: 0 };
+        window.addEventListener('mousedown', (e) => {
+            isDragging = true;
+            prevMousePos = { x: e.clientX, y: e.clientY };
+        });
+        window.addEventListener('mouseup', () => isDragging = false);
+        window.addEventListener('mousemove', (e) => {
+            if (!isDragging) return;
+            const deltaX = e.clientX - prevMousePos.x;
+            const deltaY = e.clientY - prevMousePos.y;
+            quantumPoints.rotation.y += deltaX * 0.005;
+            quantumPoints.rotation.x += deltaY * 0.005;
+            prevMousePos = { x: e.clientX, y: e.clientY };
+        });
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // Animation Loop
+        let angle = 0;
         function animate() {
-            requestAnimationFrame(animate); 
-            controls.update();
-            const t = Date.now() * 0.001;
+            requestAnimationFrame(animate);
 
-            if (isPlaying && analyser && dataArray && timeDataArray) {
-                analyser.getByteFrequencyData(dataArray); 
-                analyser.getByteTimeDomainData(timeDataArray);
-                
-                let bass = 0, mid = 0, treble = 0, energy = 0, centroid = 0, weightSum = 0;
-                const binCount = analyser.frequencyBinCount; 
-                for(let i=0; i<binCount; i++) {
-                    let val = dataArray[i] / 255.0; energy += val; centroid += val * i; weightSum += val;
-                    if(i < 32) bass += val; else if(i < 360) mid += val; else treble += val; 
-                }
-                bass /= 32; mid /= 328; treble /= (binCount - 360); energy /= binCount; if(weightSum > 0) centroid /= weightSum;
-                smoothedCentroid += ((centroid / binCount) - smoothedCentroid) * 0.05;
-
-                const sharpBass = Math.pow(bass, 3);
-                const sharpMid = Math.pow(mid, 2); 
-
-                currentBassLevel += (sharpBass - currentBassLevel) * 0.2; 
-                
-                evolveBass += (sharpBass * 0.05) + 0.001;
-                evolveMid += (mid * 0.05) + 0.002;
-                evolveTreble += (treble * 0.05) + 0.0015;
-                
-                let currentBloom = 0.5 + (energy * 1.5) + (sharpBass * 2.0);
-                if (bloomPass) bloomPass.strength = currentBloom;
-                
-                if (sharpBass > 0.8) {
-                    camera.fov += ((baseFov - sharpBass * 15) - camera.fov) * 0.2;
-                } else {
-                    camera.fov += (baseFov - camera.fov) * 0.1;
-                }
-                camera.updateProjectionMatrix();
-
-                beatThreshold = Math.max(0.2, beatThreshold * 0.95);
-                let isBeat = false;
-                if (sharpBass > beatThreshold) { 
-                    isBeat = true; 
-                    beatThreshold = Math.min(1.0, sharpBass * 1.2); 
-                    
-                    targetRotX = (Math.random() - 0.5) * 0.06 * sharpBass;
-                    targetRotY = (Math.random() - 0.5) * 0.08 * sharpBass;
-                    targetRotZ = (Math.random() - 0.5) * 0.04 * sharpBass;
-                }
-
-                currentRotX += (targetRotX - currentRotX) * 0.05;
-                currentRotY += (targetRotY - currentRotY) * 0.05;
-                currentRotZ += (targetRotZ - currentRotZ) * 0.05;
-
-                const dynamicHue = (evolveMid * 50 + smoothedCentroid * 800 + energy * 200) % 360;
-
-                // Разделение по частотам (Идея В)
-                let laserPower = Math.pow(treble, 2) * 2.0; 
-                laserGroup.children.forEach((l, i) => {
-                    l.material.color.setHSL(0, 0, 1.0); // Белые лазеры на высокие частоты
-                    if(laserPower > 0.3) { 
-                        l.material.opacity = Math.min(1.0, laserPower); l.scale.y = 1 + laserPower * 2; 
-                    } else { 
-                        l.material.opacity *= 0.85; l.scale.y += (1 - l.scale.y) * 0.1; 
-                    }
-                    let choreo = i % 3;
-                    if (choreo === 0) { l.rotation.x = l.userData.basex + Math.sin(t * l.userData.speed + l.userData.phase) * (0.2 + laserPower*0.5); l.rotation.y = l.userData.basey + Math.cos(t * l.userData.speed + l.userData.phase) * (0.2 + laserPower*0.5); } 
-                    else if (choreo === 1) { l.rotation.x = l.userData.basex + Math.sin(t * 0.5) * 0.3; l.rotation.z = Math.cos(t * 0.5) * 0.3; } 
-                    else { l.rotation.y = l.userData.basey + Math.cos(evolveBass * 0.5) * (0.5 * laserPower); }
-                });
-
-                // Кинетическая тряска камеры (Идея А)
-                if (isBeat && sharpBass > 0.7) { 
-                    strobeLight.intensity = 4.0; sunLight.intensity = 3.0; 
-                    camera.position.x = (Math.random() - 0.5) * sharpBass * 4.0;
-                    camera.position.y = 10 + (Math.random() - 0.5) * sharpBass * 4.0;
-                } else { 
-                    strobeLight.intensity += (0 - strobeLight.intensity) * 0.2; 
-                    sunLight.intensity += (1.0 - sunLight.intensity) * 0.1; 
-                }
-                
-                camera.position.x += (0 - camera.position.x) * 0.15;
-                camera.position.y += (10 - camera.position.y) * 0.15;
-
-                // Ударные волны (Идея Б)
-                if (isBeat && sharpBass > 0.6) {
-                    const wave = new THREE.Mesh(waveGeo, waveMat.clone());
-                    wave.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, 0);
-                    wave.material.color.setHSL(dynamicHue / 360, 1.0, 0.5);
-                    wave.userData = { life: 1.0, expandSpeed: 0.5 + Math.random() * 0.5 };
-                    shockwaves.add(wave);
-                }
-
-                shockwaves.children.forEach((wave) => {
-                    wave.scale.addScalar(wave.userData.expandSpeed + sharpBass * 1.5);
-                    wave.userData.life -= 0.03;
-                    wave.material.opacity = wave.userData.life * (energy + 0.2);
-                    if (wave.userData.life <= 0) {
-                        shockwaves.remove(wave);
-                        wave.material.dispose();
-                    }
-                });
-
-                const positions = quantumPoints.geometry.attributes.position.array; 
-                const colors = quantumPoints.geometry.attributes.color.array;
-                
-                let freqU = 2.0 + Math.sin(evolveMid * 0.2) * 5.0; 
-                let freqV = 3.0 + Math.cos(evolveBass * 0.15) * 6.0; 
-                let shapeChaos = Math.sin(evolveTreble * 0.3) * 0.5;
-
-                for(let i=0; i<gridDim; i++) {
-                    for(let j=0; j<gridDim; j++) {
-                        let idx = i*gridDim + j; 
-                        let u = (j / (gridDim - 1)) * Math.PI * 2; 
-                        let v = (i / (gridDim - 1)) * Math.PI;
-                        
-                        let audioIdx = Math.floor((idx / pCount) * (binCount * 0.5)); 
-                        let rawF = dataArray[audioIdx] / 255.0; 
-                        let fSharp = Math.pow(rawF, 2); 
-                        let waveRipple = (timeDataArray[audioIdx]/128.0 - 1.0); 
-                        
-                        let tx = pOrig[idx*3], ty = pOrig[idx*3+1], tz = pOrig[idx*3+2];
-
-                        if (energy > 0.01) {
-                            let R = 15 + sharpBass * 20 + Math.sin(v * freqV + evolveMid) * (8 + mid * 10);
-                            let twist = u + Math.sin(v * freqU + evolveTreble) * (Math.sin(evolveBass) * 4);
-                            let flare = Math.abs(Math.cos(u * (4 + shapeChaos*2) + t)) * (10 + sharpMid * 15);
-                            
-                            let currentRadius = R + flare + fSharp * 15;
-
-                            tx = Math.cos(twist) * Math.sin(v) * currentRadius;
-                            tz = Math.sin(twist) * Math.sin(v) * currentRadius;
-                            
-                            let yVolume = Math.cos(v) * currentRadius * (0.6 + shapeChaos * 0.4); 
-                            let yDrift = Math.cos(v * freqV) * (15 + shapeChaos * 10);
-                            ty = yVolume + yDrift + Math.sin(u * freqU + evolveMid) * (5 + treble * 25);
-
-                            let rippleForce = waveRipple * (5 + treble * 30); 
-                            tx += Math.cos(v*20) * rippleForce; 
-                            ty += Math.sin(u*20) * rippleForce; 
-                            tz += Math.cos(u*20) * rippleForce;
-                        }
-
-                        let lerpFactor = fSharp > 0.4 ? 0.35 : 0.08; 
-                        if(energy <= 0.01) lerpFactor = 0.02; 
-                        
-                        positions[idx*3] += (tx - positions[idx*3]) * lerpFactor; 
-                        positions[idx*3+1] += (ty - positions[idx*3+1]) * lerpFactor; 
-                        positions[idx*3+2] += (tz - positions[idx*3+2]) * lerpFactor;
-                        
-                        let l = energy > 0.01 ? (0.15 + fSharp*0.85) : 0.02; 
-                        colorObj.setHSL((dynamicHue + idx*0.02 + waveRipple*40)/360, 1.0, l);
-                        colors[idx*3] += (colorObj.r - colors[idx*3]) * lerpFactor; 
-                        colors[idx*3+1] += (colorObj.g - colors[idx*3+1]) * lerpFactor; 
-                        colors[idx*3+2] += (colorObj.b - colors[idx*3+2]) * lerpFactor;
-                    }
-                }
-                quantumPoints.geometry.attributes.position.needsUpdate = true; 
-                quantumPoints.geometry.attributes.color.needsUpdate = true;
-                quantumLines.material.opacity = energy < 0.01 ? 0 : Math.min(0.8, energy * 1.5);
-                
-                globeGroup.rotation.x += currentRotX;
-                globeGroup.rotation.y += currentRotY;
-                globeGroup.rotation.z += currentRotZ;
-
-            } else {
-                currentBassLevel += (0 - currentBassLevel) * 0.1;
-                strobeLight.intensity += (0 - strobeLight.intensity) * 0.1; 
-                if (bloomPass) bloomPass.strength += (0.4 - bloomPass.strength) * 0.1;
-                camera.fov += (baseFov - camera.fov) * 0.1; camera.updateProjectionMatrix();
-
-                currentRotX += (0.0 - currentRotX) * 0.02;
-                currentRotY += (0.001 - currentRotY) * 0.02;
-                currentRotZ += (0.0 - currentRotZ) * 0.02;
-
-                laserGroup.children.forEach((l) => { l.material.opacity *= 0.8; l.scale.y += (1 - l.scale.y) * 0.1; });
-                
-                shockwaves.children.forEach((wave) => {
-                    wave.userData.life -= 0.05;
-                    wave.material.opacity = wave.userData.life * 0.2;
-                    if (wave.userData.life <= 0) {
-                        shockwaves.remove(wave);
-                        wave.material.dispose();
-                    }
-                });
-
-                const positions = quantumPoints.geometry.attributes.position.array; 
-                const colors = quantumPoints.geometry.attributes.color.array;
-                for(let i=0; i<pCount; i++) {
-                    positions[i*3] += (pOrig[i*3] - positions[i*3]) * 0.1; 
-                    positions[i*3+1] += (pOrig[i*3+1] - positions[i*3+1]) * 0.1; 
-                    positions[i*3+2] += (pOrig[i*3+2] - positions[i*3+2]) * 0.1;
-                    colors[i*3] += (0.05 - colors[i*3]) * 0.1; 
-                    colors[i*3+1] += (0.05 - colors[i*3+1]) * 0.1; 
-                    colors[i*3+2] += (0.1 - colors[i*3+2]) * 0.1;
-                }
-                quantumPoints.geometry.attributes.position.needsUpdate = true; 
-                quantumPoints.geometry.attributes.color.needsUpdate = true;
-                quantumLines.material.opacity += (0 - quantumLines.material.opacity) * 0.1;
-                
-                globeGroup.rotation.x += currentRotX;
-                globeGroup.rotation.y += currentRotY;
-                globeGroup.rotation.z += currentRotZ;
+            let audioScale = 0;
+            if (analyser && dataArray) {
+                analyser.getByteFrequencyData(dataArray);
+                let sum = 0;
+                for (let i = 0; i < 64; i++) sum += dataArray[i];
+                audioScale = (sum / 64) / 255.0;
             }
-            
-            composer.render();
+
+            angle += 0.005;
+            quantumPoints.rotation.y += 0.002;
+
+            const posAttr = quantumPoints.geometry.attributes.position;
+            const colAttr = quantumPoints.geometry.attributes.color;
+
+            let idx = 0;
+            for (let i = 0; i < gridDim; i++) {
+                const u = (i / (gridDim - 1)) * Math.PI * 2;
+                for (let j = 0; j < gridDim; j++) {
+                    const v = (j / (gridDim - 1)) * Math.PI;
+                    const deform = 1.0 + Math.sin(u * 4 + angle) * Math.cos(v * 4 + angle) * (0.1 + audioScale * 0.4);
+                    const currentR = radius * deform;
+
+                    posAttr.array[idx * 3] = currentR * Math.sin(v) * Math.cos(u);
+                    posAttr.array[idx * 3 + 1] = currentR * Math.sin(v) * Math.sin(u);
+                    posAttr.array[idx * 3 + 2] = currentR * Math.cos(v);
+
+                    colAttr.array[idx * 3] = 0.2 + audioScale * 0.8;
+                    colAttr.array[idx * 3 + 1] = 0.5 + Math.sin(angle) * 0.3;
+                    colAttr.array[idx * 3 + 2] = 1.0;
+                    idx++;
+                }
+            }
+
+            posAttr.needsUpdate = true;
+            colAttr.needsUpdate = true;
+
+            renderer.render(scene, camera);
         }
 
-        // Первичная загрузка плейлиста при старте
-        fetchPlaylist();
         animate();
     </script>
 </body>
