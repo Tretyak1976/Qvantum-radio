@@ -59,8 +59,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script>
         const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxBgeGkURQSo9Ju4Bq3gDU2HZh0KH5GC2Ts_UfJ7yV5bHVLSWrxYGvIafDX6qG7Tmg/exec";
-       const PROXIED_URL = "https://thingproxy.freeboard.io/fetch/" + encodeURIComponent(APPS_SCRIPT_URL);
-
+       const PROXIED_URL = "https://corsproxy.io/?" + encodeURIComponent(APPS_SCRIPT_URL);
         let playlist = [];
         let currentTrackIndex = 0;
         let audioContext, analyser, source, dataArray;
