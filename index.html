@@ -231,7 +231,7 @@
                     const fileId = urlParams.get('id');
                     
                     // БЭКЕНД NODE.JS. На мобилке не сработает, пока сервер не выложен в сеть с HTTPS.
-                    finalUrl = `http://localhost:3000/stream?id=${fileId}`;
+                    finalUrl = `https://modern-hounds-bake.loca.lt=${fileId}`;
                 }
 
                 audioElement.src = finalUrl; 
