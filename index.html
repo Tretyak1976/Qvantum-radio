@@ -179,7 +179,7 @@
             }
         };
 
-        // ADVANCED PLAY TRACK FUNCTION (Blob Buffer Method)
+// ADVANCED PLAY TRACK FUNCTION (Node.js Backend Method)
         async function playTrack(track) {
             currentPlayingTrack = track;
             initAudio(); 
@@ -192,36 +192,20 @@
 
             const playBtn = document.getElementById('play-pause-btn');
             const originalBtnText = "PLAY / PAUSE";
+            playBtn.innerText = "CONNECTING STREAM...";
             
             try {
                 let finalUrl = track.url;
 
-                // Загружаем трек с Диска в оперативную память браузера как Blob (чтобы убить CORS)
+                // Если файл с Google Диска, направляем его через наш Node.js бэкенд
                 if (!track.isLocal && track.url.includes("drive.google.com")) {
-                    playBtn.innerText = "BUFFERING STREAM...";
-                    playBtn.disabled = true;
+                    // Извлекаем ID файла из ссылки Google Drive
+                    const urlParams = new URLSearchParams(track.url.split('?')[1]);
+                    const fileId = urlParams.get('id');
                     
-                    // Удаляем старый буфер из памяти, если он есть
-                    if (currentBlobUrl) {
-                        URL.revokeObjectURL(currentBlobUrl);
-                        currentBlobUrl = null;
-                    }
-
-                    // Пробуем скачать через надежный прокси
-                    let proxyUrl = "https://corsproxy.io/?" + encodeURIComponent(track.url);
-                    let response = await fetch(proxyUrl);
-                    
-                    // Запасной план, если первый прокси занят
-                    if (!response.ok) {
-                        proxyUrl = "https://api.allorigins.win/raw?url=" + encodeURIComponent(track.url);
-                        response = await fetch(proxyUrl);
-                    }
-
-                    if (!response.ok) throw new Error("Proxies failed to load audio");
-                    
-                    const blob = await response.blob();
-                    currentBlobUrl = URL.createObjectURL(blob);
-                    finalUrl = currentBlobUrl;
+                    // Обращаемся к нашему локальному серверу
+                    // Когда развернешь бэкенд в облаке, заменишь http://localhost:3000 на свой домен
+                    finalUrl = `http://localhost:3000/stream?id=${fileId}`;
                 }
 
                 audioElement.src = finalUrl; 
@@ -229,16 +213,13 @@
                 
                 isPlaying = true; 
                 playBtn.innerText = originalBtnText;
-                playBtn.disabled = false;
                 resetUiTimer();
                 
             } catch (error) {
-                console.error("Stream buffering failed:", error);
+                console.error("Stream failed:", error);
                 playBtn.innerText = "ERROR - SKIPPING...";
                 setTimeout(() => { 
                     playBtn.innerText = originalBtnText; 
-                    playBtn.disabled = false; 
-                    // Если трек сломан, переключаем на следующий
                     playNextInGenre();
                 }, 2000);
             }
