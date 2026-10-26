@@ -2,12 +2,14 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Quantum Radio 3D - Global Stream</title>
     <style>
-        body { margin: 0; overflow: hidden; background-color: #000000; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #fff; user-select: none; }
+        body { margin: 0; overflow: hidden; background-color: #000000; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #fff; user-select: none; touch-action: none; }
         #canvas-container { width: 100vw; height: 100vh; position: absolute; top: 0; left: 0; z-index: 1; cursor: grab; }
         #canvas-container:active { cursor: grabbing; }
         
+        /* БАЗОВЫЕ СТИЛИ (ДЕСКТОП) */
         #ui-layer {
             position: absolute; top: 20px; left: 20px; z-index: 10;
             background: rgba(10, 10, 15, 0.75); padding: 25px; border-radius: 20px;
@@ -38,6 +40,32 @@
         
         ::-webkit-scrollbar { width: 4px; }
         ::-webkit-scrollbar-thumb { background: #3b82f6; border-radius: 2px; }
+
+        /* МОБИЛЬНАЯ ВЕРСИЯ */
+        @media (max-width: 768px) {
+            #ui-layer {
+                top: auto; bottom: 0; left: 0; width: 100%;
+                border-radius: 25px 25px 0 0; padding: 20px 20px 30px 20px;
+                border: none; border-top: 1px solid rgba(255, 255, 255, 0.15);
+                box-sizing: border-box; background: rgba(10, 10, 15, 0.9);
+            }
+            #ui-layer.idle { transform: translateY(calc(100% - 15px)); }
+            #ui-layer.idle::before {
+                content: ''; position: absolute; top: 6px; left: 50%; transform: translateX(-50%);
+                width: 50px; height: 4px; background: rgba(255,255,255,0.3); border-radius: 2px;
+            }
+            #ui-layer:hover, #ui-layer:active { transform: translateY(0); }
+            
+            h2 { font-size: 1.5rem; text-align: center; margin-bottom: 20px; }
+            label { font-size: 0.85rem; margin-bottom: 10px; }
+            
+            input[type="file"], select, button {
+                font-size: 1.1rem; padding: 18px; border-radius: 12px; margin-bottom: 10px;
+            }
+            
+            #playlist { max-height: 35vh; margin-top: 20px; }
+            .track-item { font-size: 1.1rem; padding: 16px 12px; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        }
     </style>
 </head>
 <body>
@@ -81,9 +109,10 @@
         function resetUiTimer() {
             uiLayer.classList.remove('idle');
             clearTimeout(uiTimeout);
-            uiTimeout = setTimeout(() => { if (isPlaying) uiLayer.classList.add('idle'); }, 3000);
+            uiTimeout = setTimeout(() => { if (isPlaying) uiLayer.classList.add('idle'); }, 4000);
         }
         window.addEventListener('mousemove', resetUiTimer);
+        window.addEventListener('touchstart', resetUiTimer, {passive: true});
         window.addEventListener('click', resetUiTimer);
 
         // --- 2. AUDIO ENGINE & DATABASE ---
@@ -95,7 +124,6 @@
         let fullPlaylist = [];
         let currentPlaylist = [];
         let currentPlayingTrack = null;
-        let currentBlobUrl = null; // Для очистки памяти после скачивания
 
         // === БРАТ, ВСТАВЬ СВОЙ URL ВЕБ-ПРИЛОЖЕНИЯ МЕЖДУ КАВЫЧКАМИ НИЖЕ ===
         const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxsQvK6Rv_KpPMOEl-xfJeLUvtusCcxQpK89jMcRIzsYnkc46_dgKkgeVg_IW3DArc/exec"; 
@@ -103,7 +131,9 @@
 
         function initAudio() {
             if (audioContext) return;
-            audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            // Safari/Mobile фикс: инициализация должна происходить строго по клику/тапу
+            const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+            audioContext = new AudioContextClass();
             analyser = audioContext.createAnalyser();
             analyser.fftSize = 2048;
             analyser.smoothingTimeConstant = 0.85; 
@@ -116,10 +146,9 @@
             timeDataArray = new Uint8Array(analyser.fftSize);
         }
 
-        // AUTO-LOAD DATABASE ON STARTUP
         window.addEventListener('DOMContentLoaded', async () => {
             if (APPS_SCRIPT_URL === "ВСТАВЬ_СВОЙ_URL_СЮДА") {
-                document.getElementById('playlist').innerHTML = '<div style="color: #ef4444; padding: 10px;">Error: Add Apps Script URL in index.html</div>';
+                document.getElementById('playlist').innerHTML = '<div style="color: #ef4444; padding: 10px; text-align:center;">Error: Add Apps Script URL</div>';
                 return;
             }
 
@@ -146,11 +175,10 @@
                 updatePlaylistUI();
             } catch (err) {
                 console.error("Network error:", err);
-                document.getElementById('playlist').innerHTML = '<div style="color: #ef4444; padding: 10px;">Failed to load cloud database.</div>';
+                document.getElementById('playlist').innerHTML = '<div style="color: #ef4444; padding: 10px; text-align:center;">Failed to load cloud database.</div>';
             }
         });
 
-        // HANDLE GENRE FILTERING
         document.getElementById('genre-filter').addEventListener('change', (e) => {
             const selectedGenre = e.target.value;
             if (selectedGenre === 'all') {
@@ -161,7 +189,6 @@
             updatePlaylistUI();
         });
 
-        // HANDLE LOCAL FILE UPLOAD
         document.getElementById('audio-upload').onchange = (e) => {
             if (e.target.files.length > 0) {
                 const file = e.target.files[0];
@@ -179,11 +206,13 @@
             }
         };
 
-// ADVANCED PLAY TRACK FUNCTION (Node.js Backend Method)
         async function playTrack(track) {
             currentPlayingTrack = track;
+            
             initAudio(); 
-            if(audioContext.state === 'suspended') audioContext.resume();
+            if(audioContext.state === 'suspended') {
+                await audioContext.resume();
+            }
             
             document.querySelectorAll('.track-item').forEach(el => {
                 el.classList.remove('active');
@@ -197,14 +226,11 @@
             try {
                 let finalUrl = track.url;
 
-                // Если файл с Google Диска, направляем его через наш Node.js бэкенд
                 if (!track.isLocal && track.url.includes("drive.google.com")) {
-                    // Извлекаем ID файла из ссылки Google Drive
                     const urlParams = new URLSearchParams(track.url.split('?')[1]);
                     const fileId = urlParams.get('id');
                     
-                    // Обращаемся к нашему локальному серверу
-                    // Когда развернешь бэкенд в облаке, заменишь http://localhost:3000 на свой домен
+                    // БЭКЕНД NODE.JS. На мобилке не сработает, пока сервер не выложен в сеть с HTTPS.
                     finalUrl = `http://localhost:3000/stream?id=${fileId}`;
                 }
 
@@ -225,18 +251,16 @@
             }
         }
 
-        // NEXT TRACK LOGIC
         function playNextInGenre() {
             if (!currentPlayingTrack) return;
             const sameGenreTracks = fullPlaylist.filter(t => t.genre === currentPlayingTrack.genre);
             if (sameGenreTracks.length > 0) {
                 let currentIndex = sameGenreTracks.findIndex(t => t.url === currentPlayingTrack.url);
-                let nextIndex = (currentIndex + 1) % sameGenreTracks.length; // Автоматически зацикливает
+                let nextIndex = (currentIndex + 1) % sameGenreTracks.length;
                 playTrack(sameGenreTracks[nextIndex]);
             }
         }
 
-        // АВТО-ПЕРЕКЛЮЧЕНИЕ ПРИ ОКОНЧАНИИ ПЕСНИ
         audioElement.addEventListener('ended', playNextInGenre);
 
         function updatePlaylistUI() {
@@ -265,11 +289,23 @@
             });
         }
 
-        document.getElementById('play-pause-btn').onclick = () => {
-            if(!audioContext) return;
-            if (audioContext.state === 'suspended') audioContext.resume();
-            if (isPlaying) audioElement.pause(); else audioElement.play();
-            isPlaying = !isPlaying;
+        document.getElementById('play-pause-btn').onclick = async () => {
+            initAudio();
+            if(audioContext.state === 'suspended') await audioContext.resume();
+            
+            if (isPlaying) {
+                audioElement.pause();
+                isPlaying = false;
+            } else {
+                if (!audioElement.src || audioElement.src.endsWith(window.location.host + "/")) {
+                    if (currentPlaylist.length > 0) {
+                        playTrack(currentPlaylist[0]);
+                    }
+                } else {
+                    await audioElement.play();
+                    isPlaying = true;
+                }
+            }
         };
 
         // --- 3. 3D SCENE ---
@@ -288,6 +324,8 @@
 
         const controls = new THREE.OrbitControls(camera, renderer.domElement);
         controls.enableDamping = true; controls.dampingFactor = 0.05; controls.minDistance = 20; controls.maxDistance = 150;
+        // Отключаем скролл/зум двумя пальцами на мобильном поверх UI
+        controls.touches = { ONE: THREE.TOUCH.ROTATE, TWO: THREE.TOUCH.DOLLY_PAN };
 
         const renderScene = new THREE.RenderPass(scene, camera);
         const bloomPass = new THREE.UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
