@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>3D Symbiosis - Infinite Evolution (Fixed)</title>
+    <title>Quantum Radio 3D - Global Stream</title>
     <style>
         body { margin: 0; overflow: hidden; background-color: #000000; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #fff; user-select: none; }
         #canvas-container { width: 100vw; height: 100vh; position: absolute; top: 0; left: 0; z-index: 1; cursor: grab; }
@@ -22,12 +22,13 @@
         .control-group { margin-bottom: 20px; }
         label { display: block; font-size: 0.7rem; margin-bottom: 8px; color: #aaa; text-transform: uppercase; letter-spacing: 1px;}
         
-        input[type="file"], button {
+        input[type="file"], select, button {
             width: 100%; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(59, 130, 246, 0.4);
             color: white; padding: 12px; border-radius: 10px; box-sizing: border-box;
-            outline: none; cursor: pointer; transition: all 0.3s; font-weight: bold;
+            outline: none; cursor: pointer; transition: all 0.3s; font-weight: bold; margin-bottom: 5px;
         }
-        button:hover { background: rgba(59, 130, 246, 0.2); border-color: #3b82f6; box-shadow: 0 0 20px rgba(59, 130, 246, 0.4); }
+        select option { background: #111; color: #fff; }
+        button:hover, select:hover, input[type="file"]:hover { background: rgba(59, 130, 246, 0.2); border-color: #3b82f6; box-shadow: 0 0 20px rgba(59, 130, 246, 0.4); }
         button { background: rgba(59, 130, 246, 0.15); color: #3b82f6; margin-top: 5px; }
         
         #playlist { margin-top: 15px; max-height: 180px; overflow-y: auto; font-size: 0.85rem; }
@@ -42,22 +43,30 @@
 <body>
 
     <div id="ui-layer">
-        <h2>QUANTUM SYMBIOSIS</h2>
+        <h2>QUANTUM RADIO</h2>
+        
         <div class="control-group">
-            <label>Загрузить трек:</label>
+            <label>GENRE FILTER:</label>
+            <select id="genre-filter">
+                <option value="all">Loading database...</option>
+            </select>
+        </div>
+
+        <div class="control-group">
+            <label>LOCAL TRACK (OPTIONAL):</label>
             <input type="file" id="audio-upload" accept="audio/*">
         </div>
         
-        <button id="load-drive-btn" style="background: rgba(59, 130, 246, 0.3); border-color: #3b82f6; margin-bottom: 10px;">ЗАГРУЗИТЬ БАЗУ ИЗ DRIVE</button>
-        <button id="play-pause-btn">СТАРТ / ПАУЗА</button>
-        <div id="playlist"></div>
+        <button id="play-pause-btn">PLAY / PAUSE</button>
+        <div id="playlist">
+            <div style="padding: 10px; color: #aaa; text-align: center;">Fetching cloud database...</div>
+        </div>
     </div>
 
     <div id="canvas-container"></div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
-    
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/EffectComposer.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/RenderPass.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/ShaderPass.js"></script>
@@ -66,7 +75,7 @@
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/UnrealBloomPass.js"></script>
 
     <script>
-        // --- 1. АВТО-СКРЫТИЕ ИНТЕРФЕЙСА ---
+        // --- 1. UI AUTOHIDE ---
         let uiTimeout;
         const uiLayer = document.getElementById('ui-layer');
         function resetUiTimer() {
@@ -77,11 +86,13 @@
         window.addEventListener('mousemove', resetUiTimer);
         window.addEventListener('click', resetUiTimer);
 
-        // --- 2. АУДИО ДВИЖОК ---
+        // --- 2. AUDIO ENGINE & DATABASE ---
         let audioContext, analyser, dataArray, timeDataArray;
         let audioElement = new Audio();
-        audioElement.crossOrigin = "anonymous"; // КРИТИЧЕСКИ ВАЖНО ДЛЯ АНАЛИЗАТОРА WEBGL
-        let isPlaying = false, playlist = [];
+        audioElement.crossOrigin = "anonymous"; // CRITICAL FOR CORS & WEBGL
+        let isPlaying = false;
+        let fullPlaylist = [];
+        let currentPlaylist = [];
 
         // === БРАТ, ВСТАВЬ СВОЙ URL ВЕБ-ПРИЛОЖЕНИЯ МЕЖДУ КАВЫЧКАМИ НИЖЕ ===
         const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxsQvK6Rv_KpPMOEl-xfJeLUvtusCcxQpK89jMcRIzsYnkc46_dgKkgeVg_IW3DArc/exec"; 
@@ -102,45 +113,82 @@
             timeDataArray = new Uint8Array(analyser.fftSize);
         }
 
-        document.getElementById('load-drive-btn').onclick = async () => {
+        // AUTO-LOAD DATABASE ON STARTUP
+        window.addEventListener('DOMContentLoaded', async () => {
             if (APPS_SCRIPT_URL === "ВСТАВЬ_СВОЙ_URL_СЮДА") {
-                alert("Пожалуйста, добавь URL своего Apps Script в код!");
+                document.getElementById('playlist').innerHTML = '<div style="color: #ef4444; padding: 10px;">Error: Add Apps Script URL in index.html</div>';
                 return;
             }
 
-            const btn = document.getElementById('load-drive-btn');
-            const originalText = btn.innerText;
-            btn.innerText = "ЗАГРУЗКА...";
-            
             try {
                 const response = await fetch(APPS_SCRIPT_URL);
                 const data = await response.json();
                 
                 if (data.error) {
-                    alert("Ошибка: " + data.error);
-                } else {
-                    playlist = playlist.concat(data); // Добавляем к текущему плейлисту
-                    updatePlaylistUI();
+                    throw new Error(data.error);
                 }
-            } catch (err) {
-                console.error("Ошибка сети:", err);
-                alert("Не удалось загрузить данные из Google Drive. Проверь консоль (F12).");
-            }
-            btn.innerText = originalText;
-        };
 
+                fullPlaylist = data;
+                currentPlaylist = [...fullPlaylist];
+                
+                // Populate Genre Filter
+                const genres = [...new Set(fullPlaylist.map(t => t.genre).filter(Boolean))];
+                const filterSelect = document.getElementById('genre-filter');
+                filterSelect.innerHTML = '<option value="all">ALL GENRES</option>';
+                
+                genres.forEach(g => {
+                    const opt = document.createElement('option');
+                    opt.value = g;
+                    opt.innerText = g.toUpperCase();
+                    filterSelect.appendChild(opt);
+                });
+
+                updatePlaylistUI();
+            } catch (err) {
+                console.error("Network error:", err);
+                document.getElementById('playlist').innerHTML = '<div style="color: #ef4444; padding: 10px;">Failed to load cloud database.</div>';
+            }
+        });
+
+        // HANDLE GENRE FILTERING
+        document.getElementById('genre-filter').addEventListener('change', (e) => {
+            const selectedGenre = e.target.value;
+            if (selectedGenre === 'all') {
+                currentPlaylist = [...fullPlaylist];
+            } else {
+                currentPlaylist = fullPlaylist.filter(t => t.genre === selectedGenre);
+            }
+            updatePlaylistUI();
+        });
+
+        // HANDLE LOCAL FILE UPLOAD
         document.getElementById('audio-upload').onchange = (e) => {
             if (e.target.files.length > 0) {
                 const file = e.target.files[0];
-                playlist.push({ name: file.name.substring(0, 30) + '...', url: URL.createObjectURL(file) });
-                updatePlaylistUI(); e.target.value = ''; 
+                const newTrack = { 
+                    name: file.name.substring(0, 30) + '...', 
+                    genre: "LOCAL", 
+                    url: URL.createObjectURL(file),
+                    isLocal: true 
+                };
+                fullPlaylist.unshift(newTrack); // Add to top
+                currentPlaylist = [...fullPlaylist];
+                document.getElementById('genre-filter').value = 'all'; // Reset filter
+                updatePlaylistUI(); 
+                e.target.value = ''; 
             }
         };
 
         function updatePlaylistUI() {
             const playlistDiv = document.getElementById('playlist');
             playlistDiv.innerHTML = '';
-            playlist.forEach((track) => {
+            
+            if (currentPlaylist.length === 0) {
+                playlistDiv.innerHTML = '<div style="padding: 10px; color: #aaa; text-align: center;">No tracks found</div>';
+                return;
+            }
+
+            currentPlaylist.forEach((track) => {
                 const trackEl = document.createElement('div');
                 trackEl.className = 'track-item';
                 
@@ -148,7 +196,17 @@
                 trackEl.innerHTML = genrePrefix + track.name;
 
                 trackEl.onclick = () => {
-                    initAudio(); audioElement.src = track.url; audioElement.play();
+                    initAudio(); 
+                    
+                    // IF DRIVE URL, WRAP IN CORS PROXY TO AVOID WEBGL BLOCK
+                    let finalUrl = track.url;
+                    if (!track.isLocal && track.url.includes("drive.google.com")) {
+                        finalUrl = "https://corsproxy.io/?" + encodeURIComponent(track.url);
+                    }
+
+                    audioElement.src = finalUrl; 
+                    audioElement.play().catch(e => console.log("Playback delayed by browser policy:", e));
+                    
                     isPlaying = true; resetUiTimer();
                     document.querySelectorAll('.track-item').forEach(el => el.classList.remove('active'));
                     trackEl.classList.add('active');
@@ -164,7 +222,7 @@
             isPlaying = !isPlaying;
         };
 
-        // --- 3. 3D СЦЕНА ---
+        // --- 3. 3D SCENE ---
         const container = document.getElementById('canvas-container');
         const scene = new THREE.Scene();
         scene.fog = new THREE.FogExp2(0x020205, 0.002);
@@ -190,7 +248,6 @@
 
         const globeGroup = new THREE.Group(); scene.add(globeGroup);
 
-        // Квантовая Сетка (48x48)
         const gridDim = 48; const pCount = gridDim * gridDim;
         const pOrig = new Float32Array(pCount * 3);
         const pPos = new Float32Array(pCount * 3);
@@ -229,7 +286,6 @@
         const quantumLines = new THREE.LineSegments(pGeo, new THREE.LineBasicMaterial({ vertexColors: true, transparent: true, opacity: 0.35, blending: THREE.AdditiveBlending, depthWrite: false }));
         globeGroup.add(quantumPoints); globeGroup.add(quantumLines);
 
-        // Лазеры
         const laserGroup = new THREE.Group();
         const laserMat = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0, blending: THREE.AdditiveBlending });
         for(let i=0; i<100; i++) {
@@ -242,7 +298,6 @@
         }
         globeGroup.add(laserGroup);
 
-        // Кольца
         const radioWavesGroup = new THREE.Group(); globeGroup.add(radioWavesGroup);
         const radioRings = [];
         for(let i=0; i<4; i++) {
@@ -263,14 +318,10 @@
             if(composer) composer.setSize(window.innerWidth, window.innerHeight);
         });
 
-        // --- 4. НАКОПИТЕЛЬНАЯ ЭВОЛЮЦИЯ И ГЕНЕРАТИВНОСТЬ ---
+        // --- 4. ANIMATION ENGINE ---
         const colorObj = new THREE.Color();
         let currentBassLevel = 0, smoothedCentroid = 0.5, beatThreshold = 0.5;
-        
-        // Накопительные переменные, которые формируют "память" трека
         let evolveBass = 0, evolveMid = 0, evolveTreble = 0;
-        
-        // Переменные для динамического вектора вращения
         let targetRotX = 0.001, targetRotY = 0.002, targetRotZ = 0.001;
         let currentRotX = 0.001, currentRotY = 0.002, currentRotZ = 0.001;
 
@@ -297,7 +348,6 @@
 
                 currentBassLevel += (sharpBass - currentBassLevel) * 0.2; 
                 
-                // Накопление эволюции
                 evolveBass += (sharpBass * 0.05) + 0.001;
                 evolveMid += (mid * 0.05) + 0.002;
                 evolveTreble += (treble * 0.05) + 0.0015;
@@ -312,7 +362,6 @@
                 }
                 camera.updateProjectionMatrix();
 
-                // Динамическая смена вектора вращения на сильных ударах
                 beatThreshold = Math.max(0.2, beatThreshold * 0.95);
                 let isBeat = false;
                 if (sharpBass > beatThreshold) { 
@@ -347,13 +396,11 @@
                 if (isBeat && sharpBass > 0.7) { strobeLight.intensity = 4.0; sunLight.intensity = 3.0; } 
                 else { strobeLight.intensity += (0 - strobeLight.intensity) * 0.2; sunLight.intensity += (1.0 - sunLight.intensity) * 0.1; }
 
-                // ГЕНЕРАТИВНАЯ ДЕФОРМАЦИЯ
                 const positions = quantumPoints.geometry.attributes.position.array; 
                 const colors = quantumPoints.geometry.attributes.color.array;
                 
-                // Параметры деформации плавно и бесконечно меняются
-                let freqU = 2.0 + Math.sin(evolveMid * 0.2) * 5.0; // от -3 до 7
-                let freqV = 3.0 + Math.cos(evolveBass * 0.15) * 6.0; // от -3 до 9
+                let freqU = 2.0 + Math.sin(evolveMid * 0.2) * 5.0; 
+                let freqV = 3.0 + Math.cos(evolveBass * 0.15) * 6.0; 
                 let shapeChaos = Math.sin(evolveTreble * 0.3) * 0.5;
 
                 for(let i=0; i<gridDim; i++) {
@@ -407,7 +454,6 @@
                 quantumPoints.geometry.attributes.color.needsUpdate = true;
                 quantumLines.material.opacity = energy < 0.01 ? 0 : Math.min(0.8, energy * 1.5);
                 
-                // Вращение ядра
                 globeGroup.rotation.x += currentRotX;
                 globeGroup.rotation.y += currentRotY;
                 globeGroup.rotation.z += currentRotZ;
