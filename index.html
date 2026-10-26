@@ -92,7 +92,7 @@
         // =====================================================================
         // БРАТ, ВСТАВЬ СЮДА НОВУЮ ССЫЛКУ ИЗ APPS SCRIPT !!!
         // =====================================================================
-        const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxZfdqW6LXmEDGg0hHVDxYMU2FKtAR0V0psQqUyMyizmJCOMl_Cc1ScksuKOlXIcwc/exec"; 
+        const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw70Zm6VuqsMbkp34l6LQpMswfad6slExKsp_19twxAxofHBFyxzL3zGpd4kICPTuo/exec"; 
         
         // =====================================================================
 
@@ -191,18 +191,20 @@
 
             const playBtn = document.getElementById('play-pause-btn');
             const originalBtnText = "СТАРТ / ПАУЗА";
-            playBtn.innerText = "БУФЕРИЗАЦИЯ...";
+            playBtn.innerText = "ЗАГРУЗКА ДАННЫХ...";
             
             try {
-                // Если трек с Диска, скачиваем его как Blob через fetch! Это решает проблему CORS!
                 if (!track.isLocal && track.url.includes("script.google.com")) {
+                     // Запрашиваем трек у Google Apps Script (он придет в формате Base64 JSON)
                      const response = await fetch(track.url);
                      if(!response.ok) throw new Error("Ошибка загрузки аудиопотока");
-                     const blob = await response.blob();
+                     const data = await response.json();
                      
-                     if (window.currentBlobUrl) URL.revokeObjectURL(window.currentBlobUrl);
-                     window.currentBlobUrl = URL.createObjectURL(blob);
-                     audioElement.src = window.currentBlobUrl;
+                     if (data.error) throw new Error(data.error);
+                     if (!data.base64) throw new Error("Трек не сконвертирован");
+                     
+                     // Вставляем Base64 прямо в плеер - это обходит CORS!
+                     audioElement.src = data.base64;
                 } else {
                      audioElement.src = track.url; 
                 }
