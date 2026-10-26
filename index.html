@@ -1,80 +1,105 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Quantum Radio 3D - Global Stream</title>
     <style>
         body { margin: 0; overflow: hidden; background-color: #000000; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #fff; user-select: none; touch-action: none; }
+        
         #canvas-container { width: 100vw; height: 100vh; position: absolute; top: 0; left: 0; z-index: 1; cursor: grab; }
         #canvas-container:active { cursor: grabbing; }
         
-        #ui-layer {
-            position: absolute; top: 20px; left: 20px; z-index: 10;
-            background: rgba(10, 10, 15, 0.75); padding: 25px; border-radius: 20px;
-            border: 1px solid rgba(255, 255, 255, 0.1); backdrop-filter: blur(16px);
-            width: 320px; box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8);
-            transition: opacity 0.5s ease, transform 0.5s ease;
+        /* New Bottom UI Wrapper */
+        #ui-wrapper {
+            position: absolute; bottom: 25px; left: 50%; transform: translateX(-50%);
+            width: 95%; max-width: 900px; z-index: 10;
+            display: flex; flex-direction: column; gap: 10px;
+            transition: opacity 0.8s ease, transform 0.8s ease;
         }
-        #ui-layer.idle { opacity: 0; transform: translateX(-20px); pointer-events: none; }
-        #ui-layer:hover { opacity: 1.0; transform: translateX(0); }
+        
+        /* Idle State - Hides UI completely */
+        #ui-wrapper.idle {
+            opacity: 0; transform: translate(-50%, 30px); pointer-events: none;
+        }
 
-        h2 { margin-top: 0; font-size: 1.2rem; color: #3b82f6; text-transform: uppercase; letter-spacing: 2px; font-weight: 800; text-shadow: 0 0 15px rgba(59, 130, 246, 0.6);}
-        .control-group { margin-bottom: 20px; }
-        label { display: block; font-size: 0.7rem; margin-bottom: 8px; color: #aaa; text-transform: uppercase; letter-spacing: 1px;}
-        
-        input[type="file"], select, button {
-            width: 100%; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(59, 130, 246, 0.4);
-            color: white; padding: 12px; border-radius: 10px; box-sizing: border-box;
-            outline: none; cursor: pointer; transition: all 0.3s; font-weight: bold; margin-bottom: 5px;
+        /* Playlist Layer */
+        #playlist-container {
+            background: rgba(10, 10, 15, 0.75); padding: 15px; border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1); backdrop-filter: blur(16px);
+            max-height: 25vh; overflow-y: auto; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
         }
-        select option { background: #111; color: #fff; }
-        button:hover, select:hover, input[type="file"]:hover { background: rgba(59, 130, 246, 0.2); border-color: #3b82f6; box-shadow: 0 0 20px rgba(59, 130, 246, 0.4); }
-        button { background: rgba(59, 130, 246, 0.15); color: #3b82f6; margin-top: 5px; }
         
-        #playlist { margin-top: 15px; max-height: 180px; overflow-y: auto; font-size: 0.85rem; }
-        .track-item { padding: 10px; border-bottom: 1px solid rgba(255,255,255,0.05); cursor: pointer; border-radius: 8px; transition: background 0.2s;}
+        /* Controls Bar Layer */
+        #controls-bar {
+            display: flex; align-items: center; justify-content: space-between; gap: 10px;
+            background: rgba(10, 10, 15, 0.85); padding: 15px 25px; border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1); backdrop-filter: blur(20px);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8);
+        }
+
+        h2 { margin: 0; font-size: 1.2rem; color: #3b82f6; text-transform: uppercase; letter-spacing: 2px; font-weight: 800; text-shadow: 0 0 15px rgba(59, 130, 246, 0.6); white-space: nowrap;}
+        
+        /* Form Elements */
+        select, button, .custom-file-btn {
+            background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(59, 130, 246, 0.4);
+            color: white; padding: 12px 18px; border-radius: 12px; box-sizing: border-box;
+            outline: none; cursor: pointer; transition: all 0.3s; font-weight: bold;
+            text-transform: uppercase; font-size: 0.8rem; letter-spacing: 1px;
+            display: inline-block; text-align: center;
+        }
+        
+        select { flex: 1; min-width: 120px; }
+        select option { background: #111; color: #fff; }
+        
+        button:hover, select:hover, .custom-file-btn:hover { 
+            background: rgba(59, 130, 246, 0.2); border-color: #3b82f6; box-shadow: 0 0 20px rgba(59, 130, 246, 0.4); 
+        }
+        button { background: rgba(59, 130, 246, 0.15); color: #3b82f6; }
+        
+        /* Playlist Items */
+        .track-item { padding: 10px; border-bottom: 1px solid rgba(255,255,255,0.05); cursor: pointer; border-radius: 8px; transition: background 0.2s; font-size: 0.9rem;}
         .track-item:hover { background: rgba(255,255,255,0.08); }
         .track-item.active { color: #3b82f6; background: rgba(59, 130, 246, 0.1); border-color: transparent; font-weight: bold; box-shadow: 0 0 15px rgba(59, 130, 246, 0.2);}
         
         ::-webkit-scrollbar { width: 4px; }
         ::-webkit-scrollbar-thumb { background: #3b82f6; border-radius: 2px; }
 
+        /* Mobile Adjustments */
         @media (max-width: 768px) {
-            #ui-layer {
-                top: auto; bottom: 0; left: 0; width: 100%;
-                border-radius: 25px 25px 0 0; padding: 20px 20px 30px 20px;
-                border: none; border-top: 1px solid rgba(255, 255, 255, 0.15);
-                box-sizing: border-box; background: rgba(10, 10, 15, 0.9);
+            #ui-wrapper { width: 100%; bottom: 0; border-radius: 25px 25px 0 0; }
+            #controls-bar { 
+                flex-wrap: wrap; padding: 15px; border-radius: 25px 25px 0 0; 
+                border-bottom: none; border-left: none; border-right: none;
             }
-            #ui-layer.idle { transform: translateY(calc(100% - 15px)); }
-            #ui-layer.idle::before {
-                content: ''; position: absolute; top: 6px; left: 50%; transform: translateX(-50%);
-                width: 50px; height: 4px; background: rgba(255,255,255,0.3); border-radius: 2px;
-            }
-            #ui-layer:hover, #ui-layer:active { transform: translateY(0); }
-            h2 { font-size: 1.5rem; text-align: center; margin-bottom: 20px; }
-            label { font-size: 0.85rem; margin-bottom: 10px; }
-            input[type="file"], select, button { font-size: 1.1rem; padding: 18px; border-radius: 12px; margin-bottom: 10px; }
-            #playlist { max-height: 35vh; margin-top: 20px; }
-            .track-item { font-size: 1.1rem; padding: 16px 12px; border-bottom: 1px solid rgba(255,255,255,0.1); }
+            h2 { width: 100%; text-align: center; margin-bottom: 5px; font-size: 1.4rem;}
+            select, button, .custom-file-btn { flex: 1 1 45%; padding: 15px 10px; font-size: 0.75rem; }
+            #playlist-container { border-radius: 20px; margin: 0 10px; max-height: 30vh; }
         }
     </style>
 </head>
 <body>
 
-    <div id="ui-layer">
-        <h2>QUANTUM RADIO</h2>
-        <div class="control-group">
-            <label>ФИЛЬТР ЖАНРА:</label>
-            <select id="genre-filter"><option value="all">Загрузка базы...</option></select>
+    <div id="ui-wrapper">
+        <div id="playlist-container">
+            <div id="playlist">
+                <div style="padding: 10px; color: #aaa; text-align: center;">Connecting to Google Drive...</div>
+            </div>
         </div>
-        <div class="control-group">
-            <label>ЛОКАЛЬНЫЙ ТРЕК:</label>
-            <input type="file" id="audio-upload" accept="audio/*">
+        
+        <div id="controls-bar">
+            <h2>QUANTUM RADIO</h2>
+            
+            <select id="genre-filter"><option value="all">Loading database...</option></select>
+            
+            <label class="custom-file-btn">
+                UPLOAD
+                <input type="file" id="audio-upload" accept="audio/*" style="display:none;">
+            </label>
+            
+            <button id="play-pause-btn">PLAY / PAUSE</button>
+            <button id="fullscreen-btn">FULLSCREEN</button>
         </div>
-        <button id="play-pause-btn">СТАРТ / ПАУЗА</button>
-        <div id="playlist"><div style="padding: 10px; color: #aaa; text-align: center;">Подключение к Google Диску...</div></div>
     </div>
 
     <div id="canvas-container"></div>
@@ -90,26 +115,52 @@
 
     <script>
         // =====================================================================
-        // БРАТ, ВСТАВЬ СЮДА НОВУЮ ССЫЛКУ ИЗ APPS SCRIPT !!!
+        // INSERT YOUR NEW APPS SCRIPT URL HERE !!!
         // =====================================================================
         const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw70Zm6VuqsMbkp34l6LQpMswfad6slExKsp_19twxAxofHBFyxzL3zGpd4kICPTuo/exec"; 
-        
         // =====================================================================
 
         let uiTimeout;
-        const uiLayer = document.getElementById('ui-layer');
+        const uiLayer = document.getElementById('ui-wrapper');
+        
+        // Auto-hide UI and Cursor after 3 seconds of inactivity
         function resetUiTimer() {
             uiLayer.classList.remove('idle');
+            document.body.style.cursor = 'default';
             clearTimeout(uiTimeout);
-            uiTimeout = setTimeout(() => { if (isPlaying) uiLayer.classList.add('idle'); }, 4000);
+            
+            uiTimeout = setTimeout(() => { 
+                if (isPlaying) { 
+                    uiLayer.classList.add('idle'); 
+                    document.body.style.cursor = 'none'; // Magic trick to hide the mouse!
+                } 
+            }, 3000);
         }
+        
         window.addEventListener('mousemove', resetUiTimer);
         window.addEventListener('touchstart', resetUiTimer, {passive: true});
         window.addEventListener('click', resetUiTimer);
 
+        // Fullscreen Logic
+        const fullscreenBtn = document.getElementById('fullscreen-btn');
+        fullscreenBtn.onclick = () => {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(err => console.error(err));
+                fullscreenBtn.innerText = "EXIT FULL";
+            } else {
+                document.exitFullscreen();
+                fullscreenBtn.innerText = "FULLSCREEN";
+            }
+            resetUiTimer();
+        };
+
+        document.addEventListener('fullscreenchange', () => {
+            if (!document.fullscreenElement) fullscreenBtn.innerText = "FULLSCREEN";
+        });
+
+        // Audio Engine
         let audioContext, analyser, dataArray, timeDataArray;
         let audioElement = new Audio();
-        // ВАЖНО: Разрешаем кросс-доменные запросы для аудио!
         audioElement.crossOrigin = "anonymous"; 
         
         let isPlaying = false, fullPlaylist = [], currentPlaylist = [];
@@ -133,12 +184,11 @@
 
         window.addEventListener('DOMContentLoaded', async () => {
             if (APPS_SCRIPT_URL === "ВСТАВЬ_ССЫЛКУ_СЮДА") {
-                document.getElementById('playlist').innerHTML = '<div style="color:#ef4444; padding:10px; text-align:center;">Ошибка: Вставь ссылку на Apps Script в код!</div>';
+                document.getElementById('playlist').innerHTML = '<div style="color:#ef4444; padding:10px; text-align:center;">ERROR: Insert Apps Script URL in the code!</div>';
                 return;
             }
 
             try {
-                // Получаем список треков
                 const response = await fetch(APPS_SCRIPT_URL);
                 const data = await response.json();
                 if (data.error) throw new Error(data.error);
@@ -148,7 +198,7 @@
                 
                 const genres = [...new Set(fullPlaylist.map(t => t.genre).filter(Boolean))];
                 const filterSelect = document.getElementById('genre-filter');
-                filterSelect.innerHTML = '<option value="all">ВСЕ ЖАНРЫ</option>';
+                filterSelect.innerHTML = '<option value="all">ALL GENRES</option>';
                 
                 genres.forEach(g => {
                     const opt = document.createElement('option');
@@ -158,8 +208,8 @@
 
                 updatePlaylistUI();
             } catch (err) {
-                console.error("Ошибка загрузки:", err);
-                document.getElementById('playlist').innerHTML = '<div style="color:#ef4444; padding:10px; text-align:center;">Не удалось загрузить базу. Проверь ссылку Apps Script.</div>';
+                console.error("Load error:", err);
+                document.getElementById('playlist').innerHTML = '<div style="color:#ef4444; padding:10px; text-align:center;">Failed to load database. Check Apps Script URL.</div>';
             }
         });
 
@@ -167,6 +217,7 @@
             const selectedGenre = e.target.value;
             currentPlaylist = selectedGenre === 'all' ? [...fullPlaylist] : fullPlaylist.filter(t => t.genre === selectedGenre);
             updatePlaylistUI();
+            resetUiTimer();
         });
 
         document.getElementById('audio-upload').onchange = (e) => {
@@ -176,6 +227,7 @@
                 currentPlaylist = [...fullPlaylist];
                 document.getElementById('genre-filter').value = 'all'; 
                 updatePlaylistUI(); e.target.value = ''; 
+                resetUiTimer();
             }
         };
 
@@ -190,20 +242,18 @@
             });
 
             const playBtn = document.getElementById('play-pause-btn');
-            const originalBtnText = "СТАРТ / ПАУЗА";
-            playBtn.innerText = "ЗАГРУЗКА ДАННЫХ...";
+            const originalBtnText = "PLAY / PAUSE";
+            playBtn.innerText = "FETCHING DATA...";
             
             try {
                 if (!track.isLocal && track.url.includes("script.google.com")) {
-                     // Запрашиваем трек у Google Apps Script (он придет в формате Base64 JSON)
                      const response = await fetch(track.url);
-                     if(!response.ok) throw new Error("Ошибка загрузки аудиопотока");
+                     if(!response.ok) throw new Error("Audio stream loading error");
                      const data = await response.json();
                      
                      if (data.error) throw new Error(data.error);
-                     if (!data.base64) throw new Error("Трек не сконвертирован");
+                     if (!data.base64) throw new Error("Track not converted");
                      
-                     // Вставляем Base64 прямо в плеер - это обходит CORS!
                      audioElement.src = data.base64;
                 } else {
                      audioElement.src = track.url; 
@@ -215,8 +265,8 @@
                 resetUiTimer();
                 
             } catch (error) {
-                console.error("Ошибка воспроизведения:", error);
-                playBtn.innerText = "ОШИБКА - ПРОПУСК...";
+                console.error("Playback error:", error);
+                playBtn.innerText = "ERROR - SKIPPING...";
                 setTimeout(() => { 
                     playBtn.innerText = originalBtnText; 
                     playNextInGenre();
@@ -240,7 +290,7 @@
             playlistDiv.innerHTML = '';
             
             if (currentPlaylist.length === 0) {
-                playlistDiv.innerHTML = '<div style="padding:10px; color:#aaa; text-align:center;">Треки не найдены</div>';
+                playlistDiv.innerHTML = '<div style="padding:10px; color:#aaa; text-align:center;">No tracks found</div>';
                 return;
             }
 
@@ -251,7 +301,7 @@
                 const genrePrefix = track.genre ? `<span style="color:#aaa; font-size:0.7rem;">[${track.genre}]</span> ` : '';
                 trackEl.innerHTML = genrePrefix + track.name;
                 if (currentPlayingTrack && currentPlayingTrack.url === track.url) trackEl.classList.add('active');
-                trackEl.onclick = () => playTrack(track);
+                trackEl.onclick = () => { playTrack(track); resetUiTimer(); };
                 playlistDiv.appendChild(trackEl);
             });
         }
@@ -259,15 +309,19 @@
         document.getElementById('play-pause-btn').onclick = async () => {
             initAudio();
             if(audioContext.state === 'suspended') await audioContext.resume();
-            if (isPlaying) { audioElement.pause(); isPlaying = false; } 
-            else {
+            if (isPlaying) { 
+                audioElement.pause(); isPlaying = false; 
+            } else {
                 if (!audioElement.src || audioElement.src.endsWith(window.location.host + "/")) {
                     if (currentPlaylist.length > 0) playTrack(currentPlaylist[0]);
-                } else { await audioElement.play(); isPlaying = true; }
+                } else { 
+                    await audioElement.play(); isPlaying = true; 
+                }
             }
+            resetUiTimer();
         };
 
-        // --- 3. 3D СЦЕНА (ОРИГИНАЛЬНАЯ РАБОЧАЯ) ---
+        // --- 3D SCENE (UNCHANGED) ---
         const container = document.getElementById('canvas-container');
         const scene = new THREE.Scene();
         scene.fog = new THREE.FogExp2(0x020205, 0.002);
