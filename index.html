@@ -10,71 +10,62 @@
         #canvas-container { width: 100vw; height: 100vh; position: absolute; top: 0; left: 0; z-index: 1; cursor: grab; }
         #canvas-container:active { cursor: grabbing; }
         
-        /* New Bottom UI Wrapper */
         #ui-wrapper {
-            position: absolute; bottom: 25px; left: 50%; transform: translateX(-50%);
-            width: 95%; max-width: 900px; z-index: 10;
-            display: flex; flex-direction: column; gap: 10px;
+            position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%);
+            width: 95%; max-width: 700px; z-index: 10;
+            display: flex; flex-direction: column; align-items: center; gap: 15px;
             transition: opacity 0.8s ease, transform 0.8s ease;
         }
         
-        /* Idle State - Hides UI completely */
         #ui-wrapper.idle {
-            opacity: 0; transform: translate(-50%, 30px); pointer-events: none;
+            opacity: 0; transform: translate(-50%, 20px); pointer-events: none;
         }
 
-        /* Playlist Layer */
         #playlist-container {
-            background: rgba(10, 10, 15, 0.75); padding: 15px; border-radius: 20px;
+            width: 100%; background: rgba(10, 10, 15, 0.75); padding: 10px; border-radius: 20px;
             border: 1px solid rgba(255, 255, 255, 0.1); backdrop-filter: blur(16px);
-            max-height: 25vh; overflow-y: auto; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            max-height: 20vh; overflow-y: auto; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
         }
         
-        /* Controls Bar Layer */
         #controls-bar {
-            display: flex; align-items: center; justify-content: space-between; gap: 10px;
-            background: rgba(10, 10, 15, 0.85); padding: 15px 25px; border-radius: 20px;
-            border: 1px solid rgba(255, 255, 255, 0.1); backdrop-filter: blur(20px);
-            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8);
+            display: flex; align-items: center; justify-content: center; gap: 8px; width: fit-content;
+            background: rgba(10, 10, 15, 0.85); padding: 8px 15px; border-radius: 40px;
+            border: 1px solid rgba(255, 255, 255, 0.15); backdrop-filter: blur(20px);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8);
         }
 
-        h2 { margin: 0; font-size: 1.2rem; color: #3b82f6; text-transform: uppercase; letter-spacing: 2px; font-weight: 800; text-shadow: 0 0 15px rgba(59, 130, 246, 0.6); white-space: nowrap;}
+        .brand { font-size: 1rem; font-weight: 900; color: #3b82f6; letter-spacing: 2px; margin-right: 5px; text-shadow: 0 0 10px rgba(59, 130, 246, 0.6); }
         
-        /* Form Elements */
-        select, button, .custom-file-btn {
-            background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(59, 130, 246, 0.4);
-            color: white; padding: 12px 18px; border-radius: 12px; box-sizing: border-box;
+        select, .btn {
+            background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(59, 130, 246, 0.3);
+            color: white; padding: 10px 16px; border-radius: 20px;
             outline: none; cursor: pointer; transition: all 0.3s; font-weight: bold;
-            text-transform: uppercase; font-size: 0.8rem; letter-spacing: 1px;
-            display: inline-block; text-align: center;
+            font-size: 0.8rem; text-transform: uppercase; white-space: nowrap;
         }
         
-        select { flex: 1; min-width: 120px; }
+        select { max-width: 140px; text-overflow: ellipsis; }
         select option { background: #111; color: #fff; }
         
-        button:hover, select:hover, .custom-file-btn:hover { 
-            background: rgba(59, 130, 246, 0.2); border-color: #3b82f6; box-shadow: 0 0 20px rgba(59, 130, 246, 0.4); 
-        }
-        button { background: rgba(59, 130, 246, 0.15); color: #3b82f6; }
+        .btn.icon { padding: 10px 15px; font-size: 1.1rem; display: flex; align-items: center; justify-content: center; min-width: 45px; }
         
-        /* Playlist Items */
-        .track-item { padding: 10px; border-bottom: 1px solid rgba(255,255,255,0.05); cursor: pointer; border-radius: 8px; transition: background 0.2s; font-size: 0.9rem;}
+        select:hover, .btn:hover { 
+            background: rgba(59, 130, 246, 0.2); border-color: #3b82f6; box-shadow: 0 0 15px rgba(59, 130, 246, 0.4); 
+        }
+        
+        .track-item { padding: 10px 15px; border-bottom: 1px solid rgba(255,255,255,0.05); cursor: pointer; border-radius: 12px; transition: background 0.2s; font-size: 0.85rem;}
         .track-item:hover { background: rgba(255,255,255,0.08); }
-        .track-item.active { color: #3b82f6; background: rgba(59, 130, 246, 0.1); border-color: transparent; font-weight: bold; box-shadow: 0 0 15px rgba(59, 130, 246, 0.2);}
+        .track-item.active { color: #3b82f6; background: rgba(59, 130, 246, 0.1); border-color: transparent; font-weight: bold;}
         
         ::-webkit-scrollbar { width: 4px; }
         ::-webkit-scrollbar-thumb { background: #3b82f6; border-radius: 2px; }
 
-        /* Mobile Adjustments */
         @media (max-width: 768px) {
-            #ui-wrapper { width: 100%; bottom: 0; border-radius: 25px 25px 0 0; }
-            #controls-bar { 
-                flex-wrap: wrap; padding: 15px; border-radius: 25px 25px 0 0; 
-                border-bottom: none; border-left: none; border-right: none;
-            }
-            h2 { width: 100%; text-align: center; margin-bottom: 5px; font-size: 1.4rem;}
-            select, button, .custom-file-btn { flex: 1 1 45%; padding: 15px 10px; font-size: 0.75rem; }
-            #playlist-container { border-radius: 20px; margin: 0 10px; max-height: 30vh; }
+            #ui-wrapper { bottom: 15px; width: 92%; }
+            #controls-bar { width: 100%; justify-content: space-between; padding: 8px; box-sizing: border-box; }
+            .brand { display: none; } /* Скрываем текст лого на мобильных для экономии места */
+            select { flex: 1; min-width: 0; padding: 12px 10px; font-size: 0.75rem; }
+            .btn.icon { padding: 12px; font-size: 1.2rem; }
+            #playlist-container { max-height: 25vh; }
         }
     </style>
 </head>
@@ -83,22 +74,22 @@
     <div id="ui-wrapper">
         <div id="playlist-container">
             <div id="playlist">
-                <div style="padding: 10px; color: #aaa; text-align: center;">Connecting to Google Drive...</div>
+                <div style="padding: 10px; color: #aaa; text-align: center;">Syncing with Google Drive...</div>
             </div>
         </div>
         
         <div id="controls-bar">
-            <h2>QUANTUM RADIO</h2>
+            <div class="brand">QUANTUM</div>
             
-            <select id="genre-filter"><option value="all">Loading database...</option></select>
+            <select id="genre-filter"><option value="all">Loading...</option></select>
             
-            <label class="custom-file-btn">
-                UPLOAD
+            <label class="btn icon" title="Upload Local Track">
+                ⇧
                 <input type="file" id="audio-upload" accept="audio/*" style="display:none;">
             </label>
             
-            <button id="play-pause-btn">PLAY / PAUSE</button>
-            <button id="fullscreen-btn">FULLSCREEN</button>
+            <button id="play-pause-btn" class="btn icon" title="Play/Pause">▶</button>
+            <button id="fullscreen-btn" class="btn icon" title="Fullscreen">⛶</button>
         </div>
     </div>
 
@@ -123,16 +114,14 @@
         let uiTimeout;
         const uiLayer = document.getElementById('ui-wrapper');
         
-        // Auto-hide UI and Cursor after 3 seconds of inactivity
         function resetUiTimer() {
             uiLayer.classList.remove('idle');
             document.body.style.cursor = 'default';
             clearTimeout(uiTimeout);
-            
             uiTimeout = setTimeout(() => { 
                 if (isPlaying) { 
                     uiLayer.classList.add('idle'); 
-                    document.body.style.cursor = 'none'; // Magic trick to hide the mouse!
+                    document.body.style.cursor = 'none'; 
                 } 
             }, 3000);
         }
@@ -141,35 +130,25 @@
         window.addEventListener('touchstart', resetUiTimer, {passive: true});
         window.addEventListener('click', resetUiTimer);
 
-        // Fullscreen Logic
         const fullscreenBtn = document.getElementById('fullscreen-btn');
         fullscreenBtn.onclick = () => {
             if (!document.fullscreenElement) {
                 document.documentElement.requestFullscreen().catch(err => console.error(err));
-                fullscreenBtn.innerText = "EXIT FULL";
-            } else {
-                document.exitFullscreen();
-                fullscreenBtn.innerText = "FULLSCREEN";
-            }
+            } else { document.exitFullscreen(); }
             resetUiTimer();
         };
 
-        document.addEventListener('fullscreenchange', () => {
-            if (!document.fullscreenElement) fullscreenBtn.innerText = "FULLSCREEN";
-        });
-
-        // Audio Engine
         let audioContext, analyser, dataArray, timeDataArray;
         let audioElement = new Audio();
         audioElement.crossOrigin = "anonymous"; 
         
         let isPlaying = false, fullPlaylist = [], currentPlaylist = [];
         let currentPlayingTrack = null;
+        const audioCache = {}; // Память для мгновенной загрузки уже скачанных треков
 
         function initAudio() {
             if (audioContext) return;
-            const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-            audioContext = new AudioContextClass();
+            audioContext = new (window.AudioContext || window.webkitAudioContext)();
             analyser = audioContext.createAnalyser();
             analyser.fftSize = 2048;
             analyser.smoothingTimeConstant = 0.85; 
@@ -184,7 +163,7 @@
 
         window.addEventListener('DOMContentLoaded', async () => {
             if (APPS_SCRIPT_URL === "ВСТАВЬ_ССЫЛКУ_СЮДА") {
-                document.getElementById('playlist').innerHTML = '<div style="color:#ef4444; padding:10px; text-align:center;">ERROR: Insert Apps Script URL in the code!</div>';
+                document.getElementById('playlist').innerHTML = '<div style="color:#ef4444; padding:10px; text-align:center;">ERROR: App Script URL missing!</div>';
                 return;
             }
 
@@ -208,8 +187,7 @@
 
                 updatePlaylistUI();
             } catch (err) {
-                console.error("Load error:", err);
-                document.getElementById('playlist').innerHTML = '<div style="color:#ef4444; padding:10px; text-align:center;">Failed to load database. Check Apps Script URL.</div>';
+                document.getElementById('playlist').innerHTML = '<div style="color:#ef4444; padding:10px; text-align:center;">Database connection failed.</div>';
             }
         });
 
@@ -217,60 +195,63 @@
             const selectedGenre = e.target.value;
             currentPlaylist = selectedGenre === 'all' ? [...fullPlaylist] : fullPlaylist.filter(t => t.genre === selectedGenre);
             updatePlaylistUI();
+            
+            // АВТОЗАПУСК ПРИ СМЕНЕ ЖАНРА
+            if (currentPlaylist.length > 0) {
+                playTrack(currentPlaylist[0]);
+            }
             resetUiTimer();
         });
 
         document.getElementById('audio-upload').onchange = (e) => {
             if (e.target.files.length > 0) {
                 const file = e.target.files[0];
-                fullPlaylist.unshift({ name: file.name.substring(0, 30) + '...', genre: "LOCAL", url: URL.createObjectURL(file), isLocal: true }); 
+                const localUrl = URL.createObjectURL(file);
+                fullPlaylist.unshift({ name: file.name.substring(0, 30) + '...', genre: "LOCAL", url: localUrl, isLocal: true }); 
                 currentPlaylist = [...fullPlaylist];
                 document.getElementById('genre-filter').value = 'all'; 
                 updatePlaylistUI(); e.target.value = ''; 
+                playTrack(currentPlaylist[0]); // Сразу играем загруженный трек
                 resetUiTimer();
             }
         };
+
+        const playBtn = document.getElementById('play-pause-btn');
 
         async function playTrack(track) {
             currentPlayingTrack = track;
             initAudio(); 
             if(audioContext.state === 'suspended') await audioContext.resume();
             
-            document.querySelectorAll('.track-item').forEach(el => {
-                el.classList.remove('active');
-                if (el.dataset.url === track.url) el.classList.add('active');
-            });
-
-            const playBtn = document.getElementById('play-pause-btn');
-            const originalBtnText = "PLAY / PAUSE";
-            playBtn.innerText = "FETCHING DATA...";
+            updatePlaylistUI();
+            playBtn.innerText = "↻"; // Иконка загрузки
             
             try {
                 if (!track.isLocal && track.url.includes("script.google.com")) {
-                     const response = await fetch(track.url);
-                     if(!response.ok) throw new Error("Audio stream loading error");
-                     const data = await response.json();
-                     
-                     if (data.error) throw new Error(data.error);
-                     if (!data.base64) throw new Error("Track not converted");
-                     
-                     audioElement.src = data.base64;
+                     // Используем кэш, если трек уже скачивался
+                     if (audioCache[track.url]) {
+                         audioElement.src = audioCache[track.url];
+                     } else {
+                         const response = await fetch(track.url);
+                         if(!response.ok) throw new Error("Stream error");
+                         const data = await response.json();
+                         if (data.error || !data.base64) throw new Error("Convert error");
+                         
+                         audioElement.src = data.base64;
+                         audioCache[track.url] = data.base64; // Сохраняем в кэш
+                     }
                 } else {
                      audioElement.src = track.url; 
                 }
 
                 await audioElement.play();
                 isPlaying = true; 
-                playBtn.innerText = originalBtnText;
+                playBtn.innerText = "❚❚";
                 resetUiTimer();
                 
             } catch (error) {
-                console.error("Playback error:", error);
-                playBtn.innerText = "ERROR - SKIPPING...";
-                setTimeout(() => { 
-                    playBtn.innerText = originalBtnText; 
-                    playNextInGenre();
-                }, 2000);
+                playBtn.innerText = "⚠"; // Ошибка
+                setTimeout(() => playNextInGenre(), 2000);
             }
         }
 
@@ -290,32 +271,33 @@
             playlistDiv.innerHTML = '';
             
             if (currentPlaylist.length === 0) {
-                playlistDiv.innerHTML = '<div style="padding:10px; color:#aaa; text-align:center;">No tracks found</div>';
+                playlistDiv.innerHTML = '<div style="padding:10px; color:#aaa; text-align:center;">Empty</div>';
                 return;
             }
 
             currentPlaylist.forEach((track) => {
                 const trackEl = document.createElement('div');
                 trackEl.className = 'track-item';
-                trackEl.dataset.url = track.url; 
+                if (currentPlayingTrack && currentPlayingTrack.url === track.url) trackEl.classList.add('active');
+                
                 const genrePrefix = track.genre ? `<span style="color:#aaa; font-size:0.7rem;">[${track.genre}]</span> ` : '';
                 trackEl.innerHTML = genrePrefix + track.name;
-                if (currentPlayingTrack && currentPlayingTrack.url === track.url) trackEl.classList.add('active');
+                
                 trackEl.onclick = () => { playTrack(track); resetUiTimer(); };
                 playlistDiv.appendChild(trackEl);
             });
         }
 
-        document.getElementById('play-pause-btn').onclick = async () => {
+        playBtn.onclick = async () => {
             initAudio();
             if(audioContext.state === 'suspended') await audioContext.resume();
             if (isPlaying) { 
-                audioElement.pause(); isPlaying = false; 
+                audioElement.pause(); isPlaying = false; playBtn.innerText = "▶";
             } else {
                 if (!audioElement.src || audioElement.src.endsWith(window.location.host + "/")) {
                     if (currentPlaylist.length > 0) playTrack(currentPlaylist[0]);
                 } else { 
-                    await audioElement.play(); isPlaying = true; 
+                    await audioElement.play(); isPlaying = true; playBtn.innerText = "❚❚";
                 }
             }
             resetUiTimer();
@@ -453,38 +435,25 @@
                 let currentBloom = 0.5 + (energy * 1.5) + (sharpBass * 2.0);
                 if (bloomPass) bloomPass.strength = currentBloom;
                 
-                if (sharpBass > 0.8) {
-                    camera.fov += ((baseFov - sharpBass * 15) - camera.fov) * 0.2;
-                } else {
-                    camera.fov += (baseFov - camera.fov) * 0.1;
-                }
+                if (sharpBass > 0.8) { camera.fov += ((baseFov - sharpBass * 15) - camera.fov) * 0.2; } 
+                else { camera.fov += (baseFov - camera.fov) * 0.1; }
                 camera.updateProjectionMatrix();
 
                 beatThreshold = Math.max(0.2, beatThreshold * 0.95);
                 let isBeat = false;
                 if (sharpBass > beatThreshold) { 
-                    isBeat = true; 
-                    beatThreshold = Math.min(1.0, sharpBass * 1.2); 
-                    
-                    targetRotX = (Math.random() - 0.5) * 0.06 * sharpBass;
-                    targetRotY = (Math.random() - 0.5) * 0.08 * sharpBass;
-                    targetRotZ = (Math.random() - 0.5) * 0.04 * sharpBass;
+                    isBeat = true; beatThreshold = Math.min(1.0, sharpBass * 1.2); 
+                    targetRotX = (Math.random() - 0.5) * 0.06 * sharpBass; targetRotY = (Math.random() - 0.5) * 0.08 * sharpBass; targetRotZ = (Math.random() - 0.5) * 0.04 * sharpBass;
                 }
 
-                currentRotX += (targetRotX - currentRotX) * 0.05;
-                currentRotY += (targetRotY - currentRotY) * 0.05;
-                currentRotZ += (targetRotZ - currentRotZ) * 0.05;
-
+                currentRotX += (targetRotX - currentRotX) * 0.05; currentRotY += (targetRotY - currentRotY) * 0.05; currentRotZ += (targetRotZ - currentRotZ) * 0.05;
                 const dynamicHue = (evolveMid * 50 + smoothedCentroid * 800 + energy * 200) % 360;
 
                 let laserPower = Math.pow(treble, 2) * 1.5 + sharpBass; 
                 laserGroup.children.forEach((l, i) => {
                     l.material.color.setHSL((dynamicHue + i*3)%360 / 360, 1.0, 0.6);
-                    if(sharpBass > 0.5 || laserPower > 0.4) { 
-                        l.material.opacity = Math.min(1.0, laserPower); l.scale.y = 1 + sharpBass * 2; 
-                    } else { 
-                        l.material.opacity *= 0.85; l.scale.y += (1 - l.scale.y) * 0.1; 
-                    }
+                    if(sharpBass > 0.5 || laserPower > 0.4) { l.material.opacity = Math.min(1.0, laserPower); l.scale.y = 1 + sharpBass * 2; } 
+                    else { l.material.opacity *= 0.85; l.scale.y += (1 - l.scale.y) * 0.1; }
                     let choreo = i % 3;
                     if (choreo === 0) { l.rotation.x = l.userData.basex + Math.sin(t * l.userData.speed + l.userData.phase) * (0.2 + sharpBass*0.5); l.rotation.y = l.userData.basey + Math.cos(t * l.userData.speed + l.userData.phase) * (0.2 + sharpBass*0.5); } 
                     else if (choreo === 1) { l.rotation.x = l.userData.basex + Math.sin(t * 0.5) * 0.3; l.rotation.z = Math.cos(t * 0.5) * 0.3; } 
@@ -496,132 +465,76 @@
 
                 const positions = quantumPoints.geometry.attributes.position.array; 
                 const colors = quantumPoints.geometry.attributes.color.array;
-                
-                let freqU = 2.0 + Math.sin(evolveMid * 0.2) * 5.0; 
-                let freqV = 3.0 + Math.cos(evolveBass * 0.15) * 6.0; 
-                let shapeChaos = Math.sin(evolveTreble * 0.3) * 0.5;
+                let freqU = 2.0 + Math.sin(evolveMid * 0.2) * 5.0; let freqV = 3.0 + Math.cos(evolveBass * 0.15) * 6.0; let shapeChaos = Math.sin(evolveTreble * 0.3) * 0.5;
 
                 for(let i=0; i<gridDim; i++) {
                     for(let j=0; j<gridDim; j++) {
-                        let idx = i*gridDim + j; 
-                        let u = (j / (gridDim - 1)) * Math.PI * 2; 
-                        let v = (i / (gridDim - 1)) * Math.PI;
-                        
+                        let idx = i*gridDim + j; let u = (j / (gridDim - 1)) * Math.PI * 2; let v = (i / (gridDim - 1)) * Math.PI;
                         let audioIdx = Math.floor((idx / pCount) * (binCount * 0.5)); 
-                        let rawF = dataArray[audioIdx] / 255.0; 
-                        let fSharp = Math.pow(rawF, 2); 
-                        let waveRipple = (timeDataArray[audioIdx]/128.0 - 1.0); 
-                        
+                        let rawF = dataArray[audioIdx] / 255.0; let fSharp = Math.pow(rawF, 2); let waveRipple = (timeDataArray[audioIdx]/128.0 - 1.0); 
                         let tx = pOrig[idx*3], ty = pOrig[idx*3+1], tz = pOrig[idx*3+2];
 
                         if (energy > 0.01) {
                             let R = 15 + sharpBass * 20 + Math.sin(v * freqV + evolveMid) * (8 + mid * 10);
                             let twist = u + Math.sin(v * freqU + evolveTreble) * (Math.sin(evolveBass) * 4);
                             let flare = Math.abs(Math.cos(u * (4 + shapeChaos*2) + t)) * (10 + sharpMid * 15);
-                            
                             let currentRadius = R + flare + fSharp * 15;
 
-                            tx = Math.cos(twist) * Math.sin(v) * currentRadius;
-                            tz = Math.sin(twist) * Math.sin(v) * currentRadius;
-                            
+                            tx = Math.cos(twist) * Math.sin(v) * currentRadius; tz = Math.sin(twist) * Math.sin(v) * currentRadius;
                             let yVolume = Math.cos(v) * currentRadius * (0.6 + shapeChaos * 0.4); 
                             let yDrift = Math.cos(v * freqV) * (15 + shapeChaos * 10);
                             ty = yVolume + yDrift + Math.sin(u * freqU + evolveMid) * (5 + treble * 25);
-
-                            let rippleForce = waveRipple * (5 + treble * 30); 
-                            tx += Math.cos(v*20) * rippleForce; 
-                            ty += Math.sin(u*20) * rippleForce; 
-                            tz += Math.cos(u*20) * rippleForce;
+                            let rippleForce = waveRipple * (5 + treble * 30); tx += Math.cos(v*20) * rippleForce; ty += Math.sin(u*20) * rippleForce; tz += Math.cos(u*20) * rippleForce;
                         }
 
-                        let lerpFactor = fSharp > 0.4 ? 0.35 : 0.08; 
-                        if(energy <= 0.01) lerpFactor = 0.02; 
-                        
-                        positions[idx*3] += (tx - positions[idx*3]) * lerpFactor; 
-                        positions[idx*3+1] += (ty - positions[idx*3+1]) * lerpFactor; 
-                        positions[idx*3+2] += (tz - positions[idx*3+2]) * lerpFactor;
-                        
+                        let lerpFactor = fSharp > 0.4 ? 0.35 : 0.08; if(energy <= 0.01) lerpFactor = 0.02; 
+                        positions[idx*3] += (tx - positions[idx*3]) * lerpFactor; positions[idx*3+1] += (ty - positions[idx*3+1]) * lerpFactor; positions[idx*3+2] += (tz - positions[idx*3+2]) * lerpFactor;
                         let l = energy > 0.01 ? (0.15 + fSharp*0.85) : 0.02; 
                         colorObj.setHSL((dynamicHue + idx*0.02 + waveRipple*40)/360, 1.0, l);
-                        colors[idx*3] += (colorObj.r - colors[idx*3]) * lerpFactor; 
-                        colors[idx*3+1] += (colorObj.g - colors[idx*3+1]) * lerpFactor; 
-                        colors[idx*3+2] += (colorObj.b - colors[idx*3+2]) * lerpFactor;
+                        colors[idx*3] += (colorObj.r - colors[idx*3]) * lerpFactor; colors[idx*3+1] += (colorObj.g - colors[idx*3+1]) * lerpFactor; colors[idx*3+2] += (colorObj.b - colors[idx*3+2]) * lerpFactor;
                     }
                 }
-                quantumPoints.geometry.attributes.position.needsUpdate = true; 
-                quantumPoints.geometry.attributes.color.needsUpdate = true;
+                quantumPoints.geometry.attributes.position.needsUpdate = true; quantumPoints.geometry.attributes.color.needsUpdate = true;
                 quantumLines.material.opacity = energy < 0.01 ? 0 : Math.min(0.8, energy * 1.5);
-                
-                globeGroup.rotation.x += currentRotX;
-                globeGroup.rotation.y += currentRotY;
-                globeGroup.rotation.z += currentRotZ;
+                globeGroup.rotation.x += currentRotX; globeGroup.rotation.y += currentRotY; globeGroup.rotation.z += currentRotZ;
 
                 radioRings.forEach((r, idx) => {
-                    r.mesh.rotation.x += r.speed * (1 + bass * 5); 
-                    r.mesh.rotation.y += r.speed * (1 + mid * 5); 
+                    r.mesh.rotation.x += r.speed * (1 + bass * 5); r.mesh.rotation.y += r.speed * (1 + mid * 5); 
                     const ringPositions = r.mesh.geometry.attributes.position.array;
-                    r.mesh.material.color.setHSL((dynamicHue + idx*40)/360, 1.0, 0.4 + bass*0.6); 
-                    r.mesh.material.opacity = 0.15 + energy;
-                    
+                    r.mesh.material.color.setHSL((dynamicHue + idx*40)/360, 1.0, 0.4 + bass*0.6); r.mesh.material.opacity = 0.15 + energy;
                     for(let j=0; j<256; j++) {
-                        const angle = (j / 256) * Math.PI * 2; 
-                        const freqVal = dataArray[j*4] / 255.0; 
-                        const waveVal = (timeDataArray[j*8]/128.0 - 1.0); 
+                        const angle = (j / 256) * Math.PI * 2; const freqVal = dataArray[j*4] / 255.0; const waveVal = (timeDataArray[j*8]/128.0 - 1.0); 
                         const dynamicRadius = r.baseRadius + Math.pow(freqVal, 2) * (3 + idx) + (waveVal * (1 + sharpBass*4));
-                        ringPositions[j*3] = Math.cos(angle) * dynamicRadius; 
-                        ringPositions[j*3+1] = Math.sin(angle) * dynamicRadius; 
-                        ringPositions[j*3+2] = Math.sin(angle * (5 + idx*2) + t*5) * (freqVal * 5 + waveVal);
+                        ringPositions[j*3] = Math.cos(angle) * dynamicRadius; ringPositions[j*3+1] = Math.sin(angle) * dynamicRadius; ringPositions[j*3+2] = Math.sin(angle * (5 + idx*2) + t*5) * (freqVal * 5 + waveVal);
                     }
                     r.mesh.geometry.attributes.position.needsUpdate = true;
                 });
 
             } else {
-                currentBassLevel += (0 - currentBassLevel) * 0.1;
-                strobeLight.intensity += (0 - strobeLight.intensity) * 0.1; 
+                currentBassLevel += (0 - currentBassLevel) * 0.1; strobeLight.intensity += (0 - strobeLight.intensity) * 0.1; 
                 if (bloomPass) bloomPass.strength += (0.4 - bloomPass.strength) * 0.1;
                 camera.fov += (baseFov - camera.fov) * 0.1; camera.updateProjectionMatrix();
 
-                currentRotX += (0.0 - currentRotX) * 0.02;
-                currentRotY += (0.001 - currentRotY) * 0.02;
-                currentRotZ += (0.0 - currentRotZ) * 0.02;
-
+                currentRotX += (0.0 - currentRotX) * 0.02; currentRotY += (0.001 - currentRotY) * 0.02; currentRotZ += (0.0 - currentRotZ) * 0.02;
                 laserGroup.children.forEach((l) => { l.material.opacity *= 0.8; l.scale.y += (1 - l.scale.y) * 0.1; });
                 
                 radioRings.forEach(r => {
-                    r.mesh.rotation.x += r.speed; r.mesh.rotation.y += r.speed; 
-                    const pos = r.mesh.geometry.attributes.position.array; 
+                    r.mesh.rotation.x += r.speed; r.mesh.rotation.y += r.speed; const pos = r.mesh.geometry.attributes.position.array; 
                     r.mesh.material.opacity += (0 - r.mesh.material.opacity) * 0.1;
-                    for(let j=0; j<256; j++) { 
-                        const angle = (j / 256) * Math.PI * 2; 
-                        pos[j*3] += (Math.cos(angle) * r.baseRadius - pos[j*3]) * 0.1; 
-                        pos[j*3+1] += (Math.sin(angle) * r.baseRadius - pos[j*3+1]) * 0.1; 
-                        pos[j*3+2] += (0 - pos[j*3+2]) * 0.1; 
-                    }
+                    for(let j=0; j<256; j++) { const angle = (j / 256) * Math.PI * 2; pos[j*3] += (Math.cos(angle) * r.baseRadius - pos[j*3]) * 0.1; pos[j*3+1] += (Math.sin(angle) * r.baseRadius - pos[j*3+1]) * 0.1; pos[j*3+2] += (0 - pos[j*3+2]) * 0.1; }
                     r.mesh.geometry.attributes.position.needsUpdate = true;
                 });
 
-                const positions = quantumPoints.geometry.attributes.position.array; 
-                const colors = quantumPoints.geometry.attributes.color.array;
+                const positions = quantumPoints.geometry.attributes.position.array; const colors = quantumPoints.geometry.attributes.color.array;
                 for(let i=0; i<pCount; i++) {
-                    positions[i*3] += (pOrig[i*3] - positions[i*3]) * 0.1; 
-                    positions[i*3+1] += (pOrig[i*3+1] - positions[i*3+1]) * 0.1; 
-                    positions[i*3+2] += (pOrig[i*3+2] - positions[i*3+2]) * 0.1;
-                    colors[i*3] += (0.05 - colors[i*3]) * 0.1; 
-                    colors[i*3+1] += (0.05 - colors[i*3+1]) * 0.1; 
-                    colors[i*3+2] += (0.1 - colors[i*3+2]) * 0.1;
+                    positions[i*3] += (pOrig[i*3] - positions[i*3]) * 0.1; positions[i*3+1] += (pOrig[i*3+1] - positions[i*3+1]) * 0.1; positions[i*3+2] += (pOrig[i*3+2] - positions[i*3+2]) * 0.1;
+                    colors[i*3] += (0.05 - colors[i*3]) * 0.1; colors[i*3+1] += (0.05 - colors[i*3+1]) * 0.1; colors[i*3+2] += (0.1 - colors[i*3+2]) * 0.1;
                 }
-                quantumPoints.geometry.attributes.position.needsUpdate = true; 
-                quantumPoints.geometry.attributes.color.needsUpdate = true;
-                quantumLines.material.opacity += (0 - quantumLines.material.opacity) * 0.1;
-                
-                globeGroup.rotation.x += currentRotX;
-                globeGroup.rotation.y += currentRotY;
-                globeGroup.rotation.z += currentRotZ;
+                quantumPoints.geometry.attributes.position.needsUpdate = true; quantumPoints.geometry.attributes.color.needsUpdate = true;
+                quantumLines.material.opacity += (0 - quantumLines.material.opacity) * 0.1; globeGroup.rotation.x += currentRotX; globeGroup.rotation.y += currentRotY; globeGroup.rotation.z += currentRotZ;
             }
-            
             composer.render();
         }
-
         animate();
     </script>
 </body>
