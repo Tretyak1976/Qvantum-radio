@@ -89,10 +89,12 @@
         // --- 2. AUDIO ENGINE & DATABASE ---
         let audioContext, analyser, dataArray, timeDataArray;
         let audioElement = new Audio();
-        audioElement.crossOrigin = "anonymous"; // CRITICAL FOR CORS & WEBGL
+        audioElement.crossOrigin = "anonymous"; 
+        
         let isPlaying = false;
         let fullPlaylist = [];
         let currentPlaylist = [];
+        let currentPlayingTrack = null;
 
         // === БРАТ, ВСТАВЬ СВОЙ URL ВЕБ-ПРИЛОЖЕНИЯ МЕЖДУ КАВЫЧКАМИ НИЖЕ ===
         const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxsQvK6Rv_KpPMOEl-xfJeLUvtusCcxQpK89jMcRIzsYnkc46_dgKkgeVg_IW3DArc/exec"; 
@@ -171,13 +173,61 @@
                     url: URL.createObjectURL(file),
                     isLocal: true 
                 };
-                fullPlaylist.unshift(newTrack); // Add to top
+                fullPlaylist.unshift(newTrack); 
                 currentPlaylist = [...fullPlaylist];
-                document.getElementById('genre-filter').value = 'all'; // Reset filter
+                document.getElementById('genre-filter').value = 'all'; 
                 updatePlaylistUI(); 
                 e.target.value = ''; 
             }
         };
+
+        // PLAY TRACK FUNCTION
+        function playTrack(track) {
+            currentPlayingTrack = track;
+            initAudio(); 
+            
+            // Highlight active track in UI
+            document.querySelectorAll('.track-item').forEach(el => {
+                el.classList.remove('active');
+                if (el.dataset.url === track.url) el.classList.add('active');
+            });
+
+            // Proxy to fix Google Drive CORS redirect dropping
+            let finalUrl = track.url;
+            if (!track.isLocal && track.url.includes("drive.google.com")) {
+                // codetabs proxy automatically follows 302 redirects correctly
+                finalUrl = "https://api.codetabs.com/v1/proxy?quest=" + encodeURIComponent(track.url);
+            }
+
+            audioElement.src = finalUrl; 
+            audioElement.play().then(() => {
+                isPlaying = true; 
+                resetUiTimer();
+            }).catch(e => {
+                console.warn("Primary proxy failed, trying fallback...", e);
+                // Fallback proxy just in case the first one is overloaded
+                audioElement.src = "https://api.allorigins.win/raw?url=" + encodeURIComponent(track.url);
+                audioElement.play().catch(err => console.error("Playback failed completely:", err));
+            });
+        }
+
+        // AUTO-PLAY NEXT TRACK OF SAME GENRE
+        audioElement.addEventListener('ended', () => {
+            if (!currentPlayingTrack) return;
+            
+            // Get all tracks that belong to the current genre
+            const sameGenreTracks = fullPlaylist.filter(t => t.genre === currentPlayingTrack.genre);
+            
+            if (sameGenreTracks.length > 0) {
+                // Find where we are in this specific genre's playlist
+                let currentIndex = sameGenreTracks.findIndex(t => t.url === currentPlayingTrack.url);
+                // Move to the next one, loop to 0 if we hit the end
+                let nextIndex = (currentIndex + 1) % sameGenreTracks.length;
+                let nextTrack = sameGenreTracks[nextIndex];
+                
+                playTrack(nextTrack);
+            }
+        });
 
         function updatePlaylistUI() {
             const playlistDiv = document.getElementById('playlist');
@@ -191,26 +241,16 @@
             currentPlaylist.forEach((track) => {
                 const trackEl = document.createElement('div');
                 trackEl.className = 'track-item';
+                trackEl.dataset.url = track.url; // Save URL in data attribute for easy selection
                 
                 const genrePrefix = track.genre ? `<span style="color:#aaa; font-size:0.7rem;">[${track.genre}]</span> ` : '';
                 trackEl.innerHTML = genrePrefix + track.name;
 
-                trackEl.onclick = () => {
-                    initAudio(); 
-                    
-                    // IF DRIVE URL, WRAP IN CORS PROXY TO AVOID WEBGL BLOCK
-                    let finalUrl = track.url;
-                    if (!track.isLocal && track.url.includes("drive.google.com")) {
-                        finalUrl = "https://corsproxy.io/?" + encodeURIComponent(track.url);
-                    }
-
-                    audioElement.src = finalUrl; 
-                    audioElement.play().catch(e => console.log("Playback delayed by browser policy:", e));
-                    
-                    isPlaying = true; resetUiTimer();
-                    document.querySelectorAll('.track-item').forEach(el => el.classList.remove('active'));
+                if (currentPlayingTrack && currentPlayingTrack.url === track.url) {
                     trackEl.classList.add('active');
-                };
+                }
+
+                trackEl.onclick = () => playTrack(track);
                 playlistDiv.appendChild(trackEl);
             });
         }
