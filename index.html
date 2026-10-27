@@ -16,6 +16,17 @@
         #canvas-container { width: 100vw; height: 100dvh; position: fixed; top: 0; left: 0; z-index: 1; cursor: grab; background-color: #000000; }
         #canvas-container:active { cursor: grabbing; }
         
+        /* Кнопка полноэкранного режима в верхнем левом углу */
+        #fullscreen-btn-top-left {
+            position: fixed; top: 20px; left: 20px; z-index: 15;
+            background: rgba(10, 10, 15, 0.6); border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 50%; width: 44px; height: 44px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.3rem; color: #fff; cursor: pointer; backdrop-filter: blur(10px);
+            transition: all 0.3s; padding: 0; outline: none;
+        }
+        #fullscreen-btn-top-left:hover { background: rgba(59, 130, 246, 0.4); transform: scale(1.1); }
+
         /* Нижняя панель управления */
         #ui-bottom {
             position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
@@ -51,7 +62,7 @@
         .close-btn { background: none; border: none; color: #fff; font-size: 1.5rem; cursor: pointer; padding: 0; outline: none; transition: color 0.2s; }
         .close-btn:hover { color: #ef4444; }
 
-        #playlist { flex: 1; overflow-y: auto; padding: 10px; }
+        #playlist { flex: 1; overflow-y: auto; padding: 10px; transition: opacity 0.3s; }
         
         /* Элемент трека - кликабельна только иконка Play! */
         .track-item { 
@@ -111,6 +122,9 @@
 </head>
 <body>
 
+    <!-- Кнопка на весь экран теперь слева вверху -->
+    <button id="fullscreen-btn-top-left" title="На весь экран">⛶</button>
+
     <!-- Боковая панель плейлиста -->
     <div id="sidebar">
         <div id="sidebar-header">
@@ -144,8 +158,7 @@
                     <button id="play-pause-btn" class="btn icon" title="Play/Pause">▶</button>
                     <button id="next-btn" class="btn icon" title="Next Track">⏭</button>
                 </div>
-
-                <button id="fullscreen-btn" class="btn icon" title="Fullscreen">⛶</button>
+                <!-- Кнопка Fullscreen отсюда удалена -->
             </div>
         </div>
     </div>
@@ -167,14 +180,19 @@
         let uiTimeout;
         const uiLayer = document.getElementById('ui-bottom');
         const sidebar = document.getElementById('sidebar');
+        const fullscreenBtnTopLeft = document.getElementById('fullscreen-btn-top-left');
         
         function resetUiTimer() {
             uiLayer.classList.remove('idle');
+            fullscreenBtnTopLeft.style.opacity = '1';
+            fullscreenBtnTopLeft.style.pointerEvents = 'auto';
             document.body.style.cursor = 'default';
             clearTimeout(uiTimeout);
             uiTimeout = setTimeout(() => { 
                 if (isPlaying && !sidebar.classList.contains('open')) { 
                     uiLayer.classList.add('idle'); 
+                    fullscreenBtnTopLeft.style.opacity = '0';
+                    fullscreenBtnTopLeft.style.pointerEvents = 'none';
                     document.body.style.cursor = 'none'; 
                 } 
             }, 3000);
@@ -191,8 +209,7 @@
             sidebar.classList.remove('open'); resetUiTimer();
         };
 
-        const fullscreenBtn = document.getElementById('fullscreen-btn');
-        fullscreenBtn.onclick = () => {
+        fullscreenBtnTopLeft.onclick = () => {
             let docEl = document.documentElement;
             if (!document.fullscreenElement) {
                 if (docEl.requestFullscreen) docEl.requestFullscreen().catch(e => {});
@@ -208,7 +225,12 @@
         let audioElement = new Audio();
         audioElement.crossOrigin = "anonymous"; 
         
+        // Переменные для состояния загрузки
         let isPlaying = false, isPreloadingNext = false; 
+        let isLoadingTrack = false;
+        let loadingTimer = null;
+        let countdownValue = 10;
+
         let fullPlaylist = [], currentPlaylist = [];
         let currentPlayingTrack = null;
         const audioCache = {}; 
@@ -245,8 +267,7 @@
                 timeCurrent.innerText = formatTime(audioElement.currentTime);
                 timeTotal.innerText = formatTime(audioElement.duration);
                 
-                // --- СИСТЕМА ПРЕДЗАГРУЗКИ (GAPLESS) ---
-                // За 15 секунд до конца трека фоном качаем и кэшируем следующий
+                // Предзагрузка следующего трека
                 let timeLeft = audioElement.duration - audioElement.currentTime;
                 if (timeLeft < 15 && currentPlaylist.length > 1 && !isPreloadingNext) {
                     let currentIdx = currentPlaylist.findIndex(t => t.url === currentPlayingTrack.url);
@@ -254,15 +275,14 @@
                     let nextTrack = currentPlaylist[nextIdx];
                     
                     if (!nextTrack.isLocal && nextTrack.url.includes("script.google.com") && !audioCache[nextTrack.url]) {
-                        isPreloadingNext = true; // Блокируем дублирующие запросы
+                        isPreloadingNext = true; 
                         fetch(nextTrack.url)
                             .then(res => res.json())
                             .then(data => {
                                 if (!data.error && data.base64) {
-                                    audioCache[nextTrack.url] = data.base64; // Сохраняем в кэш
+                                    audioCache[nextTrack.url] = data.base64; 
                                 }
-                            })
-                            .catch(err => console.error("Ошибка предзагрузки", err));
+                            }).catch(err => console.error(err));
                     }
                 }
             }
@@ -295,7 +315,6 @@
 
                 updatePlaylistUI();
 
-                // --- АВТОВОСПРОИЗВЕДЕНИЕ ПРИ ЗАГРУЗКЕ ---
                 if (currentPlaylist.length > 0) {
                     playTrack(currentPlaylist[0]);
                 }
@@ -306,6 +325,7 @@
         });
 
         document.getElementById('genre-filter').addEventListener('change', (e) => {
+            if (isLoadingTrack) return; // Блокировка фильтра при загрузке
             const selectedGenre = e.target.value;
             if (selectedGenre === 'all') {
                 currentPlaylist = [...fullPlaylist];
@@ -322,6 +342,7 @@
         });
 
         document.getElementById('audio-upload').onchange = (e) => {
+            if (isLoadingTrack) return;
             if (e.target.files.length > 0) {
                 const file = e.target.files[0];
                 const localUrl = URL.createObjectURL(file);
@@ -337,13 +358,13 @@
         const playBtn = document.getElementById('play-pause-btn');
 
         function playNext() {
-            if (!currentPlayingTrack || currentPlaylist.length === 0) return;
+            if (isLoadingTrack || !currentPlayingTrack || currentPlaylist.length === 0) return;
             let idx = currentPlaylist.findIndex(t => t.url === currentPlayingTrack.url);
             playTrack(currentPlaylist[(idx + 1) % currentPlaylist.length]);
         }
 
         function playPrev() {
-            if (!currentPlayingTrack || currentPlaylist.length === 0) return;
+            if (isLoadingTrack || !currentPlayingTrack || currentPlaylist.length === 0) return;
             let idx = currentPlaylist.findIndex(t => t.url === currentPlayingTrack.url);
             let prevIdx = (idx - 1 + currentPlaylist.length) % currentPlaylist.length;
             playTrack(currentPlaylist[prevIdx]);
@@ -354,16 +375,29 @@
         audioElement.addEventListener('ended', playNext);
 
         async function playTrack(track) {
+            if (isLoadingTrack) return; // Защита от двойных кликов
+
             currentPlayingTrack = track;
             initAudio(); 
             if(audioContext.state === 'suspended') await audioContext.resume().catch(e=>{});
             
-            // ГЕНЕРАТОР НОВОГО СИМБИОТИЧЕСКОГО КОДА ДЛЯ КАЖДОГО ТРЕКА
             seedTrackEvolution();
+            isPreloadingNext = false; 
 
-            isPreloadingNext = false; // Сбрасываем флаг предзагрузки для нового трека
-            updatePlaylistUI();
-            playBtn.innerText = "↻"; 
+            // --- ЗАПУСК СЧЁТЧИКА И БЛОКИРОВКИ ---
+            isLoadingTrack = true;
+            countdownValue = 10;
+            playBtn.innerHTML = `<span style="color:#ef4444;">${countdownValue}</span>`;
+            updatePlaylistUI(); 
+            
+            clearInterval(loadingTimer);
+            loadingTimer = setInterval(() => {
+                if (countdownValue > 1) {
+                    countdownValue--;
+                    playBtn.innerHTML = `<span style="color:#ef4444;">${countdownValue}</span>`;
+                    updatePlaylistUI();
+                }
+            }, 1000);
             
             try {
                 if (!track.isLocal && track.url.includes("script.google.com")) {
@@ -380,15 +414,20 @@
                      audioElement.src = track.url; 
                 }
 
+                // Данные получены, сбрасываем таймер
+                clearInterval(loadingTimer);
+                isLoadingTrack = false;
+
                 let playPromise = audioElement.play();
                 if (playPromise !== undefined) {
                     playPromise.then(() => {
-                        isPlaying = true; playBtn.innerText = "❚❚";
+                        isPlaying = true; 
+                        playBtn.innerText = "❚❚";
                         updatePlaylistUI();
                         resetUiTimer();
                     }).catch(error => {
-                        // Если браузер заблокировал автовоспроизведение до первого клика
-                        isPlaying = false; playBtn.innerText = "▶";
+                        isPlaying = false; 
+                        playBtn.innerText = "▶";
                         updatePlaylistUI();
                         document.body.addEventListener('click', function resumeAutoplay() {
                             if(!isPlaying) {
@@ -403,6 +442,8 @@
                 }
                 
             } catch (error) {
+                clearInterval(loadingTimer);
+                isLoadingTrack = false;
                 playBtn.innerText = "⚠";
                 setTimeout(() => playNext(), 2000);
             }
@@ -411,6 +452,15 @@
         function updatePlaylistUI() {
             const playlistDiv = document.getElementById('playlist');
             playlistDiv.innerHTML = '';
+            
+            // Если идёт загрузка - блокируем список, чтобы не нажимали
+            if (isLoadingTrack) {
+                playlistDiv.style.pointerEvents = 'none';
+                playlistDiv.style.opacity = '0.7';
+            } else {
+                playlistDiv.style.pointerEvents = 'auto';
+                playlistDiv.style.opacity = '1';
+            }
             
             if (currentPlaylist.length === 0) {
                 playlistDiv.innerHTML = '<div style="padding:10px; color:#aaa; text-align:center;">No tracks found</div>';
@@ -423,12 +473,19 @@
                 const isActive = (currentPlayingTrack && currentPlayingTrack.url === track.url);
                 if (isActive) trackEl.classList.add('active');
                 
-                // Иконка Play внутри трека (только она запускает музыку для защиты от случайных кликов)
                 const playIconBtn = document.createElement('div');
                 playIconBtn.className = 'track-play-icon';
-                playIconBtn.innerHTML = (isActive && isPlaying) ? '❚❚' : '▶';
+                
+                // РЕНДЕР СЧЁТЧИКА В СПИСКЕ
+                if (isActive && isLoadingTrack) {
+                    playIconBtn.innerHTML = `<span style="font-size:1.1rem; color:#ef4444; font-weight:bold;">${countdownValue}</span>`;
+                } else {
+                    playIconBtn.innerHTML = (isActive && isPlaying) ? '❚❚' : '▶';
+                }
+
                 playIconBtn.onclick = (e) => {
                     e.stopPropagation();
+                    if (isLoadingTrack) return; // Защита
                     if (isActive) {
                         if (isPlaying) { audioElement.pause(); isPlaying = false; }
                         else { audioElement.play(); isPlaying = true; }
@@ -442,7 +499,7 @@
                 
                 const titleSpan = document.createElement('span');
                 titleSpan.className = 'track-title';
-                titleSpan.innerHTML = track.name; // Жанр убран, остался только чистый текст
+                titleSpan.innerHTML = track.name; 
 
                 const favBtn = document.createElement('span');
                 const isFav = favorites.includes(track.url);
@@ -451,6 +508,7 @@
                 favBtn.style.color = isFav ? '#ef4444' : '#aaa';
                 favBtn.onclick = (e) => {
                     e.stopPropagation();
+                    if (isLoadingTrack) return;
                     if (isFav) favorites = favorites.filter(url => url !== track.url);
                     else favorites.push(track.url);
                     
@@ -469,6 +527,8 @@
         }
 
         playBtn.onclick = async () => {
+            if (isLoadingTrack) return; // Защита
+
             initAudio();
             if(audioContext.state === 'suspended') await audioContext.resume().catch(e=>{});
             if (isPlaying) { 
@@ -562,12 +622,10 @@
             renderer.setSize(window.innerWidth, window.innerHeight); if(composer) composer.setSize(window.innerWidth, window.innerHeight);
         });
 
-        // ПАРАМЕТРЫ УНИКАЛЬНОЙ ГЕНЕРАЦИИ (ПЕРЕРОЖДЕНИЕ ДЛЯ КАЖДОГО ТРЕКА)
         let trackSeedR = 1.0, trackSeedFreqU = 2.0, trackSeedFreqV = 3.0, trackSeedMorph = 1.0;
         let trackSeedHueShift = 0, trackSeedTwistSpeed = 1.0;
 
         function seedTrackEvolution() {
-            // Случайные коэффициенты при старте каждого трека создают абсолютно неповторимую морфологию
             trackSeedR = 12 + Math.random() * 10;
             trackSeedFreqU = 1.0 + Math.random() * 6.0;
             trackSeedFreqV = 1.0 + Math.random() * 6.0;
@@ -598,7 +656,6 @@
                 const sharpBass = Math.pow(bass, 3); const sharpMid = Math.pow(mid, 2); 
                 currentBassLevel += (sharpBass - currentBassLevel) * 0.2; 
                 
-                // Непрерывное органическое накопление времени (фигура никогда не зацикливается)
                 evolveBass += (sharpBass * 0.04 + 0.002) * trackSeedTwistSpeed; 
                 evolveMid += (mid * 0.04 + 0.003) * trackSeedTwistSpeed; 
                 evolveTreble += (treble * 0.04 + 0.0025);
@@ -639,7 +696,6 @@
                 const positions = quantumPoints.geometry.attributes.position.array; 
                 const colors = quantumPoints.geometry.attributes.color.array;
                 
-                // Уникальный генеративный алгоритм деформации с плавной симбиотической мутацией
                 let fU = trackSeedFreqU + Math.sin(evolveMid * 0.1) * 3.0; 
                 let fV = trackSeedFreqV + Math.cos(evolveBass * 0.1) * 3.0; 
                 let chaos = Math.sin(evolveTreble * 0.2) * trackSeedMorph;
@@ -658,7 +714,6 @@
                         let tx = pOrig[idx*3], ty = pOrig[idx*3+1], tz = pOrig[idx*3+2];
 
                         if (energy > 0.01) {
-                            // Живое перерождение формы через гармонические модуляторы
                             let R = trackSeedR + sharpBass * 18 + Math.sin(v * fV + evolveMid * 0.5) * (6 + mid * 12);
                             let twist = u + Math.sin(v * fU + evolveTreble * 0.4) * (Math.sin(evolveBass * 0.3) * 3.5 * trackSeedMorph);
                             let flare = Math.abs(Math.cos(u * (3 + chaos * 2) + t * 0.5)) * (8 + sharpMid * 14);
