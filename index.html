@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Quantum Radio 3D - The Masterpiece</title>
+    <title>Quantum Radio 3D - The Absolute Masterpiece</title>
     <style>
         html, body { 
             margin: 0; padding: 0; width: 100vw; height: 100dvh; overflow: hidden; 
@@ -41,6 +41,7 @@
             display: flex; flex-direction: column; gap: 12px;
         }
 
+        /* Левая панель плейлиста */
         #sidebar {
             position: fixed; top: 0; left: 0; width: 350px; height: 100%;
             background: rgba(10, 10, 15, 0.9); backdrop-filter: blur(20px);
@@ -170,6 +171,7 @@
     <script>
         const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz-mIMwHe0AAz1xQxxmklBJFTkfRxhGDcllBKjYs3J8N77RvbROOlapD7YpiOgoBLQ/exec"; 
 
+        // --- УПРАВЛЕНИЕ UI ---
         let uiTimeout;
         const uiLayer = document.getElementById('ui-bottom');
         const sidebar = document.getElementById('sidebar');
@@ -195,8 +197,12 @@
         window.addEventListener('touchstart', resetUiTimer, {passive: true});
         window.addEventListener('click', resetUiTimer);
 
-        document.getElementById('toggle-sidebar-btn').onclick = () => { sidebar.classList.add('open'); resetUiTimer(); };
-        document.getElementById('close-sidebar').onclick = () => { sidebar.classList.remove('open'); resetUiTimer(); };
+        document.getElementById('toggle-sidebar-btn').onclick = () => {
+            sidebar.classList.add('open'); resetUiTimer();
+        };
+        document.getElementById('close-sidebar').onclick = () => {
+            sidebar.classList.remove('open'); resetUiTimer();
+        };
 
         fullscreenBtnTopLeft.onclick = () => {
             let docEl = document.documentElement;
@@ -210,6 +216,7 @@
             resetUiTimer();
         };
 
+        // --- АУДИО СИСТЕМА ---
         let audioContext, analyser, dataArray, timeDataArray;
         let audioElement = new Audio();
         audioElement.crossOrigin = "anonymous"; 
@@ -229,7 +236,7 @@
             audioContext = new (window.AudioContext || window.webkitAudioContext)();
             analyser = audioContext.createAnalyser();
             analyser.fftSize = 2048; 
-            analyser.smoothingTimeConstant = 0.85; 
+            analyser.smoothingTimeConstant = 0.82; 
             
             const source = audioContext.createMediaElementSource(audioElement);
             source.connect(analyser); analyser.connect(audioContext.destination);
@@ -264,8 +271,11 @@
                         isPreloadingNext = true; 
                         fetch(nextTrack.url)
                             .then(res => res.json())
-                            .then(data => { if (!data.error && data.base64) audioCache[nextTrack.url] = data.base64; })
-                            .catch(err => console.error(err));
+                            .then(data => {
+                                if (!data.error && data.base64) {
+                                    audioCache[nextTrack.url] = data.base64; 
+                                }
+                            }).catch(err => console.error(err));
                     }
                 }
             }
@@ -283,16 +293,25 @@
                 const data = await response.json();
                 if (data.error) throw new Error(data.error);
 
-                fullPlaylist = data; currentPlaylist = [...fullPlaylist];
+                fullPlaylist = data;
+                currentPlaylist = [...fullPlaylist];
+                
                 const genres = [...new Set(fullPlaylist.map(t => t.genre).filter(Boolean))];
                 const filterSelect = document.getElementById('genre-filter');
                 filterSelect.innerHTML = '<option value="all">ALL GENRES</option><option value="favorites">❤ FAVORITES</option>';
+                
                 genres.forEach(g => {
-                    const opt = document.createElement('option'); opt.value = g; opt.innerText = g.toUpperCase();
+                    const opt = document.createElement('option');
+                    opt.value = g; opt.innerText = g.toUpperCase();
                     filterSelect.appendChild(opt);
                 });
+
                 updatePlaylistUI();
-                if (currentPlaylist.length > 0) playTrack(currentPlaylist[0]);
+
+                if (currentPlaylist.length > 0) {
+                    playTrack(currentPlaylist[0]);
+                }
+
             } catch (err) {
                 document.getElementById('playlist').innerHTML = '<div style="color:#ef4444; padding:20px; text-align:center;">Database connection failed.</div>';
             }
@@ -301,9 +320,13 @@
         document.getElementById('genre-filter').addEventListener('change', (e) => {
             if (isLoadingTrack) return; 
             const selectedGenre = e.target.value;
-            if (selectedGenre === 'all') currentPlaylist = [...fullPlaylist];
-            else if (selectedGenre === 'favorites') currentPlaylist = fullPlaylist.filter(t => favorites.includes(t.url));
-            else currentPlaylist = fullPlaylist.filter(t => t.genre === selectedGenre);
+            if (selectedGenre === 'all') {
+                currentPlaylist = [...fullPlaylist];
+            } else if (selectedGenre === 'favorites') {
+                currentPlaylist = fullPlaylist.filter(t => favorites.includes(t.url));
+            } else {
+                currentPlaylist = fullPlaylist.filter(t => t.genre === selectedGenre);
+            }
             
             updatePlaylistUI();
             if (currentPlaylist.length > 0) playTrack(currentPlaylist[0]);
@@ -315,7 +338,9 @@
             if (isLoadingTrack) return;
             if (e.target.files.length > 0) {
                 const file = e.target.files[0];
-                fullPlaylist.unshift({ name: file.name.substring(0, 30) + '...', genre: "LOCAL", url: URL.createObjectURL(file), isLocal: true }); 
+                const localUrl = URL.createObjectURL(file);
+                fullPlaylist.unshift({ name: file.name.substring(0, 30) + '...', genre: "LOCAL", url: localUrl, isLocal: true }); 
+                
                 const filter = document.getElementById('genre-filter');
                 if(filter.value !== 'all') { filter.value = 'all'; filter.dispatchEvent(new Event('change')); }
                 else { currentPlaylist = [...fullPlaylist]; updatePlaylistUI(); playTrack(currentPlaylist[0]); }
@@ -352,44 +377,66 @@
             seedTrackEvolution();
             isPreloadingNext = false; 
 
-            isLoadingTrack = true; countdownValue = 10;
+            isLoadingTrack = true;
+            countdownValue = 10;
             playBtn.innerHTML = `<span style="color:#ef4444;">${countdownValue}</span>`;
             updatePlaylistUI(); 
             
             clearInterval(loadingTimer);
             loadingTimer = setInterval(() => {
                 if (countdownValue > 1) {
-                    countdownValue--; playBtn.innerHTML = `<span style="color:#ef4444;">${countdownValue}</span>`; updatePlaylistUI();
+                    countdownValue--;
+                    playBtn.innerHTML = `<span style="color:#ef4444;">${countdownValue}</span>`;
+                    updatePlaylistUI();
                 }
             }, 1000);
             
             try {
                 if (!track.isLocal && track.url.includes("script.google.com")) {
-                     if (audioCache[track.url]) audioElement.src = audioCache[track.url];
-                     else {
-                         const response = await fetch(track.url); const data = await response.json();
+                     if (audioCache[track.url]) {
+                         audioElement.src = audioCache[track.url];
+                     } else {
+                         const response = await fetch(track.url);
+                         const data = await response.json();
                          if (data.error || !data.base64) throw new Error("Load error");
-                         audioElement.src = data.base64; audioCache[track.url] = data.base64; 
+                         audioElement.src = data.base64;
+                         audioCache[track.url] = data.base64; 
                      }
-                } else audioElement.src = track.url; 
+                } else {
+                     audioElement.src = track.url; 
+                }
 
-                clearInterval(loadingTimer); isLoadingTrack = false;
+                clearInterval(loadingTimer);
+                isLoadingTrack = false;
 
                 let playPromise = audioElement.play();
                 if (playPromise !== undefined) {
                     playPromise.then(() => {
-                        isPlaying = true; playBtn.innerText = "❚❚"; updatePlaylistUI(); resetUiTimer();
+                        isPlaying = true; 
+                        playBtn.innerText = "❚❚";
+                        updatePlaylistUI();
+                        resetUiTimer();
                     }).catch(error => {
-                        isPlaying = false; playBtn.innerText = "▶"; updatePlaylistUI();
+                        isPlaying = false; 
+                        playBtn.innerText = "▶";
+                        updatePlaylistUI();
                         document.body.addEventListener('click', function resumeAutoplay() {
-                            if(!isPlaying) { audioContext.resume(); audioElement.play(); isPlaying = true; playBtn.innerText = "❚❚"; updatePlaylistUI(); }
+                            if(!isPlaying) {
+                                audioContext.resume();
+                                audioElement.play();
+                                isPlaying = true; playBtn.innerText = "❚❚";
+                                updatePlaylistUI();
+                            }
                             document.body.removeEventListener('click', resumeAutoplay);
                         }, {once: true});
                     });
                 }
+                
             } catch (error) {
-                clearInterval(loadingTimer); isLoadingTrack = false;
-                playBtn.innerText = "⚠"; setTimeout(() => playNext(), 2000);
+                clearInterval(loadingTimer);
+                isLoadingTrack = false;
+                playBtn.innerText = "⚠";
+                setTimeout(() => playNext(), 2000);
             }
         }
 
@@ -397,57 +444,93 @@
             const playlistDiv = document.getElementById('playlist');
             playlistDiv.innerHTML = '';
             
-            if (isLoadingTrack) { playlistDiv.style.pointerEvents = 'none'; playlistDiv.style.opacity = '0.7'; } 
-            else { playlistDiv.style.pointerEvents = 'auto'; playlistDiv.style.opacity = '1'; }
+            if (isLoadingTrack) {
+                playlistDiv.style.pointerEvents = 'none';
+                playlistDiv.style.opacity = '0.7';
+            } else {
+                playlistDiv.style.pointerEvents = 'auto';
+                playlistDiv.style.opacity = '1';
+            }
             
-            if (currentPlaylist.length === 0) { playlistDiv.innerHTML = '<div style="padding:10px; color:#aaa; text-align:center;">No tracks found</div>'; return; }
+            if (currentPlaylist.length === 0) {
+                playlistDiv.innerHTML = '<div style="padding:10px; color:#aaa; text-align:center;">No tracks found</div>';
+                return;
+            }
 
             currentPlaylist.forEach((track) => {
-                const trackEl = document.createElement('div'); trackEl.className = 'track-item';
+                const trackEl = document.createElement('div');
+                trackEl.className = 'track-item';
                 const isActive = (currentPlayingTrack && currentPlayingTrack.url === track.url);
                 if (isActive) trackEl.classList.add('active');
                 
-                const playIconBtn = document.createElement('div'); playIconBtn.className = 'track-play-icon';
+                const playIconBtn = document.createElement('div');
+                playIconBtn.className = 'track-play-icon';
                 
-                if (isActive && isLoadingTrack) playIconBtn.innerHTML = `<span style="font-size:1.1rem; color:#ef4444; font-weight:bold;">${countdownValue}</span>`;
-                else playIconBtn.innerHTML = (isActive && isPlaying) ? '❚❚' : '▶';
+                if (isActive && isLoadingTrack) {
+                    playIconBtn.innerHTML = `<span style="font-size:1.1rem; color:#ef4444; font-weight:bold;">${countdownValue}</span>`;
+                } else {
+                    playIconBtn.innerHTML = (isActive && isPlaying) ? '❚❚' : '▶';
+                }
 
                 playIconBtn.onclick = (e) => {
-                    e.stopPropagation(); if (isLoadingTrack) return;
+                    e.stopPropagation();
+                    if (isLoadingTrack) return; 
                     if (isActive) {
-                        if (isPlaying) { audioElement.pause(); isPlaying = false; } else { audioElement.play(); isPlaying = true; }
-                        updatePlaylistUI(); playBtn.innerText = isPlaying ? "❚❚" : "▶";
-                    } else playTrack(track);
+                        if (isPlaying) { audioElement.pause(); isPlaying = false; }
+                        else { audioElement.play(); isPlaying = true; }
+                        updatePlaylistUI();
+                        playBtn.innerText = isPlaying ? "❚❚" : "▶";
+                    } else {
+                        playTrack(track);
+                    }
                     resetUiTimer();
                 };
                 
-                const titleSpan = document.createElement('span'); titleSpan.className = 'track-title'; titleSpan.innerHTML = track.name; 
+                const titleSpan = document.createElement('span');
+                titleSpan.className = 'track-title';
+                titleSpan.innerHTML = track.name; 
 
                 const favBtn = document.createElement('span');
                 const isFav = favorites.includes(track.url);
-                favBtn.className = 'fav-btn'; favBtn.innerText = isFav ? '♥' : '♡'; favBtn.style.color = isFav ? '#ef4444' : '#aaa';
+                favBtn.className = 'fav-btn';
+                favBtn.innerText = isFav ? '♥' : '♡';
+                favBtn.style.color = isFav ? '#ef4444' : '#aaa';
                 favBtn.onclick = (e) => {
-                    e.stopPropagation(); if (isLoadingTrack) return;
-                    if (isFav) favorites = favorites.filter(url => url !== track.url); else favorites.push(track.url);
+                    e.stopPropagation();
+                    if (isLoadingTrack) return;
+                    if (isFav) favorites = favorites.filter(url => url !== track.url);
+                    else favorites.push(track.url);
+                    
                     localStorage.setItem('quantum_favorites', JSON.stringify(favorites));
-                    if (document.getElementById('genre-filter').value === 'favorites' && isFav) currentPlaylist = currentPlaylist.filter(t => t.url !== track.url);
+                    if (document.getElementById('genre-filter').value === 'favorites' && isFav) {
+                        currentPlaylist = currentPlaylist.filter(t => t.url !== track.url);
+                    }
                     updatePlaylistUI(); 
                 };
 
-                trackEl.appendChild(playIconBtn); trackEl.appendChild(titleSpan); trackEl.appendChild(favBtn);
+                trackEl.appendChild(playIconBtn);
+                trackEl.appendChild(titleSpan);
+                trackEl.appendChild(favBtn);
                 playlistDiv.appendChild(trackEl);
             });
         }
 
         playBtn.onclick = async () => {
             if (isLoadingTrack) return; 
-            initAudio(); if(audioContext.state === 'suspended') await audioContext.resume().catch(e=>{});
-            if (isPlaying) { audioElement.pause(); isPlaying = false; playBtn.innerText = "▶"; } 
-            else {
-                if (!audioElement.src || audioElement.src.endsWith(window.location.host + "/")) { if (currentPlaylist.length > 0) playTrack(currentPlaylist[0]); } 
-                else { await audioElement.play(); isPlaying = true; playBtn.innerText = "❚❚"; }
+
+            initAudio();
+            if(audioContext.state === 'suspended') await audioContext.resume().catch(e=>{});
+            if (isPlaying) { 
+                audioElement.pause(); isPlaying = false; playBtn.innerText = "▶";
+            } else {
+                if (!audioElement.src || audioElement.src.endsWith(window.location.host + "/")) {
+                    if (currentPlaylist.length > 0) playTrack(currentPlaylist[0]);
+                } else { 
+                    await audioElement.play(); isPlaying = true; playBtn.innerText = "❚❚";
+                }
             }
-            updatePlaylistUI(); resetUiTimer();
+            updatePlaylistUI();
+            resetUiTimer();
         };
 
         // =========================================================================
