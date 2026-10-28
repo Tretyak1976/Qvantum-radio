@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Quantum Radio 3D - Ultimate Symbiosis</title>
+    <title>Quantum Radio 3D - Ultimate Pure Symbiosis</title>
     <style>
         html, body { 
             margin: 0; padding: 0; width: 100vw; height: 100dvh; overflow: hidden; 
@@ -473,7 +473,7 @@
         };
 
         // =========================================================================
-        // 3D СЦЕНА: АБСОЛЮТНЫЙ ГИБРИД (БЕЗ СЕТКИ, ЧИСТАЯ АНАТОМИЯ + МОРФОЛОГИЯ)
+        // 3D СЦЕНА: АБСОЛЮТНЫЙ ГИБРИД (ЧИСТОЕ ЯДРО, БЕЗ СЕТКИ, СЛОЖНАЯ МОРФОЛОГИЯ)
         // =========================================================================
         const container = document.getElementById('canvas-container');
         const scene = new THREE.Scene();
@@ -529,8 +529,9 @@
         pCtx.fillStyle = pGrad; pCtx.fillRect(0,0,16,16);
         const dotTexture = new THREE.CanvasTexture(pCanvas);
 
-        const quantumPoints = new THREE.Points(pGeo, new THREE.PointsMaterial({ size: 0.7, map: dotTexture, vertexColors: true, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false }));
-        globeGroup.add(quantumPoints); // Сетки (quantumLines) здесь больше нет
+        // Увеличили размер точек (0.85) чтобы фигура без сетки смотрелась плотно и сочно
+        const quantumPoints = new THREE.Points(pGeo, new THREE.PointsMaterial({ size: 0.85, map: dotTexture, vertexColors: true, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false }));
+        globeGroup.add(quantumPoints); 
 
         // 2. ФОНОВЫЕ ЛАЗЕРЫ
         const laserGroup = new THREE.Group(); const laserMat = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0, blending: THREE.AdditiveBlending });
@@ -543,7 +544,7 @@
         }
         globeGroup.add(laserGroup);
 
-        // 3. СЛОЙ ВЫСОКИХ ЧАСТОТ (Искры и частицы)
+        // 3. СЛОЙ ВЫСОКИХ ЧАСТОТ (Искры)
         const sparksGeo = new THREE.BufferGeometry();
         const sparksCount = 1200;
         const sparksPos = new Float32Array(sparksCount * 3);
@@ -571,7 +572,7 @@
         const sparksSys = new THREE.Points(sparksGeo, sparksMat);
         globeGroup.add(sparksSys);
 
-        // 4. ЭКВАЛАЙЗЕРНЫЕ КОЛЬЦА (Жесткая привязка к частотам)
+        // 4. ЭКВАЛАЙЗЕРНЫЕ КОЛЬЦА 
         const radioRings = [];
         for(let i=0; i<4; i++) {
             const ringMesh = new THREE.LineLoop(new THREE.BufferGeometry().setAttribute('position', new THREE.BufferAttribute(new Float32Array(256 * 3), 3)), new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0, blending: THREE.AdditiveBlending }));
@@ -590,8 +591,12 @@
         });
 
         // -------------------------------------------------------------------------
-        // ГЕНЕТИКА И МОРФОЛОГИЯ (Берем дикость из index 5 и анатомию из index 10)
+        // ЕДИНЫЙ ДВИЖОК СИМБИОЗА (ФИГУРА ЖИВАЯ ВСЕГДА, ДАЖЕ НА ПАУЗЕ)
         // -------------------------------------------------------------------------
+        const PHI = 1.618033988749895;
+        const SQRT2 = 1.414213562373095;
+        const SQRT3 = 1.732050807568877;
+
         let trackSeedR = 1.0, trackSeedFreqU = 2.0, trackSeedFreqV = 3.0, trackSeedMorph = 1.0;
         let trackSeedHueShift = 0, trackSeedTwistSpeed = 1.0, dnaTwistDir = 1;
 
@@ -611,21 +616,27 @@
         let pulseBass = 0, pulseMid = 0, pulseTreble = 0;
         let prevEnergy = 0, smoothedEnergy = 0, smoothedCentroid = 0.5, vitality = 0;
         let evolveBass = 0, evolveMid = 0, evolveTreble = 0;
+        let phaseAlpha = Math.random()*100, phaseBeta = Math.random()*100, phaseGamma = Math.random()*100;
         let waltzPhase = 0, audioMapOffset = 0;
         
         let rotImpulseX = 0, rotImpulseY = 0, rotImpulseZ = 0;
         let currentRotX = 0.0008, currentRotY = 0.0018, currentRotZ = 0.0006;
+        
+        // Для избежания "подвисания" - запускаем генерацию при старте
+        seedTrackEvolution();
 
         function animate() {
             requestAnimationFrame(animate); 
             controls.update(); 
             const t = Date.now() * 0.001;
 
+            let bass = 0, lowMid = 0, mid = 0, treble = 0, energy = 0, centroid = 0, weightSum = 0;
+            
+            // Если играет музыка - читаем буфер, если нет - плавно спускаем звук в 0
             if (isPlaying && analyser && dataArray && timeDataArray) {
                 analyser.getByteFrequencyData(dataArray); 
                 analyser.getByteTimeDomainData(timeDataArray);
                 
-                let bass = 0, lowMid = 0, mid = 0, treble = 0, energy = 0, centroid = 0, weightSum = 0;
                 const binCount = analyser.frequencyBinCount;
                 for(let i=0; i<binCount; i++) {
                     let val = dataArray[i] / 255.0; 
@@ -637,256 +648,240 @@
                 }
                 bass /= 12; lowMid /= 48; mid /= 240; treble /= (binCount - 300); 
                 energy /= binCount; if(weightSum > 0) centroid /= weightSum;
-                
-                smoothedCentroid += ((centroid / binCount) - smoothedCentroid) * 0.05;
-                smoothedEnergy   += (energy - smoothedEnergy) * 0.07;
-                let energyFlux = Math.max(0, energy - prevEnergy); prevEnergy = energy;
-
-                // Анатомические акценты (Идеальная синхронизация)
-                pulseBass   += (Math.pow(bass, 2.2) - pulseBass) * 0.35;
-                pulseMid    += (Math.pow(mid, 1.8) - pulseMid) * 0.30;
-                pulseTreble += (Math.pow(treble, 1.6) - pulseTreble) * 0.35;
-
-                flowBass   += (bass - flowBass) * 0.10; flowLowMid += (lowMid - flowLowMid) * 0.09;
-                flowMid    += (mid - flowMid) * 0.08; flowTreble += (treble - flowTreble) * 0.08;
-
-                // Бесконечное накопление времени для генетики формы (из index 5)
-                evolveBass += (pulseBass * 0.04 + 0.002) * trackSeedTwistSpeed; 
-                evolveMid += (pulseMid * 0.04 + 0.003) * trackSeedTwistSpeed; 
-                evolveTreble += (pulseTreble * 0.04 + 0.0025);
-
-                // Огромный диапазон живости (от спячки до экстаза)
-                let targetVitality = Math.min(1.0, Math.pow(smoothedEnergy, 1.6) * 2.5 + Math.pow(pulseBass, 1.3) * 1.5 + energyFlux * 3.0);
-                vitality += (targetVitality - vitality) * 0.045;
-                
-                waltzPhase += 0.0015 + vitality * 0.015 + flowLowMid * 0.01;
-                audioMapOffset += 0.0008 + vitality * 0.008 + pulseBass * 0.01;
-
-                // ДЕТЕКТОР БИТА: Мощное кружение на удар
-                beatThreshold = Math.max(0.25, beatThreshold * 0.96); 
-                let isBeat = false;
-                if (pulseBass > beatThreshold) { 
-                    isBeat = true; beatThreshold = Math.min(0.95, pulseBass * 1.25); 
-                    
-                    let imp = (0.02 + Math.pow(vitality, 1.5) * 0.12) * pulseBass;
-                    rotImpulseX = (Math.random() - 0.5) * imp; 
-                    rotImpulseY = (Math.random() - 0.5) * imp * 3.5; // Экстремальный спин на Y
-                    rotImpulseZ = (Math.random() - 0.5) * imp * 1.5;
-
-                    if (pulseBass > 0.6 && Math.random() < 0.25) {
-                        seedTrackEvolution(); // Легкая мутация генома прямо во время мощного дропа
-                    }
-                }
-
-                if (bloomPass) {
-                    let targetBloom = 0.50 + vitality * 0.65 + pulseBass * 0.85;
-                    bloomPass.strength += (Math.min(1.8, targetBloom) - bloomPass.strength) * 0.15;
-                }
-
-                let breathFov = Math.sin(waltzPhase * 1.1) * 2.0 * (1.0 - vitality * 0.3);
-                let kickFov = -pulseBass * (14.0 * (0.4 + Math.pow(vitality, 1.5)));
-                camera.fov += ((baseFov + breathFov + kickFov) - camera.fov) * 0.15; camera.updateProjectionMatrix();
-
-                // ДИНАМИКА ВРАЩЕНИЯ: Огромный контраст
-                rotImpulseX *= 0.88; rotImpulseY *= 0.88; rotImpulseZ *= 0.88; 
-                
-                let targetRotX = Math.sin(waltzPhase * 0.65) * (0.0001 + Math.pow(vitality, 2) * 0.015) + rotImpulseX;
-                let targetRotY = (0.0002 + Math.pow(vitality, 2) * 0.022 + flowBass * 0.012) * dnaTwistDir + rotImpulseY;
-                let targetRotZ = Math.cos(waltzPhase * 0.50) * (0.0001 + Math.pow(vitality, 2) * 0.012) + rotImpulseZ;
-
-                currentRotX += (targetRotX - currentRotX) * 0.05; 
-                currentRotY += (targetRotY - currentRotY) * 0.05; 
-                currentRotZ += (targetRotZ - currentRotZ) * 0.05;
-
-                const dynamicHue = (trackSeedHueShift + phaseBeta * 10 + smoothedCentroid * 400 + vitality * 80) % 360;
-
-                // ИСКРЫ (Treble): Рой вырывается наружу
-                let pArr = sparksSys.geometry.attributes.position.array;
-                let cArr = sparksSys.geometry.attributes.color.array;
-                sparksMat.opacity = 0.15 + pulseTreble * 0.85;
-                
-                for(let i=0; i<sparksCount; i++) {
-                    let bx = sparksBase[i*3], by = sparksBase[i*3+1], bz = sparksBase[i*3+2];
-                    
-                    if (pulseTreble > 0.35) {
-                        let force = (pulseTreble * 0.8) + (Math.random() * 0.5);
-                        pArr[i*3] += sparksVel[i].x * force;
-                        pArr[i*3+1] += sparksVel[i].y * force;
-                        pArr[i*3+2] += sparksVel[i].z * force;
-                        
-                        cArr[i*3] = 1.0; cArr[i*3+1] = 0.9 + Math.random()*0.1; cArr[i*3+2] = 0.5 + Math.random()*0.5;
-                    } else {
-                        let angle = t * 0.5 + i;
-                        let orbitX = bx + Math.sin(angle) * 2;
-                        let orbitY = by + Math.cos(angle) * 2;
-                        let orbitZ = bz + Math.sin(angle * 0.5) * 2;
-                        
-                        pArr[i*3] += (orbitX - pArr[i*3]) * 0.05;
-                        pArr[i*3+1] += (orbitY - pArr[i*3+1]) * 0.05;
-                        pArr[i*3+2] += (orbitZ - pArr[i*3+2]) * 0.05;
-                        
-                        cArr[i*3] += (1.0 - cArr[i*3]) * 0.05;
-                        cArr[i*3+1] += (0.6 - cArr[i*3+1]) * 0.05;
-                        cArr[i*3+2] += (0.1 - cArr[i*3+2]) * 0.05;
-                    }
-                }
-                sparksSys.geometry.attributes.position.needsUpdate = true;
-                sparksSys.geometry.attributes.color.needsUpdate = true;
-
-                if (isBeat && pulseBass > 0.60) { strobeLight.intensity = 1.2 * vitality; sunLight.intensity = 1.8; } 
-                else { strobeLight.intensity += (0 - strobeLight.intensity) * 0.15; sunLight.intensity += (1.0 - sunLight.intensity) * 0.1; }
-
-                // -----------------------------------------------------------------
-                // МОРФОЛОГИЯ И АНАТОМИЯ: Гибрид генетики и звуковой точности
-                // -----------------------------------------------------------------
-                const positions = quantumPoints.geometry.attributes.position.array; 
-                const colors = quantumPoints.geometry.attributes.color.array;
-                
-                let fU = trackSeedFreqU + Math.sin(evolveMid * 0.1) * 3.0; 
-                let fV = trackSeedFreqV + Math.cos(evolveBass * 0.1) * 3.0; 
-                let chaos = Math.sin(evolveTreble * 0.2) * trackSeedMorph;
-                
-                let bioBreath = 1.0 + Math.sin(waltzPhase * 1.1) * 0.05 + Math.pow(pulseBass, 1.2) * 0.35;
-                let baseLerp = 0.02 + Math.pow(vitality, 2.0) * 0.18;
-
-                for(let i=0; i<gridDim; i++) {
-                    let vNorm = i / (gridDim - 1); let v = vNorm * Math.PI; let sinV = Math.sin(v); let cosV = Math.cos(v);
-
-                    for(let j=0; j<gridDim; j++) {
-                        let idx = i * gridDim + j; 
-                        let uNorm = j / (gridDim - 1); let u = uNorm * Math.PI * 2;
-                        
-                        // Чтение спектра и волны
-                        let audioIdx = Math.floor((idx / pCount) * (binCount * 0.5)); 
-                        let rawF = dataArray[audioIdx] / 255.0; 
-                        let fSharp = Math.pow(rawF, 2.0); 
-                        let waveRipple = (timeDataArray[audioIdx]/128.0 - 1.0); 
-                        
-                        let tx = pOrig[idx*3], ty = pOrig[idx*3+1], tz = pOrig[idx*3+2];
-
-                        if (smoothedEnergy > 0.005) {
-                            // Формула генетической мутации (из index 5)
-                            let R = trackSeedR * bioBreath + pulseBass * 14 + Math.sin(v * fV + evolveMid * 0.5) * (4 + pulseMid * 12);
-                            let twist = u + Math.sin(v * fU + evolveTreble * 0.4) * (Math.sin(evolveBass * 0.3) * 3.0 * trackSeedMorph);
-                            let flare = Math.abs(Math.cos(u * (3 + chaos * 2) + t * 0.5)) * (4 + pulseMid * 14);
-                            
-                            let currentRadius = R + flare;
-
-                            tx = Math.cos(twist) * Math.sin(v) * currentRadius;
-                            tz = Math.sin(twist) * Math.sin(v) * currentRadius;
-                            
-                            let yVolume = Math.cos(v) * currentRadius * (0.65 + chaos * 0.35); 
-                            let yDrift = Math.cos(v * fV + t * 0.2) * (8 + chaos * 6);
-                            ty = yVolume + yDrift + Math.sin(u * fU + evolveMid) * (3 + pulseTreble * 15);
-
-                            // Точная анатомическая деформация (из index 10)
-                            let dist = Math.sqrt(tx*tx + ty*ty + tz*tz) || 1.0;
-                            let rippleForce = waveRipple * (4.0 + pulseTreble * 22.0); 
-                            let spikeForce = fSharp * (2.0 + pulseMid * 18.0 * vitality);
-                            
-                            tx += (tx / dist) * (rippleForce + spikeForce);
-                            ty += (ty / dist) * (rippleForce + spikeForce);
-                            tz += (tz / dist) * (rippleForce + spikeForce);
-                        }
-
-                        let lerpFactor = baseLerp + fSharp * (0.05 + vitality * 0.15);
-                        if(smoothedEnergy <= 0.005) lerpFactor = 0.015; 
-                        
-                        positions[idx*3]   += (tx - positions[idx*3])   * lerpFactor; 
-                        positions[idx*3+1] += (ty - positions[idx*3+1]) * lerpFactor; 
-                        positions[idx*3+2] += (tz - positions[idx*3+2]) * lerpFactor;
-                        
-                        let pointHue = (dynamicHue + waveRipple * 40 + fSharp * 60) % 360;
-                        if (pointHue < 0) pointHue += 360;
-                        let pointLightness = smoothedEnergy > 0.005 ? (0.10 + vitality * 0.2 + fSharp * 0.6) : 0.03;
-                        let pointSat = 0.8 + vitality * 0.2; 
-                        
-                        colorObj.setHSL(pointHue / 360, pointSat, Math.min(0.85, pointLightness));
-                        colors[idx*3]   += (colorObj.r - colors[idx*3])   * 0.15; 
-                        colors[idx*3+1] += (colorObj.g - colors[idx*3+1]) * 0.15; 
-                        colors[idx*3+2] += (colorObj.b - colors[idx*3+2]) * 0.15;
-                    }
-                }
-                
-                quantumPoints.geometry.attributes.position.needsUpdate = true; quantumPoints.geometry.attributes.color.needsUpdate = true;
-                
-                globeGroup.rotation.x += currentRotX; globeGroup.rotation.y += currentRotY; globeGroup.rotation.z += currentRotZ;
-
-                // ЭКВАЛАЙЗЕРНЫЕ КОЛЬЦА
-                const bands = [pulseBass, flowLowMid, pulseMid, pulseTreble]; 
-                
-                radioRings.forEach((r) => {
-                    r.mesh.rotation.x += r.speed * (0.8 + bands[r.bandIndex] * 4.0 * vitality); 
-                    r.mesh.rotation.y += r.speed * (0.8 + bands[r.bandIndex] * 4.0 * vitality); 
-                    const ringPositions = r.mesh.geometry.attributes.position.array;
-                    
-                    let ringHue = (dynamicHue + r.bandIndex * 60) % 360;
-                    r.mesh.material.color.setHSL(ringHue / 360, 0.95, 0.4 + bands[r.bandIndex] * 0.5); 
-                    r.mesh.material.opacity = 0.15 + bands[r.bandIndex] * 0.85;
-                    
-                    for(let j=0; j<256; j++) {
-                        const angle = (j / 256) * Math.PI * 2; 
-                        let freqBin = Math.floor((j / 256) * (binCount * 0.25)) + (r.bandIndex * Math.floor(binCount * 0.2));
-                        const freqVal = dataArray[freqBin] / 255.0; 
-                        
-                        const ringWave = Math.sin(angle * (3 + r.bandIndex) + waltzPhase * 3.0);
-                        const targetR = r.baseRadius + Math.pow(freqVal, 2) * (3.0 + r.bandIndex * 1.5) * vitality + ringWave * (0.5 + bands[r.bandIndex] * 2.0);
-                        const targetZ = Math.sin(angle * (4 + r.bandIndex * 2) + audioMapOffset) * (freqVal * 4.0 * vitality);
-                        
-                        ringPositions[j*3]   += (Math.cos(angle) * targetR - ringPositions[j*3]) * 0.2; 
-                        ringPositions[j*3+1] += (Math.sin(angle) * targetR - ringPositions[j*3+1]) * 0.2; 
-                        ringPositions[j*3+2] += (targetZ - ringPositions[j*3+2]) * 0.2;
-                    }
-                    r.mesh.geometry.attributes.position.needsUpdate = true;
-                });
-
             } else {
-                // СПОКОЙНЫЙ РЕЖИМ (Без музыки)
-                strobeLight.intensity += (0 - strobeLight.intensity) * 0.1;
-                if (bloomPass) bloomPass.strength += (0.42 - bloomPass.strength) * 0.06; 
-                camera.fov += (baseFov - camera.fov) * 0.06; camera.updateProjectionMatrix();
-                
-                currentRotX += (0.0001 - currentRotX) * 0.02; 
-                currentRotY += (0.0002 - currentRotY) * 0.02; 
-                currentRotZ += (0.0001 - currentRotZ) * 0.02;
-                
-                let pArr = sparksSys.geometry.attributes.position.array;
-                let cArr = sparksSys.geometry.attributes.color.array;
-                sparksMat.opacity += (0.1 - sparksMat.opacity) * 0.05;
-                for(let i=0; i<sparksCount; i++) {
-                    let angle = t * 0.2 + i;
-                    pArr[i*3] += (sparksBase[i*3] + Math.sin(angle)*3 - pArr[i*3]) * 0.02;
-                    pArr[i*3+1] += (sparksBase[i*3+1] + Math.cos(angle)*3 - pArr[i*3+1]) * 0.02;
-                    pArr[i*3+2] += (sparksBase[i*3+2] - pArr[i*3+2]) * 0.02;
-                    cArr[i*3] += (0.2 - cArr[i*3]) * 0.05; cArr[i*3+1] += (0.4 - cArr[i*3+1]) * 0.05; cArr[i*3+2] += (0.8 - cArr[i*3+2]) * 0.05;
-                }
-                sparksSys.geometry.attributes.position.needsUpdate = true; sparksSys.geometry.attributes.color.needsUpdate = true;
-
-                radioRings.forEach(r => {
-                    r.mesh.rotation.x += r.speed * 0.45; r.mesh.rotation.y += r.speed * 0.45; 
-                    const pos = r.mesh.geometry.attributes.position.array; 
-                    r.mesh.material.opacity += (0.05 - r.mesh.material.opacity) * 0.06;
-                    for(let j=0; j<256; j++) { 
-                        const angle = (j / 256) * Math.PI * 2; 
-                        pos[j*3]   += (Math.cos(angle) * r.baseRadius - pos[j*3]) * 0.06; 
-                        pos[j*3+1] += (Math.sin(angle) * r.baseRadius - pos[j*3+1]) * 0.06; 
-                        pos[j*3+2] += (0 - pos[j*3+2]) * 0.06; 
-                    }
-                    r.mesh.geometry.attributes.position.needsUpdate = true;
-                });
-
-                const positions = quantumPoints.geometry.attributes.position.array; const colors = quantumPoints.geometry.attributes.color.array;
-                let idleBreath = 1.0 + Math.sin(t * 1.0) * 0.04;
-                for(let i=0; i<pCount; i++) {
-                    positions[i*3]   += (pOrig[i*3] * idleBreath - positions[i*3]) * 0.05; 
-                    positions[i*3+1] += (pOrig[i*3+1] * idleBreath - positions[i*3+1]) * 0.05; 
-                    positions[i*3+2] += (pOrig[i*3+2] * idleBreath - positions[i*3+2]) * 0.05;
-                    colors[i*3]   += (0.04 - colors[i*3]) * 0.06; colors[i*3+1] += (0.08 - colors[i*3+1]) * 0.06; colors[i*3+2] += (0.18 - colors[i*3+2]) * 0.06;
-                }
-                quantumPoints.geometry.attributes.position.needsUpdate = true; quantumPoints.geometry.attributes.color.needsUpdate = true;
-                
-                globeGroup.rotation.x += currentRotX; globeGroup.rotation.y += currentRotY; globeGroup.rotation.z += currentRotZ;
+                bass = pulseBass * 0.9; lowMid = flowLowMid * 0.9; mid = pulseMid * 0.9; treble = pulseTreble * 0.9; energy = smoothedEnergy * 0.9;
             }
+            
+            smoothedCentroid += (centroid - smoothedCentroid) * 0.05;
+            smoothedEnergy   += (energy - smoothedEnergy) * 0.07;
+            let energyFlux = Math.max(0, energy - prevEnergy); prevEnergy = energy;
+
+            pulseBass   += (Math.pow(bass, 2.2) - pulseBass) * 0.35;
+            pulseMid    += (Math.pow(mid, 1.8) - pulseMid) * 0.30;
+            pulseTreble += (Math.pow(treble, 1.6) - pulseTreble) * 0.35;
+
+            flowBass   += (bass - flowBass) * 0.10; 
+            flowLowMid += (lowMid - flowLowMid) * 0.09;
+            flowMid    += (mid - flowMid) * 0.08; 
+            flowTreble += (treble - flowTreble) * 0.08;
+
+            // Время течет ВСЕГДА, чтобы форма жила даже в тишине
+            evolveBass += (pulseBass * 0.04 + 0.002) * trackSeedTwistSpeed; 
+            evolveMid += (pulseMid * 0.04 + 0.003) * trackSeedTwistSpeed; 
+            evolveTreble += (pulseTreble * 0.04 + 0.0025);
+
+            let targetVitality = Math.min(1.0, Math.pow(smoothedEnergy, 1.6) * 2.5 + Math.pow(pulseBass, 1.3) * 1.5 + energyFlux * 3.0);
+            vitality += (targetVitality - vitality) * 0.045;
+            
+            let metabolism = (0.001 + Math.pow(vitality, 2.5) * 0.05) * dna.morphSpeed; 
+            phaseAlpha += (metabolism + pulseBass * 0.03) * PHI;
+            phaseBeta  += (metabolism + pulseMid * 0.025) * SQRT2;
+            phaseGamma += (metabolism + pulseTreble * 0.025) * SQRT3;
+            
+            waltzPhase += 0.0015 + vitality * 0.015 + flowLowMid * 0.01;
+            audioMapOffset += 0.0008 + vitality * 0.008 + pulseBass * 0.01;
+
+            beatThreshold = Math.max(0.25, beatThreshold * 0.96); 
+            let isBeat = false;
+            if (pulseBass > beatThreshold) { 
+                isBeat = true; beatThreshold = Math.min(0.95, pulseBass * 1.25); 
+                
+                let imp = (0.02 + Math.pow(vitality, 1.5) * 0.12) * pulseBass;
+                rotImpulseX = (Math.random() - 0.5) * imp; 
+                rotImpulseY = (Math.random() - 0.5) * imp * 3.5; 
+                rotImpulseZ = (Math.random() - 0.5) * imp * 1.5;
+
+                if (pulseBass > 0.6 && Math.random() < 0.25) {
+                    seedTrackEvolution(); 
+                }
+            }
+
+            if (bloomPass) {
+                let targetBloom = 0.50 + vitality * 0.65 + pulseBass * 0.85;
+                bloomPass.strength += (Math.min(1.8, targetBloom) - bloomPass.strength) * 0.15;
+            }
+
+            let breathFov = Math.sin(waltzPhase * 1.1) * 2.0 * (1.0 - vitality * 0.3);
+            let kickFov = -pulseBass * (14.0 * (0.4 + Math.pow(vitality, 1.5)));
+            camera.fov += ((baseFov + breathFov + kickFov) - camera.fov) * 0.15; camera.updateProjectionMatrix();
+
+            // ДИНАМИКА ВРАЩЕНИЯ: Медленные - очень медленно. Быстрые - дикий спин.
+            rotImpulseX *= 0.88; rotImpulseY *= 0.88; rotImpulseZ *= 0.88; 
+            
+            let targetRotX = Math.sin(waltzPhase * 0.65) * (0.0001 + Math.pow(vitality, 2) * 0.015) + rotImpulseX;
+            let targetRotY = (0.0002 + Math.pow(vitality, 2) * 0.035 + flowBass * 0.015) * dnaTwistDir + rotImpulseY;
+            let targetRotZ = Math.cos(waltzPhase * 0.50) * (0.0001 + Math.pow(vitality, 2) * 0.012) + rotImpulseZ;
+
+            currentRotX += (targetRotX - currentRotX) * 0.05; 
+            currentRotY += (targetRotY - currentRotY) * 0.05; 
+            currentRotZ += (targetRotZ - currentRotZ) * 0.05;
+
+            const dynamicHue = (trackSeedHueShift + phaseBeta * 10 + smoothedCentroid * 400 + vitality * 80) % 360;
+
+            // ИСКРЫ (Treble)
+            let pArr = sparksSys.geometry.attributes.position.array;
+            let cArr = sparksSys.geometry.attributes.color.array;
+            sparksMat.opacity = isPlaying ? (0.15 + pulseTreble * 0.85) : (sparksMat.opacity + (0.1 - sparksMat.opacity)*0.05);
+            
+            for(let i=0; i<sparksCount; i++) {
+                let bx = sparksBase[i*3], by = sparksBase[i*3+1], bz = sparksBase[i*3+2];
+                
+                if (pulseTreble > 0.35) {
+                    let force = (pulseTreble * 0.8) + (Math.random() * 0.5);
+                    pArr[i*3] += sparksVel[i].x * force;
+                    pArr[i*3+1] += sparksVel[i].y * force;
+                    pArr[i*3+2] += sparksVel[i].z * force;
+                    
+                    cArr[i*3] = 1.0; cArr[i*3+1] = 0.9 + Math.random()*0.1; cArr[i*3+2] = 0.5 + Math.random()*0.5;
+                } else {
+                    let angle = t * 0.5 + i;
+                    let orbitX = bx + Math.sin(angle) * 2;
+                    let orbitY = by + Math.cos(angle) * 2;
+                    let orbitZ = bz + Math.sin(angle * 0.5) * 2;
+                    
+                    pArr[i*3] += (orbitX - pArr[i*3]) * 0.05;
+                    pArr[i*3+1] += (orbitY - pArr[i*3+1]) * 0.05;
+                    pArr[i*3+2] += (orbitZ - pArr[i*3+2]) * 0.05;
+                    
+                    cArr[i*3] += (1.0 - cArr[i*3]) * 0.05;
+                    cArr[i*3+1] += (0.6 - cArr[i*3+1]) * 0.05;
+                    cArr[i*3+2] += (0.1 - cArr[i*3+2]) * 0.05;
+                }
+            }
+            sparksSys.geometry.attributes.position.needsUpdate = true;
+            sparksSys.geometry.attributes.color.needsUpdate = true;
+
+            if (isBeat && pulseBass > 0.60) { strobeLight.intensity = 1.2 * vitality; sunLight.intensity = 1.8; } 
+            else { strobeLight.intensity += (0 - strobeLight.intensity) * 0.15; sunLight.intensity += (1.0 - sunLight.intensity) * 0.1; }
+
+            // ЛАЗЕРЫ
+            let laserPower = (pulseTreble * 1.2 + pulseBass * 1.0) * (0.35 + vitality * 0.65); 
+            laserGroup.children.forEach((l, i) => {
+                l.material.color.setHSL((dynamicHue + i * 2.5) % 360 / 360, 0.90, 0.52);
+                if (pulseBass > 0.38 || laserPower > 0.30) {
+                    let targetOp = Math.min(0.55, laserPower * 0.55);
+                    l.material.opacity += (targetOp - l.material.opacity) * 0.15;
+                    l.scale.y += ((0.8 + pulseBass * 1.6 * vitality) - l.scale.y) * 0.15;
+                } else {
+                    l.material.opacity *= 0.88; l.scale.y += (1 - l.scale.y) * 0.1;
+                }
+                let waveAmp = 0.12 + vitality * 0.42;
+                l.rotation.x = l.userData.basex + Math.sin(phaseAlpha * 0.35 + l.userData.phase) * waveAmp; 
+                l.rotation.y = l.userData.basey + Math.cos(phaseBeta * 0.35 + l.userData.phase) * waveAmp; 
+            });
+
+            // -----------------------------------------------------------------
+            // УНИФИЦИРОВАННАЯ ФОРМА: Работает непрерывно
+            // -----------------------------------------------------------------
+            const positions = quantumPoints.geometry.attributes.position.array; 
+            const colors = quantumPoints.geometry.attributes.color.array;
+            
+            let fU = trackSeedFreqU + Math.sin(evolveMid * 0.1) * 3.0; 
+            let fV = trackSeedFreqV + Math.cos(evolveBass * 0.1) * 3.0; 
+            let chaos = Math.sin(evolveTreble * 0.2) * trackSeedMorph;
+            
+            let bioBreath = 1.0 + Math.sin(waltzPhase * 1.1) * 0.05 + Math.pow(pulseBass, 1.2) * 0.35;
+            let baseLerp = 0.015 + Math.pow(vitality, 2.0) * 0.15;
+
+            for(let i=0; i<gridDim; i++) {
+                let vNorm = i / (gridDim - 1); let v = vNorm * Math.PI; let sinV = Math.sin(v); 
+
+                for(let j=0; j<gridDim; j++) {
+                    let idx = i * gridDim + j; 
+                    let uNorm = j / (gridDim - 1); let u = uNorm * Math.PI * 2;
+                    
+                    let fSharp = 0; let waveRipple = 0;
+                    
+                    if (isPlaying && dataArray && timeDataArray) {
+                        let spiralCoord = (uNorm * 0.55 + vNorm * 0.45 + audioMapOffset + Math.sin(u + phaseAlpha * 0.18) * 0.14) % 1.0;
+                        if (spiralCoord < 0) spiralCoord += 1.0;
+                        
+                        let baseBin = Math.floor(spiralCoord * (analyser.frequencyBinCount * 0.42));
+                        let rawF = dataArray[baseBin] / 255.0; 
+                        fSharp = Math.pow(rawF, 2.0); 
+                        
+                        let tIdx = (idx * 2 + Math.floor(audioMapOffset * 150)) % (analyser.fftSize - 4);
+                        waveRipple = (timeDataArray[tIdx]/128.0 - 1.0); 
+                    }
+
+                    // Базовая генетическая мутация (всегда активна!)
+                    let R = trackSeedR * bioBreath + pulseBass * 14 + Math.sin(v * fV + evolveMid * 0.5) * (4 + pulseMid * 12);
+                    let twist = u + Math.sin(v * fU + evolveTreble * 0.4) * (Math.sin(evolveBass * 0.3) * 3.0 * trackSeedMorph);
+                    let flare = Math.abs(Math.cos(u * (3 + chaos * 2) + t * 0.5)) * (4 + pulseMid * 14);
+                    
+                    let currentRadius = R + flare;
+
+                    let tx = Math.cos(twist) * Math.sin(v) * currentRadius;
+                    let tz = Math.sin(twist) * Math.sin(v) * currentRadius;
+                    
+                    let yVolume = Math.cos(v) * currentRadius * (0.65 + chaos * 0.35); 
+                    let yDrift = Math.cos(v * fV + t * 0.2) * (8 + chaos * 6);
+                    let ty = yVolume + yDrift + Math.sin(u * fU + evolveMid) * (3 + pulseTreble * 15);
+
+                    // Звуковой рельеф (иглы и вибрации)
+                    if (fSharp > 0.01 || Math.abs(waveRipple) > 0.01) {
+                        let dist = Math.sqrt(tx*tx + ty*ty + tz*tz) || 1.0;
+                        let rippleForce = waveRipple * (4.0 + pulseTreble * 22.0); 
+                        let spikeForce = fSharp * (2.0 + pulseMid * 18.0 * vitality);
+                        
+                        tx += (tx / dist) * (rippleForce + spikeForce);
+                        ty += (ty / dist) * (rippleForce + spikeForce);
+                        tz += (tz / dist) * (rippleForce + spikeForce);
+                    }
+
+                    let lerpFactor = baseLerp + fSharp * (0.05 + vitality * 0.15);
+                    
+                    positions[idx*3]   += (tx - positions[idx*3])   * lerpFactor; 
+                    positions[idx*3+1] += (ty - positions[idx*3+1]) * lerpFactor; 
+                    positions[idx*3+2] += (tz - positions[idx*3+2]) * lerpFactor;
+                    
+                    let pointHue = (dynamicHue + waveRipple * 40 + fSharp * 60) % 360;
+                    if (pointHue < 0) pointHue += 360;
+                    let pointLightness = isPlaying ? (0.12 + vitality * 0.2 + fSharp * 0.6) : 0.06;
+                    let pointSat = isPlaying ? (0.8 + vitality * 0.2) : 0.4; 
+                    
+                    colorObj.setHSL(pointHue / 360, pointSat, Math.min(0.85, pointLightness));
+                    colors[idx*3]   += (colorObj.r - colors[idx*3])   * 0.15; 
+                    colors[idx*3+1] += (colorObj.g - colors[idx*3+1]) * 0.15; 
+                    colors[idx*3+2] += (colorObj.b - colors[idx*3+2]) * 0.15;
+                }
+            }
+            
+            quantumPoints.geometry.attributes.position.needsUpdate = true; 
+            quantumPoints.geometry.attributes.color.needsUpdate = true;
+            
+            globeGroup.rotation.x += currentRotX; globeGroup.rotation.y += currentRotY; globeGroup.rotation.z += currentRotZ;
+
+            const bands = [pulseBass, flowLowMid, pulseMid, pulseTreble]; 
+            
+            radioRings.forEach((r) => {
+                r.mesh.rotation.x += r.speed * (0.8 + bands[r.bandIndex] * 4.0 * vitality); 
+                r.mesh.rotation.y += r.speed * (0.8 + bands[r.bandIndex] * 4.0 * vitality); 
+                const ringPositions = r.mesh.geometry.attributes.position.array;
+                
+                let ringHue = (dynamicHue + r.bandIndex * 60) % 360;
+                r.mesh.material.color.setHSL(ringHue / 360, 0.95, 0.4 + bands[r.bandIndex] * 0.5); 
+                r.mesh.material.opacity = isPlaying ? (0.15 + bands[r.bandIndex] * 0.85) : (r.mesh.material.opacity + (0.05 - r.mesh.material.opacity)*0.1);
+                
+                for(let j=0; j<256; j++) {
+                    const angle = (j / 256) * Math.PI * 2; 
+                    let freqVal = 0;
+                    if (isPlaying && dataArray) {
+                        let freqBin = Math.floor((j / 256) * (analyser.frequencyBinCount * 0.25)) + (r.bandIndex * Math.floor(analyser.frequencyBinCount * 0.2));
+                        freqVal = dataArray[freqBin] / 255.0; 
+                    }
+                    
+                    const ringWave = Math.sin(angle * (3 + r.bandIndex) + waltzPhase * 3.0);
+                    const targetR = r.baseRadius + Math.pow(freqVal, 2) * (3.0 + r.bandIndex * 1.5) * vitality + ringWave * (0.5 + bands[r.bandIndex] * 2.0);
+                    const targetZ = Math.sin(angle * (4 + r.bandIndex * 2) + audioMapOffset) * (freqVal * 4.0 * vitality);
+                    
+                    ringPositions[j*3]   += (Math.cos(angle) * targetR - ringPositions[j*3]) * 0.2; 
+                    ringPositions[j*3+1] += (Math.sin(angle) * targetR - ringPositions[j*3+1]) * 0.2; 
+                    ringPositions[j*3+2] += (targetZ - ringPositions[j*3+2]) * 0.2;
+                }
+                r.mesh.geometry.attributes.position.needsUpdate = true;
+            });
+
             composer.render();
         }
         animate();
