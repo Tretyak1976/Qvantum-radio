@@ -188,7 +188,7 @@
         
         let isPlaying = false, isLoadingTrack = false, loadingTimer = null, countdownValue = 10;
         let fullPlaylist = [], currentPlaylist = [], currentPlayingTrack = null;
-        const audioCache = {}; 
+        const audioCache = {}; let favorites = JSON.parse(localStorage.getItem('quantum_favorites')) || [];
 
         function initAudio() {
             if (audioContext) return;
@@ -221,7 +221,7 @@
                 fullPlaylist = data; currentPlaylist = [...fullPlaylist];
                 const genres = [...new Set(fullPlaylist.map(t => t.genre).filter(Boolean))];
                 const filterSelect = document.getElementById('genre-filter');
-                filterSelect.innerHTML = '<option value="all">ALL GENRES</option>';
+                filterSelect.innerHTML = '<option value="all">ALL GENRES</option><option value="favorites">❤ FAVORITES</option>';
                 genres.forEach(g => { const opt = document.createElement('option'); opt.value = g; opt.innerText = g.toUpperCase(); filterSelect.appendChild(opt); });
                 updatePlaylistUI();
                 if (currentPlaylist.length > 0) playTrack(currentPlaylist[0]);
@@ -252,7 +252,7 @@
             currentPlayingTrack = track; initAudio(); 
             if(audioContext.state === 'suspended') await audioContext.resume().catch(e=>{});
             
-            // Сброс алгоритма накопления при новом треке
+            // СБРОС НАКОПИТЕЛЬНЫХ ПЕРЕМЕННЫХ (КВАНТОВЫЙ АЛГОРИТМ)
             accBass = 0; accMid = 0; accTreble = 0; trackFingerprint = 0;
 
             isLoadingTrack = true; countdownValue = 10;
@@ -304,7 +304,25 @@
                 };
                 
                 const titleSpan = document.createElement('span'); titleSpan.className = 'track-title'; titleSpan.innerHTML = track.name; 
-                trackEl.appendChild(playIconBtn); trackEl.appendChild(titleSpan); playlistDiv.appendChild(trackEl);
+                
+                const favBtn = document.createElement('span');
+                const isFav = favorites.includes(track.url);
+                favBtn.className = 'fav-btn';
+                favBtn.innerText = isFav ? '♥' : '♡';
+                favBtn.style.color = isFav ? '#ef4444' : '#aaa';
+                favBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    if (isFav) favorites = favorites.filter(url => url !== track.url);
+                    else favorites.push(track.url);
+                    localStorage.setItem('quantum_favorites', JSON.stringify(favorites));
+                    if (document.getElementById('genre-filter').value === 'favorites' && isFav) {
+                        currentPlaylist = currentPlaylist.filter(t => t.url !== track.url);
+                    }
+                    updatePlaylistUI(); 
+                };
+                
+                trackEl.appendChild(playIconBtn); trackEl.appendChild(titleSpan); trackEl.appendChild(favBtn);
+                playlistDiv.appendChild(trackEl);
             });
         }
 
@@ -336,11 +354,10 @@
         controls.enableDamping = true; controls.dampingFactor = 0.05; controls.minDistance = 20; controls.maxDistance = 300;
 
         const renderScene = new THREE.RenderPass(scene, camera);
-        const bloomPass = new THREE.UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 2.0, 0.5, 0.85); // Сильный Bloom для свечения
+        const bloomPass = new THREE.UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 2.0, 0.5, 0.85); 
         const composer = new THREE.EffectComposer(renderer);
         composer.addPass(renderScene); composer.addPass(bloomPass);
 
-        // Генератор базовой параметрической сферы (координаты будут искривляться математикой)
         const gridDim = 56; const pCount = gridDim * gridDim;
         function createAbstractGrid() {
             const pOrig = new Float32Array(pCount * 3); 
@@ -351,7 +368,6 @@
                     let idx = i*gridDim + j;
                     if (j < gridDim - 1) lineIndices.push(idx, idx + 1);
                     if (i < gridDim - 1) lineIndices.push(idx, idx + gridDim);
-                    // Сохраняем параметрические углы U и V в pOrig для дальнейших расчетов
                     let u = (j / (gridDim - 1)) * Math.PI * 2; 
                     let v = (i / (gridDim - 1)) * Math.PI; 
                     pOrig[idx*3] = u; pOrig[idx*3+1] = v; pOrig[idx*3+2] = 0;
@@ -368,14 +384,12 @@
         const universeGroup = new THREE.Group();
         scene.add(universeGroup);
 
-        // Текстура для светящихся точек
         const pCanvas = document.createElement('canvas'); pCanvas.width = 32; pCanvas.height = 32; 
         const pCtx = pCanvas.getContext('2d'); const pGrad = pCtx.createRadialGradient(16, 16, 0, 16, 16, 16);
         pGrad.addColorStop(0, 'rgba(255,255,255,1)'); pGrad.addColorStop(0.2, 'rgba(255,255,255,0.8)'); pGrad.addColorStop(1, 'rgba(0,0,0,0)'); 
         pCtx.fillStyle = pGrad; pCtx.fillRect(0,0,32,32);
         const ptTex = new THREE.CanvasTexture(pCanvas);
 
-        // Фигура 1 (Сущность А)
         const fig1Data = createAbstractGrid();
         const fig1Group = new THREE.Group();
         const points1 = new THREE.Points(fig1Data.geo, new THREE.PointsMaterial({ size: 2.2, map: ptTex, vertexColors: true, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false }));
@@ -383,7 +397,6 @@
         fig1Group.add(points1); fig1Group.add(lines1);
         universeGroup.add(fig1Group);
 
-        // Фигура 2 (Сущность Б)
         const fig2Data = createAbstractGrid();
         const fig2Group = new THREE.Group();
         const points2 = new THREE.Points(fig2Data.geo, new THREE.PointsMaterial({ size: 1.8, map: ptTex, vertexColors: true, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false }));
@@ -391,7 +404,6 @@
         fig2Group.add(points2); fig2Group.add(lines2);
         universeGroup.add(fig2Group);
 
-        // Лазеры / Лучи Хаоса
         const rayGroup = new THREE.Group(); 
         const rayMat = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0, blending: THREE.AdditiveBlending });
         for(let i=0; i<80; i++) {
@@ -412,16 +424,8 @@
 
         const colorObj = new THREE.Color();
         
-        // --- АЛГОРИТМ КВАНТОВОГО НАКОПЛЕНИЯ ---
-        // Эти переменные не сбрасываются каждый кадр. Они накапливают энергию трека.
-        // Это создает уникальный "хэш" или "отпечаток" музыки во времени.
-        let accBass = 0;
-        let accMid = 0;
-        let accTreble = 0;
-        let trackFingerprint = 0; 
-        
+        let accBass = 0, accMid = 0, accTreble = 0, trackFingerprint = 0; 
         let pulseBass = 0, pulseMid = 0, pulseTreble = 0, smoothedEnergy = 0;
-        
         let currentPos1 = new THREE.Vector3(-30, 0, 0);
         let currentPos2 = new THREE.Vector3(30, 0, 0);
         let t = 0;
@@ -449,30 +453,21 @@
                 pulseTreble += (treble - pulseTreble) * 0.2;
                 smoothedEnergy += (energy - smoothedEnergy) * 0.1;
 
-                // НАКОПЛЕНИЕ: Формируем уникальную математическую историю трека
                 accBass += pulseBass * 0.05;
                 accMid += pulseMid * 0.04;
                 accTreble += pulseTreble * 0.06;
                 trackFingerprint += smoothedEnergy * 0.02;
 
-                // ===============================================
-                // ХАОТИЧНЫЕ ТРАЕКТОРИИ (СЛИЯНИЕ И РАЗДЕЛЕНИЕ)
-                // ===============================================
-                // Фигуры двигаются по сложным 3D-аттракторам, зависящим от накопленных частот
-                
-                // Траектория 1
                 let t1x = Math.sin(t * 0.3 + accBass) * (25 + Math.cos(accMid) * 15);
                 let t1y = Math.cos(t * 0.4 + accTreble) * 20;
                 let t1z = Math.sin(t * 0.35 + trackFingerprint) * (25 + Math.sin(accBass) * 15);
 
-                // Траектория 2
                 let t2x = Math.cos(t * 0.25 + accMid) * (25 + Math.sin(accTreble) * 15);
                 let t2y = Math.sin(t * 0.45 + accBass) * 20;
                 let t2z = Math.cos(t * 0.28 + trackFingerprint) * (25 + Math.cos(accMid) * 15);
 
-                // Магнитное притяжение (Входят друг в друга на сильных битах)
-                let magnetForce = Math.pow(Math.sin(trackFingerprint * 1.5), 4); // Значение от 0 до 1
-                if (pulseBass > 0.7) magnetForce = 1.0; // Жесткое слияние на супер-басе
+                let magnetForce = Math.pow(Math.sin(trackFingerprint * 1.5), 4); 
+                if (pulseBass > 0.7) magnetForce = 1.0; 
                 
                 let centerX = (t1x + t2x) / 2;
                 let centerY = (t1y + t2y) / 2;
@@ -495,15 +490,11 @@
                 fig1Group.position.copy(currentPos1);
                 fig2Group.position.copy(currentPos2);
 
-                // Вращение самих структур зависит от потока музыки
                 fig1Group.rotation.x += 0.005 + pulseBass * 0.02;
                 fig1Group.rotation.y += 0.01 + pulseMid * 0.02;
                 fig2Group.rotation.y -= 0.015 + pulseTreble * 0.02;
                 fig2Group.rotation.z += 0.005 + pulseBass * 0.02;
 
-                // ===============================================
-                // ФРАКТАЛЬНОЕ ИСКАЖЕНИЕ ФОРМ (ГЕНЕРАЦИЯ ХАОСА)
-                // ===============================================
                 const pos1 = points1.geometry.attributes.position.array; 
                 const col1 = points1.geometry.attributes.color.array;
                 const pos2 = points2.geometry.attributes.position.array; 
@@ -512,7 +503,6 @@
                 let baseRadius = 12 + smoothedEnergy * 10;
 
                 for(let k=0; k<pCount; k++) {
-                    // Извлекаем параметрические углы, сохраненные при создании сетки
                     let u = fig1Data.orig[k*3]; 
                     let v = fig1Data.orig[k*3+1];
                     let sinV = Math.sin(v), cosV = Math.cos(v);
@@ -521,10 +511,7 @@
                     let freqVal = dataArray[audioIdx] / 255.0;
                     let rawWave = (timeDataArray[audioIdx] / 128.0 - 1.0);
 
-                    // ФОРМА 1: Острая, реагирующая на бас и ритм
-                    // Сложная сферическая гармоника, параметры которой плывут во времени
-                    let m1 = 2 + Math.floor((accBass * 0.5) % 6); // Меняет количество лепестков
-                    let n1 = 1 + pulseBass * 3.0;
+                    let m1 = 2 + Math.floor((accBass * 0.5) % 6); 
                     let deform1 = Math.sin(m1 * u + accMid) * Math.cos(m1 * v + t) * (4 + pulseBass * 15);
                     let r1 = baseRadius + deform1 + (rawWave * pulseBass * 5.0);
                     
@@ -536,15 +523,11 @@
                     pos1[k*3+1] += (ty1 - pos1[k*3+1]) * 0.15; 
                     pos1[k*3+2] += (tz1 - pos1[k*3+2]) * 0.15;
                     
-                    // Уникальный градиентный цвет на основе накопления
                     let hue1 = (accBass * 20 + v * 60 + freqVal * 50) % 360;
                     colorObj.setHSL(hue1 / 360, 0.9, 0.2 + freqVal * 0.7);
                     col1[k*3] = colorObj.r; col1[k*3+1] = colorObj.g; col1[k*3+2] = colorObj.b;
 
-
-                    // ФОРМА 2: Плавная, закрученная, реагирующая на высокие и средние
                     let m2 = 3 + Math.floor((accMid * 0.3) % 5);
-                    // Скручиваем сетку по спирали
                     let twistedU = u + (v * Math.sin(accTreble) * 5.0);
                     let deform2 = Math.cos(m2 * twistedU + t) * Math.sin(m2 * v - accBass) * (5 + pulseTreble * 12);
                     let r2 = (baseRadius * 0.8) + deform2 + (rawWave * pulseMid * 8.0);
@@ -569,26 +552,19 @@
                 points2.geometry.attributes.position.needsUpdate = true; points2.geometry.attributes.color.needsUpdate = true;
                 lines2.material.opacity = Math.min(0.8, 0.3 + pulseMid * 0.6);
 
-                // Динамика свечения (Bloom)
                 if (bloomPass) bloomPass.strength += (1.0 + smoothedEnergy * 3.0 + pulseBass * 2.0 - bloomPass.strength) * 0.1;
                 
-                // Хаотичная камера, которая облетает весь этот взрыв энергии
                 let camR = 120 - smoothedEnergy * 40;
                 camera.position.x += (Math.sin(accMid * 0.2) * camR - camera.position.x) * 0.05;
                 camera.position.z += (Math.cos(accBass * 0.2) * camR - camera.position.z) * 0.05;
                 camera.position.y += (20 + Math.sin(trackFingerprint) * 30 - camera.position.y) * 0.05;
                 camera.lookAt(centerX, centerY, centerZ);
 
-                // Лазеры хаоса
                 let laserPower = pulseTreble * 1.5 + pulseBass; 
                 rayGroup.children.forEach((l, i) => {
                     l.material.color.setHSL((accTreble * 10 + i * 4) % 360 / 360, 1.0, 0.6);
-                    if (laserPower > 0.4) { 
-                        l.material.opacity += (Math.min(0.8, laserPower) - l.material.opacity) * 0.2; 
-                    } else { 
-                        l.material.opacity *= 0.85; 
-                    }
-                    // Лучи извиваются
+                    if (laserPower > 0.4) { l.material.opacity += (Math.min(0.8, laserPower) - l.material.opacity) * 0.2; } 
+                    else { l.material.opacity *= 0.85; }
                     l.rotation.x = l.userData.basex + Math.sin(accBass * 0.5 + l.userData.phase) * 0.3; 
                     l.rotation.y = l.userData.basey + Math.cos(accMid * 0.5 + l.userData.phase) * 0.3; 
                 });
