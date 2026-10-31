@@ -3,20 +3,28 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Quantum Radio 3D - Living Symbiosis</title>
+    <title>Quantum Radio 3D - The Dancing Symbiosis</title>
     <style>
         html, body { 
             margin: 0; padding: 0; width: 100vw; height: 100dvh; overflow: hidden; 
             background-color: #000000 !important; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
             color: #fff; user-select: none; touch-action: none; -webkit-tap-highlight-color: transparent; 
         }
-        
         :fullscreen, ::backdrop, :-webkit-full-screen { background-color: #000000 !important; }
 
         #canvas-container { width: 100vw; height: 100dvh; position: fixed; top: 0; left: 0; z-index: 1; cursor: grab; background-color: #000000; }
         #canvas-container:active { cursor: grabbing; }
         
-        /* Нижняя панель управления */
+        #fullscreen-btn-top-left {
+            position: fixed; top: 20px; left: 20px; z-index: 15;
+            background: rgba(10, 10, 15, 0.6); border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 50%; width: 44px; height: 44px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.3rem; color: #fff; cursor: pointer; backdrop-filter: blur(10px);
+            transition: all 0.3s; padding: 0; outline: none;
+        }
+        #fullscreen-btn-top-left:hover { background: rgba(59, 130, 246, 0.4); transform: scale(1.1); }
+
         #ui-bottom {
             position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
             width: 95%; max-width: 700px; z-index: 10;
@@ -31,7 +39,6 @@
             display: flex; flex-direction: column; gap: 12px;
         }
 
-        /* Левая панель плейлиста */
         #sidebar {
             position: fixed; top: 0; left: 0; width: 350px; height: 100%;
             background: rgba(10, 10, 15, 0.9); backdrop-filter: blur(20px);
@@ -50,10 +57,8 @@
         
         .close-btn { background: none; border: none; color: #fff; font-size: 1.5rem; cursor: pointer; padding: 0; outline: none; transition: color 0.2s; }
         .close-btn:hover { color: #ef4444; }
-
-        #playlist { flex: 1; overflow-y: auto; padding: 10px; }
+        #playlist { flex: 1; overflow-y: auto; padding: 10px; transition: opacity 0.3s; }
         
-        /* Элемент трека - кликабельна только иконка Play! */
         .track-item { 
             display: flex; align-items: center; padding: 10px 15px; border-bottom: 1px solid rgba(255,255,255,0.05); 
             border-radius: 12px; transition: background 0.2s; font-size: 0.9rem; margin-bottom: 4px;
@@ -70,12 +75,10 @@
         .track-item.active .track-play-icon { background: rgba(59, 130, 246, 0.2); color: #3b82f6; }
 
         .track-title { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #eee; }
-        
         .fav-btn { font-size: 1.3rem; cursor: pointer; transition: transform 0.2s; padding: 5px; margin-left: 10px; }
         .fav-btn:hover { transform: scale(1.3); }
 
         #progress-container { display: flex; align-items: center; gap: 10px; width: 100%; font-size: 0.75rem; color: #aaa; font-weight: 600; }
-        
         input[type="range"] { flex: 1; -webkit-appearance: none; background: rgba(255,255,255,0.1); height: 6px; border-radius: 3px; outline: none; cursor: pointer; }
         input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 14px; background: #3b82f6; border-radius: 50%; box-shadow: 0 0 10px rgba(59,130,246,0.8); }
 
@@ -87,42 +90,29 @@
             outline: none; cursor: pointer; transition: all 0.3s; font-weight: bold;
             font-size: 0.8rem; text-transform: uppercase;
         }
-        
         select { flex: 1; min-width: 100px; text-overflow: ellipsis; }
         select option { background: #111; color: #fff; }
         
         .btn.icon { display: flex; align-items: center; justify-content: center; min-width: 40px; font-size: 1.1rem; }
         #play-pause-btn { font-size: 1.3rem; min-width: 50px; background: rgba(59, 130, 246, 0.15); color: #3b82f6; }
-        
         select:hover, .btn:hover { background: rgba(59, 130, 246, 0.2); border-color: #3b82f6; box-shadow: 0 0 15px rgba(59, 130, 246, 0.4); }
         
         ::-webkit-scrollbar { width: 5px; }
         ::-webkit-scrollbar-thumb { background: #3b82f6; border-radius: 3px; }
-
-        @media (max-width: 768px) {
-            #sidebar { width: 100%; }
-            #ui-bottom { bottom: 15px; width: 95%; }
-            #player-panel { padding: 12px 15px; border-radius: 20px; }
-            select { padding: 10px; font-size: 0.7rem; }
-            .btn.icon { padding: 10px; font-size: 1.1rem; min-width: 35px; }
-            #play-pause-btn { min-width: 45px; }
-        }
     </style>
 </head>
 <body>
 
-    <!-- Боковая панель плейлиста -->
+    <button id="fullscreen-btn-top-left" title="На весь экран">⛶</button>
+
     <div id="sidebar">
         <div id="sidebar-header">
             <span>QUANTUM PLAYLIST</span>
             <button id="close-sidebar" class="close-btn" title="Закрыть плейлист">✕</button>
         </div>
-        <div id="playlist">
-            <div style="padding: 20px; color: #aaa; text-align: center;">Syncing with Global Core...</div>
-        </div>
+        <div id="playlist"><div style="padding: 20px; color: #aaa; text-align: center;">Syncing with Global Core...</div></div>
     </div>
 
-    <!-- Нижняя панель управления -->
     <div id="ui-bottom">
         <div id="player-panel">
             <div id="progress-container">
@@ -144,8 +134,6 @@
                     <button id="play-pause-btn" class="btn icon" title="Play/Pause">▶</button>
                     <button id="next-btn" class="btn icon" title="Next Track">⏭</button>
                 </div>
-
-                <button id="fullscreen-btn" class="btn icon" title="Fullscreen">⛶</button>
             </div>
         </div>
     </div>
@@ -162,190 +150,97 @@
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/UnrealBloomPass.js"></script>
 
     <script>
+        // ==========================================
+        // UI & AUDIO SETUP (ОБЩЕЕ)
+        // ==========================================
         const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz-mIMwHe0AAz1xQxxmklBJFTkfRxhGDcllBKjYs3J8N77RvbROOlapD7YpiOgoBLQ/exec"; 
 
         let uiTimeout;
         const uiLayer = document.getElementById('ui-bottom');
         const sidebar = document.getElementById('sidebar');
+        const fullscreenBtnTopLeft = document.getElementById('fullscreen-btn-top-left');
         
         function resetUiTimer() {
             uiLayer.classList.remove('idle');
-            document.body.style.cursor = 'default';
-            clearTimeout(uiTimeout);
+            fullscreenBtnTopLeft.style.opacity = '1'; fullscreenBtnTopLeft.style.pointerEvents = 'auto';
+            document.body.style.cursor = 'default'; clearTimeout(uiTimeout);
             uiTimeout = setTimeout(() => { 
                 if (isPlaying && !sidebar.classList.contains('open')) { 
-                    uiLayer.classList.add('idle'); 
-                    document.body.style.cursor = 'none'; 
+                    uiLayer.classList.add('idle'); fullscreenBtnTopLeft.style.opacity = '0';
+                    fullscreenBtnTopLeft.style.pointerEvents = 'none'; document.body.style.cursor = 'none'; 
                 } 
             }, 3000);
         }
         
         window.addEventListener('mousemove', resetUiTimer);
-        window.addEventListener('touchstart', resetUiTimer, {passive: true});
         window.addEventListener('click', resetUiTimer);
-
-        document.getElementById('toggle-sidebar-btn').onclick = () => {
-            sidebar.classList.add('open'); resetUiTimer();
-        };
-        document.getElementById('close-sidebar').onclick = () => {
-            sidebar.classList.remove('open'); resetUiTimer();
-        };
-
-        const fullscreenBtn = document.getElementById('fullscreen-btn');
-        fullscreenBtn.onclick = () => {
+        document.getElementById('toggle-sidebar-btn').onclick = () => { sidebar.classList.add('open'); resetUiTimer(); };
+        document.getElementById('close-sidebar').onclick = () => { sidebar.classList.remove('open'); resetUiTimer(); };
+        fullscreenBtnTopLeft.onclick = () => {
             let docEl = document.documentElement;
-            if (!document.fullscreenElement) {
-                if (docEl.requestFullscreen) docEl.requestFullscreen().catch(e => {});
-                else if (docEl.webkitRequestFullscreen) docEl.webkitRequestFullscreen().catch(e => {});
-            } else {
-                if (document.exitFullscreen) document.exitFullscreen();
-                else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
-            }
+            if (!document.fullscreenElement) { if (docEl.requestFullscreen) docEl.requestFullscreen().catch(e=>{}); } 
+            else { if (document.exitFullscreen) document.exitFullscreen(); }
             resetUiTimer();
         };
 
         let audioContext, analyser, dataArray, timeDataArray;
-        let audioElement = new Audio();
-        audioElement.crossOrigin = "anonymous"; 
+        let audioElement = new Audio(); audioElement.crossOrigin = "anonymous"; 
         
-        let isPlaying = false, isPreloadingNext = false; 
-        let fullPlaylist = [], currentPlaylist = [];
-        let currentPlayingTrack = null;
-        const audioCache = {}; 
-        let favorites = JSON.parse(localStorage.getItem('quantum_favorites')) || [];
+        let isPlaying = false, isPreloadingNext = false, isLoadingTrack = false, loadingTimer = null, countdownValue = 10;
+        let fullPlaylist = [], currentPlaylist = [], currentPlayingTrack = null;
+        const audioCache = {}; let favorites = JSON.parse(localStorage.getItem('quantum_favorites')) || [];
 
         function initAudio() {
             if (audioContext) return;
             audioContext = new (window.AudioContext || window.webkitAudioContext)();
             analyser = audioContext.createAnalyser();
-            // Золотая середина сглаживания: 0.85 сохраняет четкую атаку бита, но убирает цифровой шум
             analyser.fftSize = 2048; analyser.smoothingTimeConstant = 0.85; 
-            
             const source = audioContext.createMediaElementSource(audioElement);
             source.connect(analyser); analyser.connect(audioContext.destination);
-            
-            dataArray = new Uint8Array(analyser.frequencyBinCount);
-            timeDataArray = new Uint8Array(analyser.fftSize);
+            dataArray = new Uint8Array(analyser.frequencyBinCount); timeDataArray = new Uint8Array(analyser.fftSize);
         }
 
         const progressBar = document.getElementById('progress-bar');
         const timeCurrent = document.getElementById('time-current');
         const timeTotal = document.getElementById('time-total');
 
-        function formatTime(seconds) {
-            if (isNaN(seconds)) return "0:00";
-            const m = Math.floor(seconds / 60);
-            const s = Math.floor(seconds % 60).toString().padStart(2, '0');
-            return `${m}:${s}`;
-        }
+        function formatTime(s) { if (isNaN(s)) return "0:00"; let m = Math.floor(s/60); let sec = Math.floor(s%60).toString().padStart(2, '0'); return `${m}:${sec}`; }
 
         audioElement.addEventListener('timeupdate', () => {
             if (audioElement.duration) {
-                progressBar.max = audioElement.duration;
-                progressBar.value = audioElement.currentTime;
-                timeCurrent.innerText = formatTime(audioElement.currentTime);
-                timeTotal.innerText = formatTime(audioElement.duration);
-                
-                // --- СИСТЕМА ПРЕДЗАГРУЗКИ (GAPLESS) ---
-                let timeLeft = audioElement.duration - audioElement.currentTime;
-                if (timeLeft < 15 && currentPlaylist.length > 1 && !isPreloadingNext) {
-                    let currentIdx = currentPlaylist.findIndex(t => t.url === currentPlayingTrack.url);
-                    let nextIdx = (currentIdx + 1) % currentPlaylist.length;
-                    let nextTrack = currentPlaylist[nextIdx];
-                    
-                    if (!nextTrack.isLocal && nextTrack.url.includes("script.google.com") && !audioCache[nextTrack.url]) {
-                        isPreloadingNext = true;
-                        fetch(nextTrack.url)
-                            .then(res => res.json())
-                            .then(data => {
-                                if (!data.error && data.base64) {
-                                    audioCache[nextTrack.url] = data.base64;
-                                }
-                            })
-                            .catch(err => console.error("Ошибка предзагрузки", err));
-                    }
-                }
+                progressBar.max = audioElement.duration; progressBar.value = audioElement.currentTime;
+                timeCurrent.innerText = formatTime(audioElement.currentTime); timeTotal.innerText = formatTime(audioElement.duration);
             }
         });
 
-        progressBar.addEventListener('input', () => {
-            if(audioElement.duration) audioElement.currentTime = progressBar.value;
-            resetUiTimer();
-        });
+        progressBar.addEventListener('input', () => { if(audioElement.duration) audioElement.currentTime = progressBar.value; resetUiTimer(); });
 
         window.addEventListener('DOMContentLoaded', async () => {
-            if (APPS_SCRIPT_URL === "ВСТАВЬ_ССЫЛКУ_СЮДА") return;
             try {
-                const response = await fetch(APPS_SCRIPT_URL);
-                const data = await response.json();
-                if (data.error) throw new Error(data.error);
-
-                fullPlaylist = data;
-                currentPlaylist = [...fullPlaylist];
-                
+                const response = await fetch(APPS_SCRIPT_URL); const data = await response.json();
+                fullPlaylist = data; currentPlaylist = [...fullPlaylist];
                 const genres = [...new Set(fullPlaylist.map(t => t.genre).filter(Boolean))];
                 const filterSelect = document.getElementById('genre-filter');
                 filterSelect.innerHTML = '<option value="all">ALL GENRES</option><option value="favorites">❤ FAVORITES</option>';
-                
-                genres.forEach(g => {
-                    const opt = document.createElement('option');
-                    opt.value = g; opt.innerText = g.toUpperCase();
-                    filterSelect.appendChild(opt);
-                });
-
+                genres.forEach(g => { const opt = document.createElement('option'); opt.value = g; opt.innerText = g.toUpperCase(); filterSelect.appendChild(opt); });
                 updatePlaylistUI();
-
-                if (currentPlaylist.length > 0) {
-                    playTrack(currentPlaylist[0]);
-                }
-
+                if (currentPlaylist.length > 0) playTrack(currentPlaylist[0]);
             } catch (err) {
                 document.getElementById('playlist').innerHTML = '<div style="color:#ef4444; padding:20px; text-align:center;">Database connection failed.</div>';
             }
         });
 
-        document.getElementById('genre-filter').addEventListener('change', (e) => {
-            const selectedGenre = e.target.value;
-            if (selectedGenre === 'all') {
-                currentPlaylist = [...fullPlaylist];
-            } else if (selectedGenre === 'favorites') {
-                currentPlaylist = fullPlaylist.filter(t => favorites.includes(t.url));
-            } else {
-                currentPlaylist = fullPlaylist.filter(t => t.genre === selectedGenre);
-            }
-            
-            updatePlaylistUI();
-            if (currentPlaylist.length > 0) playTrack(currentPlaylist[0]);
-            else { audioElement.pause(); isPlaying = false; document.getElementById('play-pause-btn').innerText = "▶"; }
-            resetUiTimer();
-        });
-
-        document.getElementById('audio-upload').onchange = (e) => {
-            if (e.target.files.length > 0) {
-                const file = e.target.files[0];
-                const localUrl = URL.createObjectURL(file);
-                fullPlaylist.unshift({ name: file.name.substring(0, 30) + '...', genre: "LOCAL", url: localUrl, isLocal: true }); 
-                
-                const filter = document.getElementById('genre-filter');
-                if(filter.value !== 'all') { filter.value = 'all'; filter.dispatchEvent(new Event('change')); }
-                else { currentPlaylist = [...fullPlaylist]; updatePlaylistUI(); playTrack(currentPlaylist[0]); }
-                e.target.value = ''; resetUiTimer();
-            }
-        };
-
         const playBtn = document.getElementById('play-pause-btn');
 
         function playNext() {
-            if (!currentPlayingTrack || currentPlaylist.length === 0) return;
+            if (isLoadingTrack || !currentPlayingTrack || currentPlaylist.length === 0) return;
             let idx = currentPlaylist.findIndex(t => t.url === currentPlayingTrack.url);
             playTrack(currentPlaylist[(idx + 1) % currentPlaylist.length]);
         }
-
         function playPrev() {
-            if (!currentPlayingTrack || currentPlaylist.length === 0) return;
+            if (isLoadingTrack || !currentPlayingTrack || currentPlaylist.length === 0) return;
             let idx = currentPlaylist.findIndex(t => t.url === currentPlayingTrack.url);
-            let prevIdx = (idx - 1 + currentPlaylist.length) % currentPlaylist.length;
-            playTrack(currentPlaylist[prevIdx]);
+            playTrack(currentPlaylist[(idx - 1 + currentPlaylist.length) % currentPlaylist.length]);
         }
 
         document.getElementById('next-btn').onclick = () => { playNext(); resetUiTimer(); };
@@ -353,144 +248,84 @@
         audioElement.addEventListener('ended', playNext);
 
         async function playTrack(track) {
-            currentPlayingTrack = track;
-            initAudio(); 
+            if (isLoadingTrack) return; 
+            currentPlayingTrack = track; initAudio(); 
             if(audioContext.state === 'suspended') await audioContext.resume().catch(e=>{});
             
-            // ГЕНЕРАЦИЯ НОВОГО ГЕНЕТИЧЕСКОГО КОДА ДЛЯ ТРЕКА
-            seedTrackEvolution();
+            seedTrackEvolution1(); // Инициализация 1-й фигуры (Мужской)
+            seedTrackEvolution2(); // Инициализация 2-й фигуры (Женской)
 
-            isPreloadingNext = false;
-            updatePlaylistUI();
-            playBtn.innerText = "↻"; 
+            isLoadingTrack = true; countdownValue = 10;
+            playBtn.innerHTML = `<span style="color:#ef4444;">${countdownValue}</span>`; updatePlaylistUI(); 
+            
+            clearInterval(loadingTimer);
+            loadingTimer = setInterval(() => {
+                if (countdownValue > 1) { countdownValue--; playBtn.innerHTML = `<span style="color:#ef4444;">${countdownValue}</span>`; updatePlaylistUI(); }
+            }, 1000);
             
             try {
                 if (!track.isLocal && track.url.includes("script.google.com")) {
-                     if (audioCache[track.url]) {
-                         audioElement.src = audioCache[track.url];
-                     } else {
-                         const response = await fetch(track.url);
-                         const data = await response.json();
+                     if (audioCache[track.url]) { audioElement.src = audioCache[track.url]; } 
+                     else {
+                         const response = await fetch(track.url); const data = await response.json();
                          if (data.error || !data.base64) throw new Error("Load error");
-                         audioElement.src = data.base64;
-                         audioCache[track.url] = data.base64; 
+                         audioElement.src = data.base64; audioCache[track.url] = data.base64; 
                      }
-                } else {
-                     audioElement.src = track.url; 
-                }
+                } else { audioElement.src = track.url; }
+
+                clearInterval(loadingTimer); isLoadingTrack = false;
 
                 let playPromise = audioElement.play();
                 if (playPromise !== undefined) {
-                    playPromise.then(() => {
-                        isPlaying = true; playBtn.innerText = "❚❚";
-                        updatePlaylistUI();
-                        resetUiTimer();
-                    }).catch(error => {
-                        isPlaying = false; playBtn.innerText = "▶";
-                        updatePlaylistUI();
-                        document.body.addEventListener('click', function resumeAutoplay() {
-                            if(!isPlaying) {
-                                audioContext.resume();
-                                audioElement.play();
-                                isPlaying = true; playBtn.innerText = "❚❚";
-                                updatePlaylistUI();
-                            }
-                            document.body.removeEventListener('click', resumeAutoplay);
-                        }, {once: true});
+                    playPromise.then(() => { isPlaying = true; playBtn.innerText = "❚❚"; updatePlaylistUI(); resetUiTimer(); }).catch(error => {
+                        isPlaying = false; playBtn.innerText = "▶"; updatePlaylistUI();
                     });
                 }
-                
-            } catch (error) {
-                playBtn.innerText = "⚠";
-                setTimeout(() => playNext(), 2000);
-            }
+            } catch (error) { clearInterval(loadingTimer); isLoadingTrack = false; playBtn.innerText = "⚠"; setTimeout(() => playNext(), 2000); }
         }
 
         function updatePlaylistUI() {
-            const playlistDiv = document.getElementById('playlist');
-            playlistDiv.innerHTML = '';
+            const playlistDiv = document.getElementById('playlist'); playlistDiv.innerHTML = '';
+            if (isLoadingTrack) { playlistDiv.style.pointerEvents = 'none'; playlistDiv.style.opacity = '0.7'; } 
+            else { playlistDiv.style.pointerEvents = 'auto'; playlistDiv.style.opacity = '1'; }
             
-            if (currentPlaylist.length === 0) {
-                playlistDiv.innerHTML = '<div style="padding:10px; color:#aaa; text-align:center;">No tracks found</div>';
-                return;
-            }
-
             currentPlaylist.forEach((track) => {
-                const trackEl = document.createElement('div');
-                trackEl.className = 'track-item';
+                const trackEl = document.createElement('div'); trackEl.className = 'track-item';
                 const isActive = (currentPlayingTrack && currentPlayingTrack.url === track.url);
                 if (isActive) trackEl.classList.add('active');
                 
-                const playIconBtn = document.createElement('div');
-                playIconBtn.className = 'track-play-icon';
-                playIconBtn.innerHTML = (isActive && isPlaying) ? '❚❚' : '▶';
-                playIconBtn.onclick = (e) => {
-                    e.stopPropagation();
-                    if (isActive) {
-                        if (isPlaying) { audioElement.pause(); isPlaying = false; }
-                        else { audioElement.play(); isPlaying = true; }
-                        updatePlaylistUI();
-                        playBtn.innerText = isPlaying ? "❚❚" : "▶";
-                    } else {
-                        playTrack(track);
-                    }
-                    resetUiTimer();
+                const playIconBtn = document.createElement('div'); playIconBtn.className = 'track-play-icon';
+                if (isActive && isLoadingTrack) playIconBtn.innerHTML = `<span style="font-size:1.1rem; color:#ef4444; font-weight:bold;">${countdownValue}</span>`;
+                else playIconBtn.innerHTML = (isActive && isPlaying) ? '❚❚' : '▶';
+
+                playIconBtn.onclick = (e) => { e.stopPropagation(); if (isLoadingTrack) return; 
+                    if (isActive) { if (isPlaying) { audioElement.pause(); isPlaying = false; } else { audioElement.play(); isPlaying = true; } updatePlaylistUI(); playBtn.innerText = isPlaying ? "❚❚" : "▶"; } 
+                    else { playTrack(track); } resetUiTimer(); 
                 };
                 
-                const titleSpan = document.createElement('span');
-                titleSpan.className = 'track-title';
-                titleSpan.innerHTML = track.name;
-
-                const favBtn = document.createElement('span');
-                const isFav = favorites.includes(track.url);
-                favBtn.className = 'fav-btn';
-                favBtn.innerText = isFav ? '♥' : '♡';
-                favBtn.style.color = isFav ? '#ef4444' : '#aaa';
-                favBtn.onclick = (e) => {
-                    e.stopPropagation();
-                    if (isFav) favorites = favorites.filter(url => url !== track.url);
-                    else favorites.push(track.url);
-                    
-                    localStorage.setItem('quantum_favorites', JSON.stringify(favorites));
-                    if (document.getElementById('genre-filter').value === 'favorites' && isFav) {
-                        currentPlaylist = currentPlaylist.filter(t => t.url !== track.url);
-                    }
-                    updatePlaylistUI(); 
-                };
-
-                trackEl.appendChild(playIconBtn);
-                trackEl.appendChild(titleSpan);
-                trackEl.appendChild(favBtn);
-                playlistDiv.appendChild(trackEl);
+                const titleSpan = document.createElement('span'); titleSpan.className = 'track-title'; titleSpan.innerHTML = track.name; 
+                trackEl.appendChild(playIconBtn); trackEl.appendChild(titleSpan); playlistDiv.appendChild(trackEl);
             });
         }
 
         playBtn.onclick = async () => {
-            initAudio();
+            if (isLoadingTrack) return; initAudio();
             if(audioContext.state === 'suspended') await audioContext.resume().catch(e=>{});
-            if (isPlaying) { 
-                audioElement.pause(); isPlaying = false; playBtn.innerText = "▶";
-            } else {
-                if (!audioElement.src || audioElement.src.endsWith(window.location.host + "/")) {
-                    if (currentPlaylist.length > 0) playTrack(currentPlaylist[0]);
-                } else { 
-                    await audioElement.play(); isPlaying = true; playBtn.innerText = "❚❚";
-                }
-            }
-            updatePlaylistUI();
-            resetUiTimer();
+            if (isPlaying) { audioElement.pause(); isPlaying = false; playBtn.innerText = "▶"; } 
+            else { if (!audioElement.src || audioElement.src.endsWith(window.location.host + "/")) { if (currentPlaylist.length > 0) playTrack(currentPlaylist[0]); } else { await audioElement.play(); isPlaying = true; playBtn.innerText = "❚❚"; } }
+            updatePlaylistUI(); resetUiTimer();
         };
 
-        // =========================================================================
-        // 3D СЦЕНА И СБАЛАНСИРОВАННОЕ БИО-ЯДРО (ЗОЛОТАЯ СЕРЕДИНА: ЖИЗНЬ + ПЛАВНОСТЬ)
-        // =========================================================================
+        // ==========================================
+        // 3D СЦЕНА И ТАНЕЦ ФИГУР (DANCE CHOREOGRAPHY)
+        // ==========================================
         const container = document.getElementById('canvas-container');
         const scene = new THREE.Scene();
         scene.fog = new THREE.FogExp2(0x020205, 0.002);
 
-        const baseFov = 50;
+        const baseFov = 55;
         const camera = new THREE.PerspectiveCamera(baseFov, window.innerWidth / window.innerHeight, 0.1, 2000);
-        camera.position.set(0, 10, 55); 
+        camera.position.set(0, 15, 80); 
 
         const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, powerPreference: "high-performance" });
         renderer.setSize(window.innerWidth, window.innerHeight);
@@ -498,159 +333,134 @@
         container.appendChild(renderer.domElement);
 
         const controls = new THREE.OrbitControls(camera, renderer.domElement);
-        controls.enableDamping = true; controls.dampingFactor = 0.05; controls.minDistance = 20; controls.maxDistance = 150;
+        controls.enableDamping = true; controls.dampingFactor = 0.05; controls.minDistance = 20; controls.maxDistance = 200;
 
         const renderScene = new THREE.RenderPass(scene, camera);
-        // Сбалансированный Bloom: сочное свечение без белого выгорания
-        const bloomPass = new THREE.UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.1, 0.4, 0.85);
-        bloomPass.threshold = 0.20; bloomPass.strength = 0.85; bloomPass.radius = 0.48;
-
+        const bloomPass = new THREE.UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.2, 0.4, 0.85);
         const composer = new THREE.EffectComposer(renderer);
         composer.addPass(renderScene); composer.addPass(bloomPass);
 
-        const globeGroup = new THREE.Group(); scene.add(globeGroup);
+        // Функция для создания отдельной сетки фигуры
         const gridDim = 48; const pCount = gridDim * gridDim;
-        const pOrig = new Float32Array(pCount * 3); 
-        const pPos = new Float32Array(pCount * 3); 
-        const pColor = new Float32Array(pCount * 3); 
-        const lineIndices = [];
-
-        for(let i=0; i<gridDim; i++){
-            for(let j=0; j<gridDim; j++){
-                let idx = i*gridDim + j;
-                if (j < gridDim - 1) lineIndices.push(idx, idx + 1);
-                if (i < gridDim - 1) lineIndices.push(idx, idx + gridDim);
-                let u = (j / (gridDim - 1)) * Math.PI * 2; 
-                let v = (i / (gridDim - 1)) * Math.PI; 
-                let r = 10.3; 
-                pOrig[idx*3] = r * Math.cos(u) * Math.sin(v); 
-                pOrig[idx*3+1] = r * Math.cos(v); 
-                pOrig[idx*3+2] = r * Math.sin(u) * Math.sin(v);
-                pPos[idx*3] = pOrig[idx*3]; pPos[idx*3+1] = pOrig[idx*3+1]; pPos[idx*3+2] = pOrig[idx*3+2];
+        function createFigureGrid() {
+            const pOrig = new Float32Array(pCount * 3); 
+            const pPos = new Float32Array(pCount * 3); 
+            const pColor = new Float32Array(pCount * 3); 
+            const lineIndices = [];
+            for(let i=0; i<gridDim; i++){
+                for(let j=0; j<gridDim; j++){
+                    let idx = i*gridDim + j;
+                    if (j < gridDim - 1) lineIndices.push(idx, idx + 1);
+                    if (i < gridDim - 1) lineIndices.push(idx, idx + gridDim);
+                    let u = (j / (gridDim - 1)) * Math.PI * 2; let v = (i / (gridDim - 1)) * Math.PI; let r = 10.3; 
+                    pOrig[idx*3] = r * Math.cos(u) * Math.sin(v); pOrig[idx*3+1] = r * Math.cos(v); pOrig[idx*3+2] = r * Math.sin(u) * Math.sin(v);
+                    pPos[idx*3] = pOrig[idx*3]; pPos[idx*3+1] = pOrig[idx*3+1]; pPos[idx*3+2] = pOrig[idx*3+2];
+                }
             }
+            const pGeo = new THREE.BufferGeometry();
+            pGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3)); 
+            pGeo.setAttribute('color', new THREE.BufferAttribute(pColor, 3)); 
+            pGeo.setIndex(lineIndices);
+            return { geo: pGeo, orig: pOrig, pos: pPos, color: pColor };
         }
 
-        const pGeo = new THREE.BufferGeometry();
-        pGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3)); 
-        pGeo.setAttribute('color', new THREE.BufferAttribute(pColor, 3)); 
-        pGeo.setIndex(lineIndices);
+        // --- Группа Танцпола ---
+        const danceFloor = new THREE.Group();
+        scene.add(danceFloor);
 
-        const pCanvas = document.createElement('canvas'); pCanvas.width = 16; pCanvas.height = 16; 
-        const pCtx = pCanvas.getContext('2d'); const pGrad = pCtx.createRadialGradient(8, 8, 0, 8, 8, 8);
-        pGrad.addColorStop(0, 'rgba(255,255,255,1)'); pGrad.addColorStop(0.22, 'rgba(255,255,255,0.75)'); pGrad.addColorStop(1, 'rgba(0,0,0,0)'); 
-        pCtx.fillStyle = pGrad; pCtx.fillRect(0,0,16,16);
+        // Фигура 1 (Из файла 12 - Скелетная/Био)
+        const fig1Data = createFigureGrid();
+        const fig1Group = new THREE.Group();
+        const pCanvas1 = document.createElement('canvas'); pCanvas1.width = 32; pCanvas1.height = 32; 
+        const pCtx1 = pCanvas1.getContext('2d'); const pGrad1 = pCtx1.createRadialGradient(16, 16, 0, 16, 16, 16);
+        pGrad1.addColorStop(0, 'rgba(255,255,255,1)'); pGrad1.addColorStop(0.3, 'rgba(255,255,255,0.85)'); pGrad1.addColorStop(1, 'rgba(0,0,0,0)'); 
+        pCtx1.fillStyle = pGrad1; pCtx1.fillRect(0,0,32,32);
+        const points1 = new THREE.Points(fig1Data.geo, new THREE.PointsMaterial({ size: 1.4, map: new THREE.CanvasTexture(pCanvas1), vertexColors: true, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false }));
+        const lines1 = new THREE.LineSegments(fig1Data.geo, new THREE.LineBasicMaterial({ vertexColors: true, transparent: true, opacity: 0.40, blending: THREE.AdditiveBlending, depthWrite: false }));
+        fig1Group.add(points1); fig1Group.add(lines1);
+        fig1Group.position.x = -18; // Начальная позиция слева
+        danceFloor.add(fig1Group);
 
-        const quantumPoints = new THREE.Points(pGeo, new THREE.PointsMaterial({ size: 0.62, map: new THREE.CanvasTexture(pCanvas), vertexColors: true, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false }));
-        const quantumLines = new THREE.LineSegments(pGeo, new THREE.LineBasicMaterial({ vertexColors: true, transparent: true, opacity: 0.30, blending: THREE.AdditiveBlending, depthWrite: false }));
-        globeGroup.add(quantumPoints); globeGroup.add(quantumLines);
+        // Фигура 2 (Из файла 6 - Энергетическая/Математическая)
+        const fig2Data = createFigureGrid();
+        const fig2Group = new THREE.Group();
+        const pCanvas2 = document.createElement('canvas'); pCanvas2.width = 16; pCanvas2.height = 16; 
+        const pCtx2 = pCanvas2.getContext('2d'); const pGrad2 = pCtx2.createRadialGradient(8, 8, 0, 8, 8, 8);
+        pGrad2.addColorStop(0, 'rgba(255,255,255,1)'); pGrad2.addColorStop(0.2, 'rgba(255,255,255,0.8)'); pGrad2.addColorStop(1, 'rgba(0,0,0,0)'); 
+        pCtx2.fillStyle = pGrad2; pCtx2.fillRect(0,0,16,16);
+        const points2 = new THREE.Points(fig2Data.geo, new THREE.PointsMaterial({ size: 1.2, map: new THREE.CanvasTexture(pCanvas2), vertexColors: true, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false }));
+        const lines2 = new THREE.LineSegments(fig2Data.geo, new THREE.LineBasicMaterial({ vertexColors: true, transparent: true, opacity: 0.35, blending: THREE.AdditiveBlending, depthWrite: false }));
+        fig2Group.add(points2); fig2Group.add(lines2);
+        fig2Group.position.x = 18; // Начальная позиция справа
+        danceFloor.add(fig2Group);
 
+        // --- Общие эффекты ---
         const laserGroup = new THREE.Group(); const laserMat = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0, blending: THREE.AdditiveBlending });
-        for(let i=0; i<100; i++) {
+        for(let i=0; i<60; i++) {
             const laser = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0, 10, 0), new THREE.Vector3(0, 250, 0)]), laserMat.clone());
-            const phi = Math.acos(-1 + (2 * i) / 100); const theta = Math.sqrt(100 * Math.PI) * phi;
+            const phi = Math.acos(-1 + (2 * i) / 60); const theta = Math.sqrt(60 * Math.PI) * phi;
             laser.rotation.set(phi, theta, 0); 
             laser.userData = { phase: Math.random() * Math.PI * 2, speed: 0.015 + Math.random() * 0.02, basex: phi, basey: theta };
             laserGroup.add(laser);
         }
-        globeGroup.add(laserGroup);
-
-        const radioWavesGroup = new THREE.Group(); globeGroup.add(radioWavesGroup);
-        const radioRings = [];
-        for(let i=0; i<4; i++) {
-            const ringMesh = new THREE.LineLoop(new THREE.BufferGeometry().setAttribute('position', new THREE.BufferAttribute(new Float32Array(256 * 3), 3)), new THREE.LineBasicMaterial({ color: 0x3b82f6, transparent: true, opacity: 0, blending: THREE.AdditiveBlending }));
-            ringMesh.rotation.set(Math.random()*Math.PI, Math.random()*Math.PI, Math.random()*Math.PI);
-            radioRings.push({ mesh: ringMesh, baseRadius: 10.4 + i*0.8, speed: (Math.random()-0.5)*0.016 }); radioWavesGroup.add(ringMesh);
-        }
+        danceFloor.add(laserGroup); // Лазеры идут из центра танцпола
 
         const strobeLight = new THREE.AmbientLight(0xffffff, 0); scene.add(strobeLight);
         const sunLight = new THREE.DirectionalLight(0xffffff, 1.0); sunLight.position.set(50, 20, 30); scene.add(sunLight);
-        scene.add(new THREE.AmbientLight(0x050510, 1.8));
+        scene.add(new THREE.AmbientLight(0x0a0a1a, 2.5)); 
 
         window.addEventListener('resize', () => { 
             camera.aspect = window.innerWidth / window.innerHeight; camera.updateProjectionMatrix(); 
             renderer.setSize(window.innerWidth, window.innerHeight); if(composer) composer.setSize(window.innerWidth, window.innerHeight);
         });
 
-        // -------------------------------------------------------------------------
-        // ДВУХКОНТУРНАЯ МАТЕМАТИКА: ЖИВАЯ РЕАКТИВНОСТЬ + ПЛАВНЫЙ ВАЛЬС
-        // -------------------------------------------------------------------------
-        const PHI = 1.618033988749895;
-        const SQRT2 = 1.414213562373095;
-        const SQRT3 = 1.732050807568877;
-
-        // 3D-генератор органической пластики (живая мускулатура фигуры)
+        // --- Переменные Фигуры 1 ---
+        const PHI = 1.618033988749895; const SQRT2 = 1.414213562373095; const SQRT3 = 1.732050807568877;
         function bioWave3D(x, y, z, time) {
             let n1 = Math.sin(x * 1.05 + time * 0.6) * Math.cos(y * 1.05 - time * 0.45) * Math.sin(z * 1.05 + time * 0.3);
             let n2 = Math.sin(x * 2.1 * PHI - time * 0.85) * Math.sin(y * 2.1 * SQRT2 + time * 0.7) * Math.cos(z * 2.1 * SQRT3 - time * 0.5) * 0.45;
             let n3 = Math.cos((x + y) * 1.4 + time * 0.9) * Math.sin((y - z) * 1.4 - time * 0.6) * 0.25;
             return n1 + n2 + n3;
         }
+        let dna = { baseScale: 13.0, symmetryA: 3, symmetryB: 5, knotP: 2, knotQ: 3, twistDir: 1, hueBase: 190, hueRange: 140, morphSpeed: 0.9, bioPulseRate: 1.1 };
+        let morphWeights = [1, 0, 0, 0], targetWeights = [1, 0, 0, 0], activeArchetype = 0;
+        let phaseAlpha = 0, phaseBeta = 0, phaseGamma = 0, waltzPhase = 0, audioMapOffset = 0;
 
-        let dna = {
-            baseScale: 13.0,
-            symmetryA: 3,
-            symmetryB: 5,
-            knotP: 2,
-            knotQ: 3,
-            twistDir: 1,
-            hueBase: 190,
-            hueRange: 140,
-            morphSpeed: 0.9,
-            bioPulseRate: 1.1
-        };
-
-        // Веса 4 архетипов формы: [0] Био-Медуза, [1] Гипер-Тор, [2] Галактическая Спираль, [3] Квантовый Цветок
-        let morphWeights = [1, 0, 0, 0];
-        let targetWeights = [1, 0, 0, 0];
-        let activeArchetype = 0;
-
-        function seedTrackEvolution() {
-            dna.baseScale = 11.2 + Math.random() * 5.0;
+        function seedTrackEvolution1() {
+            dna.baseScale = 10.0 + Math.random() * 4.0;
             dna.symmetryA = Math.floor(2 + Math.random() * 6);
-            dna.symmetryB = Math.floor(2 + Math.random() * 6);
-            dna.knotP = Math.floor(1 + Math.random() * 3);
-            dna.knotQ = Math.floor(2 + Math.random() * 4);
             dna.twistDir = Math.random() > 0.5 ? 1 : -1;
             dna.hueBase = Math.random() * 360;
-            dna.hueRange = 100 + Math.random() * 160;
-            dna.morphSpeed = 0.7 + Math.random() * 0.9;
-            dna.bioPulseRate = 0.7 + Math.random() * 1.1;
-
-            activeArchetype = (activeArchetype + 1 + Math.floor(Math.random() * 3)) % 4;
-            setArchetypeTarget(activeArchetype);
+            activeArchetype = Math.floor(Math.random() * 4);
+            for (let i = 0; i < 4; i++) targetWeights[i] = (i === activeArchetype) ? 1.0 : 0.0;
         }
 
-        function setArchetypeTarget(index) {
-            for (let i = 0; i < 4; i++) {
-                targetWeights[i] = (i === index) ? (0.65 + Math.random() * 0.35) : (Math.random() * 0.35);
-            }
-            let sum = targetWeights[0] + targetWeights[1] + targetWeights[2] + targetWeights[3];
-            for (let i = 0; i < 4; i++) targetWeights[i] /= sum;
+        // --- Переменные Фигуры 2 ---
+        let trackSeedR = 1.0, trackSeedFreqU = 2.0, trackSeedFreqV = 3.0, trackSeedMorph = 1.0, trackSeedHueShift = 0, trackSeedTwistSpeed = 1.0;
+        let currentBassLevel = 0, evolveBass = 0, evolveMid = 0, evolveTreble = 0;
+
+        function seedTrackEvolution2() {
+            trackSeedR = 10 + Math.random() * 8;
+            trackSeedFreqU = 1.0 + Math.random() * 6.0;
+            trackSeedFreqV = 1.0 + Math.random() * 6.0;
+            trackSeedMorph = 0.5 + Math.random() * 1.5;
+            trackSeedHueShift = (dna.hueBase + 180) % 360; // Контрастный цвет ко второй фигуре
+            trackSeedTwistSpeed = 0.5 + Math.random() * 2.0;
         }
 
         const colorObj = new THREE.Color();
-        let beatThreshold = 0.42;
-        
-        // Контур 1: Плавное течение (отвечает за грацию и отсутствие дерганья)
-        let flowBass = 0, flowLowMid = 0, flowMid = 0, flowTreble = 0;
-        // Контур 2: Быстрый живой пульс (отвечает за мгновенную отзывчивость на каждый звук и бит)
-        let pulseBass = 0, pulseMid = 0, pulseTreble = 0;
-        
         let prevEnergy = 0, smoothedEnergy = 0, smoothedCentroid = 0.5, vitality = 0;
-        
-        let phaseAlpha = Math.random() * 100;
-        let phaseBeta = Math.random() * 100;
-        let phaseGamma = Math.random() * 100;
-        let waltzPhase = 0;
-        let audioMapOffset = 0;
+        let flowBass = 0, flowLowMid = 0, flowMid = 0, flowTreble = 0;
+        let pulseBass = 0, pulseMid = 0, pulseTreble = 0;
+        let beatThreshold = 0.42, beatCooldown = 0;
+        let baseDistance = 22; // Базовое расстояние между фигурами
 
-        let rotImpulseX = 0, rotImpulseY = 0, rotImpulseZ = 0;
-        let currentRotX = 0.0008, currentRotY = 0.0018, currentRotZ = 0.0006;
-
+        // --- Главный цикл анимации ---
         function animate() {
             requestAnimationFrame(animate); 
             controls.update(); 
             const t = Date.now() * 0.001;
+            if (beatCooldown > 0) beatCooldown--;
 
             if (isPlaying && analyser && dataArray && timeDataArray) {
                 analyser.getByteFrequencyData(dataArray); 
@@ -659,340 +469,181 @@
                 let bass = 0, lowMid = 0, mid = 0, treble = 0, energy = 0, centroid = 0, weightSum = 0;
                 const binCount = analyser.frequencyBinCount;
                 for(let i=0; i<binCount; i++) {
-                    let val = dataArray[i] / 255.0; 
-                    energy += val; centroid += val * i; weightSum += val;
-                    if(i < 24) bass += val; 
-                    else if(i < 120) lowMid += val;
-                    else if(i < 400) mid += val; 
-                    else treble += val; 
+                    let val = dataArray[i] / 255.0; energy += val; centroid += val * i; weightSum += val;
+                    if(i < 24) bass += val; else if(i < 120) lowMid += val; else if(i < 400) mid += val; else treble += val; 
                 }
-                bass /= 24; 
-                lowMid /= 96;
-                mid /= 280; 
-                treble /= (binCount - 400); 
-                energy /= binCount; 
-                if(weightSum > 0) centroid /= weightSum;
+                bass /= 24; lowMid /= 96; mid /= 280; treble /= (binCount - 400); 
+                energy /= binCount; if(weightSum > 0) centroid /= weightSum;
                 
                 smoothedCentroid += ((centroid / binCount) - smoothedCentroid) * 0.05;
                 smoothedEnergy   += (energy - smoothedEnergy) * 0.07;
+                let energyFlux = Math.max(0, energy - prevEnergy); prevEnergy = energy;
 
-                let energyFlux = Math.max(0, energy - prevEnergy);
-                prevEnergy = energy;
+                const rawSharpBass = Math.pow(bass, 1.8); const rawSharpMid = Math.pow(mid, 1.6); const rawSharpTreble = Math.pow(treble, 1.5);
+                const attack = 0.35, release = 0.06;
+                pulseBass += (rawSharpBass > pulseBass ? attack : release) * (rawSharpBass - pulseBass);
+                pulseMid += (rawSharpMid > pulseMid ? attack : release) * (rawSharpMid - pulseMid);
+                pulseTreble += (rawSharpTreble > pulseTreble ? attack : release) * (rawSharpTreble - pulseTreble);
 
-                // Нелинейное выделение акцентов (чтобы фигура четко чувствовала ритм и вокал)
-                const rawSharpBass   = Math.pow(bass, 2.2);
-                const rawSharpMid    = Math.pow(mid, 1.7);
-                const rawSharpTreble = Math.pow(treble, 1.6);
+                flowBass += (bass - flowBass) * 0.10; flowMid += (mid - flowMid) * 0.08;
+                let targetVitality = Math.min(1.0, smoothedEnergy * 2.2 + pulseBass * 0.5 + energyFlux * 2.5);
+                vitality += (targetVitality - vitality) * 0.04;
 
-                // БЫСТРЫЙ КОНТУР (Живой пульс — скорость реакции 0.25..0.30, мгновенно дышит со звуком!)
-                pulseBass   += (rawSharpBass - pulseBass) * 0.28;
-                pulseMid    += (rawSharpMid - pulseMid) * 0.25;
-                pulseTreble += (rawSharpTreble - pulseTreble) * 0.25;
+                // Переменные для Фигуры 1
+                let metabolism = (0.002 + vitality * 0.015) * dna.morphSpeed;
+                phaseAlpha += (metabolism + pulseBass * 0.02) * PHI;
+                phaseBeta  += (metabolism + pulseMid * 0.018) * SQRT2;
+                phaseGamma += (metabolism + pulseTreble * 0.018) * SQRT3;
+                waltzPhase += 0.003 + vitality * 0.012; audioMapOffset += 0.0015 + vitality * 0.007;
+                for (let k = 0; k < 4; k++) morphWeights[k] += (targetWeights[k] - morphWeights[k]) * 0.01;
 
-                // ПЛАВНЫЙ КОНТУР (Грация вальса — скорость 0.09, удерживает форму от судорог)
-                flowBass   += (bass - flowBass) * 0.10;
-                flowLowMid += (lowMid - flowLowMid) * 0.09;
-                flowMid    += (mid - flowMid) * 0.08;
-                flowTreble += (treble - flowTreble) * 0.08;
+                // Переменные для Фигуры 2
+                currentBassLevel += (Math.pow(bass, 3) - currentBassLevel) * 0.2; 
+                evolveBass += (Math.pow(bass, 3) * 0.04 + 0.002) * trackSeedTwistSpeed; 
+                evolveMid += (mid * 0.04 + 0.003) * trackSeedTwistSpeed; 
+                evolveTreble += (treble * 0.04 + 0.0025);
 
-                // VITALITY (Жизненный темперамент трека: чутко реагирует на смену спокойной и энергичной музыки)
-                let targetVitality = Math.min(1.0, smoothedEnergy * 2.1 + pulseBass * 0.65 + energyFlux * 3.0);
-                vitality += (targetVitality - vitality) * 0.045;
-
-                // Скорость метаболизма и перерождения: живая на лирике, стремительная на драйве
-                let metabolism = (0.002 + vitality * 0.022) * dna.morphSpeed;
-                phaseAlpha += (metabolism + pulseBass * 0.025) * PHI;
-                phaseBeta  += (metabolism + pulseMid * 0.022) * SQRT2;
-                phaseGamma += (metabolism + pulseTreble * 0.022) * SQRT3;
-                
-                waltzPhase += 0.004 + vitality * 0.016 + flowLowMid * 0.012;
-                audioMapOffset += 0.0018 + vitality * 0.009 + pulseBass * 0.01;
-
-                // Детектор бита и упругого импульса
-                beatThreshold = Math.max(0.24, beatThreshold * 0.965); 
+                beatThreshold = Math.max(0.24, beatThreshold * 0.97); 
                 let isBeat = false;
-                if (pulseBass > beatThreshold) { 
-                    isBeat = true; 
-                    beatThreshold = Math.min(0.95, pulseBass * 1.22); 
-                    
-                    // Мягкий, но ощутимый упругий импульс вращения на ударе бочки (плавно затухает)
-                    let imp = (0.006 + vitality * 0.022) * pulseBass;
-                    rotImpulseX = (Math.random() - 0.5) * imp;
-                    rotImpulseY = (Math.random() - 0.5) * imp * 1.3;
-                    rotImpulseZ = (Math.random() - 0.5) * imp * 0.8;
-
-                    // Перерождение архетипа на выраженных акцентах
-                    if (pulseBass > 0.58 && Math.random() < 0.22) {
-                        activeArchetype = (activeArchetype + 1 + Math.floor(Math.random() * 2)) % 4;
-                        setArchetypeTarget(activeArchetype);
-                    }
+                if (pulseBass > beatThreshold && beatCooldown <= 0) { 
+                    isBeat = true; beatThreshold = Math.min(0.9, pulseBass * 1.25); beatCooldown = 15; 
                 }
 
-                // Спонтанная эволюция формы во времени
-                if (Math.random() < 0.004) {
-                    activeArchetype = (activeArchetype + 1) % 4;
-                    setArchetypeTarget(activeArchetype);
-                }
-
-                // Плавное, но заметное глазу перетекание между 4 архетипами
-                let morphLerp = 0.006 + vitality * 0.016;
-                for (let k = 0; k < 4; k++) {
-                    morphWeights[k] += (targetWeights[k] - morphWeights[k]) * morphLerp;
-                }
-
-                // СБАЛАНСИРОВАННЫЙ BLOOM (живая пульсация света от 0.50 до максимума 1.65 без белого пересвета)
-                if (bloomPass) {
-                    let targetBloom = 0.50 + vitality * 0.55 + pulseBass * 0.60;
-                    bloomPass.strength += (Math.min(1.65, targetBloom) - bloomPass.strength) * 0.12;
-                }
-
-                // Живое дыхание камеры + упругий панч на басу
-                let breathFov = Math.sin(waltzPhase * dna.bioPulseRate) * 2.2 * (1.0 - vitality * 0.3);
-                let kickFov = -pulseBass * (8.5 * (0.4 + vitality * 0.6));
-                camera.fov += ((baseFov + breathFov + kickFov) - camera.fov) * 0.12;
-                camera.updateProjectionMatrix();
-
-                // Плавное затухание басового импульса вращения + непрерывный вальс
-                rotImpulseX *= 0.92; rotImpulseY *= 0.92; rotImpulseZ *= 0.92;
-                let targetRotX = Math.sin(waltzPhase * 0.65) * (0.0015 + vitality * 0.006) + rotImpulseX;
-                let targetRotY = (0.0018 + vitality * 0.008 + flowBass * 0.006) * dna.twistDir + rotImpulseY;
-                let targetRotZ = Math.cos(waltzPhase * 0.50) * (0.0012 + vitality * 0.005) + rotImpulseZ;
-
-                currentRotX += (targetRotX - currentRotX) * 0.05; 
-                currentRotY += (targetRotY - currentRotY) * 0.05; 
-                currentRotZ += (targetRotZ - currentRotZ) * 0.05;
-
-                // Насыщенная динамическая палитра
-                const dynamicHue = (dna.hueBase + phaseBeta * 10 + smoothedCentroid * dna.hueRange * 2.5 + vitality * 60) % 360;
-
-                // Живые лазерные лучи (отзывчивые, но с мягким потолком прозрачности 0.65)
-                let laserPower = (pulseTreble * 1.2 + pulseBass * 1.0) * (0.35 + vitality * 0.65); 
-                laserGroup.children.forEach((l, i) => {
-                    l.material.color.setHSL((dynamicHue + i * 2.5) % 360 / 360, 0.90, 0.52);
-                    if (pulseBass > 0.38 || laserPower > 0.30) {
-                        let targetOp = Math.min(0.65, laserPower * 0.65);
-                        l.material.opacity += (targetOp - l.material.opacity) * 0.15;
-                        l.scale.y += ((0.8 + pulseBass * 1.6 * vitality) - l.scale.y) * 0.15;
-                    } else {
-                        l.material.opacity *= 0.88;
-                        l.scale.y += (1 - l.scale.y) * 0.1;
-                    }
-                    let waveAmp = 0.12 + vitality * 0.42;
-                    l.rotation.x = l.userData.basex + Math.sin(phaseAlpha * 0.35 + l.userData.phase) * waveAmp; 
-                    l.rotation.y = l.userData.basey + Math.cos(phaseBeta * 0.35 + l.userData.phase) * waveAmp; 
-                });
-
-                // Мягкая подсветка сцены на сильных долях (без слепящего стробоскопа)
-                if (isBeat && pulseBass > 0.60) { 
-                    strobeLight.intensity = 1.2 * vitality; 
-                    sunLight.intensity = 1.8; 
-                } else { 
-                    strobeLight.intensity += (0 - strobeLight.intensity) * 0.15; 
-                    sunLight.intensity += (1.0 - sunLight.intensity) * 0.1; 
-                }
-
-                // -----------------------------------------------------------------
-                // СИНТЕЗ ЖИВОЙ 3D-ФОРМЫ (ТОЧНЫЙ БАЛАНС ПЛАВНОСТИ И ОТЗЫВЧИВОСТИ)
-                // -----------------------------------------------------------------
-                const positions = quantumPoints.geometry.attributes.position.array; 
-                const colors = quantumPoints.geometry.attributes.color.array;
+                // ===============================================
+                // ХОРЕОГРАФИЯ (Движение и сближение фигур)
+                // ===============================================
+                // Общее вращение танцпола (оба кружатся)
+                danceFloor.rotation.y += 0.005 + flowBass * 0.015;
+                danceFloor.rotation.x = Math.sin(t * 0.5) * 0.1 * vitality;
                 
-                let waveV = dna.symmetryB + Math.cos(phaseBeta * 0.14) * 2.2 + Math.sin(phaseGamma * 0.16) * 1.4;
-                let symU  = dna.symmetryA; // Целое число сохраняет бесшовность по кругу
+                // Вращение самих фигур
+                fig1Group.rotation.y += 0.01 + pulseBass * 0.02;
+                fig2Group.rotation.y -= 0.01 + pulseBass * 0.02; // В другую сторону
                 
-                // Глубокое дыхание тела (сочетает плавный вдох и упругий удар баса)
-                let bioBreath = 1.0 + Math.sin(waltzPhase * dna.bioPulseRate) * (0.10 + flowLowMid * 0.20) + pulseBass * 0.28;
+                fig1Group.rotation.x = Math.sin(waltzPhase) * 0.2;
+                fig2Group.rotation.x = Math.sin(waltzPhase + Math.PI) * 0.2;
 
-                // Скорость реакции мышц фигуры: 0.065 на медленной музыке (живая и текучая), до 0.16 на драйве!
-                let baseLerp = 0.065 + vitality * 0.095;
+                // Сближение при сильном басе!
+                let currentDistance = baseDistance - (pulseBass * 14.0); // Чем сильнее бас, тем ближе они
+                fig1Group.position.x += (-currentDistance/2 - fig1Group.position.x) * 0.1;
+                fig2Group.position.x += (currentDistance/2 - fig2Group.position.x) * 0.1;
+
+                // ===============================================
+                // РЕНДЕР ФИГУРЫ 1 (Мужчина / Био-движок)
+                // ===============================================
+                const pos1 = points1.geometry.attributes.position.array; 
+                const col1 = points1.geometry.attributes.color.array;
+                let waveV = dna.symmetryB + Math.cos(phaseBeta * 0.12) * 2.0;
+                let symU = dna.symmetryA; 
+                let bioBreath = 1.0 + Math.sin(waltzPhase * dna.bioPulseRate) * 0.1 + pulseBass * 0.2;
+
+                // ===============================================
+                // РЕНДЕР ФИГУРЫ 2 (Женщина / Энерго-движок)
+                // ===============================================
+                const pos2 = points2.geometry.attributes.position.array; 
+                const col2 = points2.geometry.attributes.color.array;
+                let fU2 = trackSeedFreqU + Math.sin(evolveMid * 0.1) * 3.0; 
+                let fV2 = trackSeedFreqV + Math.cos(evolveBass * 0.1) * 3.0; 
+                let chaos2 = Math.sin(evolveTreble * 0.2) * trackSeedMorph;
 
                 for(let i=0; i<gridDim; i++) {
-                    let vNorm = i / (gridDim - 1);
-                    let v = vNorm * Math.PI;
-                    let sinV = Math.sin(v);
-                    let cosV = Math.cos(v);
-
+                    let vNorm = i / (gridDim - 1); let v = vNorm * Math.PI; let sinV = Math.sin(v); let cosV = Math.cos(v);
+                    
                     for(let j=0; j<gridDim; j++) {
                         let idx = i * gridDim + j; 
-                        let uNorm = j / (gridDim - 1);
-                        let u = uNorm * Math.PI * 2;
+                        let uNorm = j / (gridDim - 1); let u = uNorm * Math.PI * 2;
+                        let audioIdx = Math.floor((idx / pCount) * (analyser.frequencyBinCount * 0.4));
+                        let rawF = (dataArray[audioIdx] + dataArray[audioIdx+1]) / (2 * 255.0);
+                        let fSharp = Math.pow(rawF, 1.7);
+                        let tIdx = (idx * 2 + Math.floor(audioMapOffset * 100)) % (analyser.fftSize - 2);
+                        let rawWave = (timeDataArray[tIdx] / 128.0 - 1.0);
+
+                        // --- Расчет Фигуры 1 ---
+                        let rSphere = dna.baseScale * bioBreath + Math.sin(v * waveV + phaseAlpha) * (3.0 + flowMid * 5.0) + Math.cos(u * symU + phaseBeta) * sinV * (2.0 + pulseBass * 5.0);
+                        let tx1 = rSphere * Math.cos(u) * sinV; let tz1 = rSphere * Math.sin(u) * sinV;
+                        let ty1 = rSphere * cosV + Math.sin(u * symU + phaseBeta) * sinV * (2.0 + pulseTreble * 5.0);
                         
-                        // Блуждающая спираль частот по поверхности фигуры
-                        let spiralCoord = (uNorm * 0.55 + vNorm * 0.45 + audioMapOffset + Math.sin(u + phaseAlpha * 0.18) * 0.14) % 1.0;
-                        if (spiralCoord < 0) spiralCoord += 1.0;
+                        let dist1 = Math.sqrt(tx1*tx1 + ty1*ty1 + tz1*tz1) || 1.0;
+                        let audioSwell1 = fSharp * (2.5 + vitality * 5.0);
+                        let flutter1 = rawWave * (3.0 + pulseTreble * 20.0 * vitality);
+                        tx1 += (tx1 / dist1) * audioSwell1 + Math.cos(v * 20 + waltzPhase) * flutter1;
+                        ty1 += (ty1 / dist1) * audioSwell1 + Math.sin(u * 20 + waltzPhase) * flutter1;
+                        tz1 += (tz1 / dist1) * audioSwell1 + Math.cos(u * 20 + waltzPhase) * flutter1;
+
+                        let pointLerp1 = 0.05 + fSharp * 0.1 + Math.abs(rawWave) * 0.2;
+                        pos1[idx*3] += (tx1 - pos1[idx*3]) * pointLerp1; 
+                        pos1[idx*3+1] += (ty1 - pos1[idx*3+1]) * pointLerp1; 
+                        pos1[idx*3+2] += (tz1 - pos1[idx*3+2]) * pointLerp1;
                         
-                        // Читаем частоту с легким сглаживанием соседних корзин (убирает мелкую дрожь, оставляя мощный рельеф)
-                        let baseBin = Math.floor(spiralCoord * (binCount * 0.42));
-                        let rawF = (dataArray[baseBin] + dataArray[baseBin + 1]) / (2 * 255.0);
-                        let fSharp = Math.pow(rawF, 1.85);
+                        let hue1 = (dna.hueBase + fSharp * 45) % 360;
+                        colorObj.setHSL(hue1 / 360, 0.85, Math.min(0.85, 0.2 + fSharp * 0.5));
+                        col1[idx*3] += (colorObj.r - col1[idx*3]) * 0.15; 
+                        col1[idx*3+1] += (colorObj.g - col1[idx*3+1]) * 0.15; 
+                        col1[idx*3+2] += (colorObj.b - col1[idx*3+2]) * 0.15;
+
+                        // --- Расчет Фигуры 2 ---
+                        let R2 = trackSeedR + pulseBass * 15 + Math.sin(v * fV2 + evolveMid * 0.5) * (4 + mid * 10);
+                        let twist2 = u + Math.sin(v * fU2 + evolveTreble * 0.4) * (Math.sin(evolveBass * 0.3) * 3.0);
+                        let flare2 = Math.abs(Math.cos(u * (3 + chaos2 * 2) + t * 0.5)) * (5 + Math.pow(mid,2) * 10);
+                        let currentRadius2 = R2 + flare2 + fSharp * 12;
+
+                        let tx2 = Math.cos(twist2) * Math.sin(v) * currentRadius2;
+                        let tz2 = Math.sin(twist2) * Math.sin(v) * currentRadius2;
+                        let yVolume2 = Math.cos(v) * currentRadius2 * (0.65 + chaos2 * 0.35); 
+                        let yDrift2 = Math.cos(v * fV2 + t * 0.2) * (8 + chaos2 * 5);
+                        let ty2 = yVolume2 + yDrift2 + Math.sin(u * fU2 + evolveMid) * (3 + treble * 15);
+
+                        let rippleForce2 = rawWave * (3 + treble * 20); 
+                        tx2 += Math.cos(v * 15 + t) * rippleForce2; 
+                        ty2 += Math.sin(u * 15 + t) * rippleForce2; 
+                        tz2 += Math.cos(u * 15 + t) * rippleForce2;
+
+                        let lerpFactor2 = fSharp > 0.4 ? 0.3 : 0.08; 
+                        pos2[idx*3] += (tx2 - pos2[idx*3]) * lerpFactor2; 
+                        pos2[idx*3+1] += (ty2 - pos2[idx*3+1]) * lerpFactor2; 
+                        pos2[idx*3+2] += (tz2 - pos2[idx*3+2]) * lerpFactor2;
                         
-                        // Сглаженная звуковая волна (берем среднее из 4 точек осциллографа + гармоническая волна)
-                        let tIdx = (idx * 2 + Math.floor(audioMapOffset * 150)) % (analyser.fftSize - 4);
-                        let smoothWave = ((timeDataArray[tIdx] + timeDataArray[tIdx+1] + timeDataArray[tIdx+2] + timeDataArray[tIdx+3]) / 512.0 - 1.0);
-                        let organicRipple = smoothWave * (0.35 + vitality * 0.65) + Math.sin(u * symU + v * 3.0 - waltzPhase * 2.5) * flowMid * 0.5;
-                        
-                        let tx = pOrig[idx*3], ty = pOrig[idx*3+1], tz = pOrig[idx*3+2];
-
-                        if (smoothedEnergy > 0.003) {
-                            // 1. АРХЕТИП 0: Живая Био-Медуза / Квантовая Сфера
-                            let rSphere = dna.baseScale * bioBreath 
-                                        + Math.sin(v * waveV + phaseAlpha) * (3.5 + flowMid * 8.0 + pulseMid * 4.0)
-                                        + Math.cos(u * symU + phaseBeta) * sinV * (3.0 + flowBass * 7.0 + pulseBass * 8.0);
-                            let twistSphere = u + Math.sin(v * 2.0 + phaseGamma * 0.45) * (0.5 + flowLowMid * 1.5) * dna.twistDir;
-                            let x0 = rSphere * Math.cos(twistSphere) * sinV;
-                            let z0 = rSphere * Math.sin(twistSphere) * sinV;
-                            let y0 = rSphere * cosV * (0.86 + Math.sin(phaseAlpha * 0.28) * 0.25) + Math.sin(u * symU + phaseBeta) * sinV * (2.5 + pulseTreble * 8.5);
-
-                            // 2. АРХЕТИП 1: Энергетический Гипер-Тор
-                            let torusAngleV = (vNorm * 2.0 - 1.0) * Math.PI;
-                            let majorR = (dna.baseScale * 1.12) + (flowBass * 5.0 + pulseBass * 6.5) + Math.sin(u * dna.knotP + phaseAlpha) * 3.0;
-                            let minorR = (4.4 + flowLowMid * 5.5 + pulseMid * 4.0) * (1.0 + 0.40 * Math.sin(u * symU - phaseBeta * 1.2));
-                            let twistTorus = torusAngleV + u * dna.knotQ * 0.5 + phaseGamma * 0.55;
-                            let x1 = (majorR + minorR * Math.cos(twistTorus)) * Math.cos(u);
-                            let z1 = (majorR + minorR * Math.cos(twistTorus)) * Math.sin(u);
-                            let y1 = minorR * Math.sin(twistTorus) * 1.3 + Math.cos(u * dna.knotP + phaseAlpha) * (3.5 + pulseMid * 8.5);
-
-                            // 3. АРХЕТИП 2: Живая Спираль ДНК / Галактический Вихрь
-                            let spiralTurns = 2.2 + Math.sin(phaseAlpha * 0.14) * 0.8;
-                            let spiralAngle = u * spiralTurns + v * dna.twistDir * 1.8 + phaseBeta * 0.45;
-                            let ribbonWidth = (4.8 + flowMid * 7.0 + pulseMid * 5.5) * sinV;
-                            let coreHelixR = (dna.baseScale * 0.85) * (0.42 + 0.68 * sinV) + (flowBass * 6.0 + pulseBass * 7.5);
-                            let x2 = (coreHelixR + ribbonWidth * Math.cos(v * waveV)) * Math.cos(spiralAngle);
-                            let z2 = (coreHelixR + ribbonWidth * Math.cos(v * waveV)) * Math.sin(spiralAngle);
-                            let y2 = (vNorm - 0.5) * 34.0 * bioBreath + Math.sin(spiralAngle * 2.0 + phaseGamma) * (4.2 + pulseTreble * 10.0);
-
-                            // 4. АРХЕТИП 3: Квантовый Лотос (Аттрактор)
-                            let roseMod = (0.5 + 0.5 * Math.cos(u * symU + phaseAlpha * 0.38)) * Math.sin(v * waveV * 0.5 + phaseBeta * 0.35);
-                            let rFlower = dna.baseScale * 0.78 + roseMod * (12.0 + pulseBass * 14.0 + flowMid * 10.0);
-                            let x3 = rFlower * Math.cos(u) * sinV;
-                            let z3 = rFlower * Math.sin(u) * sinV;
-                            let y3 = rFlower * cosV * (0.72 + 0.42 * roseMod) + Math.cos(u * symU + phaseGamma) * sinV * (4.2 + flowLowMid * 8.5);
-
-                            // Смешиваем архетипы
-                            tx = x0 * morphWeights[0] + x1 * morphWeights[1] + x2 * morphWeights[2] + x3 * morphWeights[3];
-                            ty = y0 * morphWeights[0] + y1 * morphWeights[1] + y2 * morphWeights[2] + y3 * morphWeights[3];
-                            tz = z0 * morphWeights[0] + z1 * morphWeights[1] + z2 * morphWeights[2] + z3 * morphWeights[3];
-
-                            // НАКЛАДЫВАЕМ 3D БИО-ПЛАСТИКУ (делает фигуру живым дышащим существом)
-                            let nx = tx * 0.062, ny = ty * 0.062, nz = tz * 0.062;
-                            let bioX = bioWave3D(nx, ny, nz, phaseAlpha * 0.38);
-                            let bioY = bioWave3D(ny + 6.1, nz + 2.9, nx, phaseBeta * 0.38);
-                            let bioZ = bioWave3D(nz + 11.3, nx + 4.7, ny, phaseGamma * 0.38);
-
-                            let bioAmp = 2.2 + vitality * 6.5 + fSharp * (6.0 + vitality * 10.0);
-                            tx += bioX * bioAmp;
-                            ty += bioY * bioAmp;
-                            tz += bioZ * bioAmp;
-
-                            // ВЫРАЗИТЕЛЬНЫЙ, НО УПРУГИЙ ОТКЛИК НА ЗВУК (протуберанцы и волны по телу)
-                            let dist = Math.sqrt(tx*tx + ty*ty + tz*tz) || 1.0;
-                            let audioSwell = fSharp * (5.5 + vitality * 12.5) + organicRipple * (3.5 + pulseTreble * 12.0);
-                            tx += (tx / dist) * audioSwell;
-                            ty += (ty / dist) * audioSwell;
-                            tz += (tz / dist) * audioSwell;
-                        }
-
-                        // СБАЛАНСИРОВАННАЯ УПРУГОСТЬ: точки чутко и быстро идут за звуком, но без рваных скачков
-                        let lerpFactor = baseLerp + fSharp * (0.06 + vitality * 0.08);
-                        if(smoothedEnergy <= 0.003) lerpFactor = 0.03; 
-                        
-                        positions[idx*3]   += (tx - positions[idx*3])   * lerpFactor; 
-                        positions[idx*3+1] += (ty - positions[idx*3+1]) * lerpFactor; 
-                        positions[idx*3+2] += (tz - positions[idx*3+2]) * lerpFactor;
-                        
-                        // СОЧНАЯ БИОЛЮМИНЕСЦЕНЦИЯ (Потолок яркости 0.76 дает яркие вспышки на нотах без белого выгорания)
-                        let pointHue = (dynamicHue + spiralCoord * dna.hueRange + fSharp * 48 + organicRipple * 20) % 360;
-                        if (pointHue < 0) pointHue += 360;
-                        let pointLightness = smoothedEnergy > 0.003 ? (0.14 + vitality * 0.12 + fSharp * 0.50) : 0.03;
-                        let pointSat = 0.85 + vitality * 0.14;
-                        
-                        colorObj.setHSL(pointHue / 360, pointSat, Math.min(0.76, pointLightness));
-                        colors[idx*3]   += (colorObj.r - colors[idx*3])   * 0.12; 
-                        colors[idx*3+1] += (colorObj.g - colors[idx*3+1]) * 0.12; 
-                        colors[idx*3+2] += (colorObj.b - colors[idx*3+2]) * 0.12;
+                        let hue2 = (trackSeedHueShift + evolveMid * 40 + rawWave * 30) % 360;
+                        colorObj.setHSL(hue2 / 360, 1.0, 0.15 + fSharp * 0.7);
+                        col2[idx*3] += (colorObj.r - col2[idx*3]) * lerpFactor2; 
+                        col2[idx*3+1] += (colorObj.g - col2[idx*3+1]) * lerpFactor2; 
+                        col2[idx*3+2] += (colorObj.b - col2[idx*3+2]) * lerpFactor2;
                     }
                 }
                 
-                quantumPoints.geometry.attributes.position.needsUpdate = true; 
-                quantumPoints.geometry.attributes.color.needsUpdate = true;
+                points1.geometry.attributes.position.needsUpdate = true; points1.geometry.attributes.color.needsUpdate = true;
+                lines1.material.opacity += (Math.min(0.65, 0.2 + vitality * 0.35) - lines1.material.opacity) * 0.08;
                 
-                // Выразительная сетка линий (дышит вместе с басом до 0.58)
-                let targetLineOp = smoothedEnergy < 0.003 ? 0.05 : Math.min(0.58, 0.15 + vitality * 0.30 + pulseBass * 0.18);
-                quantumLines.material.opacity += (targetLineOp - quantumLines.material.opacity) * 0.10;
-                
-                globeGroup.rotation.x += currentRotX; 
-                globeGroup.rotation.y += currentRotY; 
-                globeGroup.rotation.z += currentRotZ;
+                points2.geometry.attributes.position.needsUpdate = true; points2.geometry.attributes.color.needsUpdate = true;
+                lines2.material.opacity += (Math.min(0.8, energy * 1.5) - lines2.material.opacity) * 0.08;
 
-                // Отзывчивые орбитальные кольца
-                radioRings.forEach((r, idx) => {
-                    r.mesh.rotation.x += r.speed * (0.8 + flowBass * 3.0 * vitality); 
-                    r.mesh.rotation.y += r.speed * (0.8 + flowMid * 3.0 * vitality); 
-                    const ringPositions = r.mesh.geometry.attributes.position.array;
-                    r.mesh.material.color.setHSL((dynamicHue + idx * 45) % 360 / 360, 0.95, 0.35 + pulseBass * 0.40); 
-                    
-                    let targetRingOp = Math.min(0.65, 0.12 + smoothedEnergy * 0.85);
-                    r.mesh.material.opacity += (targetRingOp - r.mesh.material.opacity) * 0.10;
-                    
-                    for(let j=0; j<256; j++) {
-                        const angle = (j / 256) * Math.PI * 2; 
-                        const freqVal = dataArray[(j * 2 + idx * 17) % (binCount * 0.5)] / 255.0; 
-                        const ringWave = Math.sin(angle * (3 + idx) + waltzPhase * 2.5);
-                        const targetR = r.baseRadius + Math.pow(freqVal, 2) * (2.2 + idx * 1.0) * (0.5 + vitality * 0.9) + ringWave * (0.6 + pulseBass * 2.8);
-                        const targetZ = Math.sin(angle * (3 + idx * 2) + phaseAlpha * 0.7) * (freqVal * 3.5 * vitality + ringWave * 1.2);
-                        
-                        ringPositions[j*3]   += (Math.cos(angle) * targetR - ringPositions[j*3]) * 0.18; 
-                        ringPositions[j*3+1] += (Math.sin(angle) * targetR - ringPositions[j*3+1]) * 0.18; 
-                        ringPositions[j*3+2] += (targetZ - ringPositions[j*3+2]) * 0.18;
-                    }
-                    r.mesh.geometry.attributes.position.needsUpdate = true;
+                // --- Камера и эффекты ---
+                if (bloomPass) bloomPass.strength += (0.8 + (energy * 1.0) + (pulseBass * 1.5) - bloomPass.strength) * 0.1;
+                let breathFov = Math.sin(waltzPhase) * 2.0;
+                let kickFov = -pulseBass * 10;
+                camera.fov += ((baseFov + breathFov + kickFov) - camera.fov) * 0.1;
+                camera.updateProjectionMatrix();
+
+                let laserPower = (pulseTreble * 1.3 + pulseBass * 0.8) * (0.3 + vitality * 0.7); 
+                laserGroup.children.forEach((l, i) => {
+                    l.material.color.setHSL((dna.hueBase + i * 5) % 360 / 360, 0.95, 0.55);
+                    if (laserPower > 0.30) { l.material.opacity += (Math.min(0.7, laserPower * 0.7) - l.material.opacity) * 0.2; l.scale.y += (1 + pulseBass * 2 - l.scale.y) * 0.2; } 
+                    else { l.material.opacity *= 0.9; l.scale.y += (1 - l.scale.y) * 0.08; }
+                    l.rotation.x = l.userData.basex + Math.sin(phaseAlpha * 0.3 + l.userData.phase) * (0.1 + vitality * 0.3); 
+                    l.rotation.y = l.userData.basey + Math.cos(phaseBeta * 0.3 + l.userData.phase) * (0.1 + vitality * 0.3); 
                 });
 
             } else {
-                // В РЕЖИМЕ ПАУЗЫ: Мягкое органическое дыхание
+                // Плавное затухание, если музыка не играет
                 strobeLight.intensity += (0 - strobeLight.intensity) * 0.1;
-                if (bloomPass) bloomPass.strength += (0.42 - bloomPass.strength) * 0.06; 
-                camera.fov += (baseFov - camera.fov) * 0.06; 
-                camera.updateProjectionMatrix();
+                if (bloomPass) bloomPass.strength += (0.4 - bloomPass.strength) * 0.05; 
+                camera.fov += (baseFov - camera.fov) * 0.05; camera.updateProjectionMatrix();
                 
-                currentRotX += (0.0004 - currentRotX) * 0.02; 
-                currentRotY += (0.0012 - currentRotY) * 0.02; 
-                currentRotZ += (0.0003 - currentRotZ) * 0.02;
+                danceFloor.rotation.y += 0.002;
+                fig1Group.position.x += (-18 - fig1Group.position.x) * 0.05;
+                fig2Group.position.x += (18 - fig2Group.position.x) * 0.05;
                 
-                laserGroup.children.forEach((l) => { l.material.opacity *= 0.88; l.scale.y += (1 - l.scale.y) * 0.08; });
-                
-                radioRings.forEach(r => {
-                    r.mesh.rotation.x += r.speed * 0.45; 
-                    r.mesh.rotation.y += r.speed * 0.45; 
-                    const pos = r.mesh.geometry.attributes.position.array; 
-                    r.mesh.material.opacity += (0.05 - r.mesh.material.opacity) * 0.06;
-                    for(let j=0; j<256; j++) { 
-                        const angle = (j / 256) * Math.PI * 2; 
-                        pos[j*3]   += (Math.cos(angle) * r.baseRadius - pos[j*3]) * 0.06; 
-                        pos[j*3+1] += (Math.sin(angle) * r.baseRadius - pos[j*3+1]) * 0.06; 
-                        pos[j*3+2] += (0 - pos[j*3+2]) * 0.06; 
-                    }
-                    r.mesh.geometry.attributes.position.needsUpdate = true;
-                });
-
-                const positions = quantumPoints.geometry.attributes.position.array; 
-                const colors = quantumPoints.geometry.attributes.color.array;
-                let idleBreath = 1.0 + Math.sin(t * 1.0) * 0.04;
-                for(let i=0; i<pCount; i++) {
-                    positions[i*3]   += (pOrig[i*3] * idleBreath - positions[i*3]) * 0.05; 
-                    positions[i*3+1] += (pOrig[i*3+1] * idleBreath - positions[i*3+1]) * 0.05; 
-                    positions[i*3+2] += (pOrig[i*3+2] * idleBreath - positions[i*3+2]) * 0.05;
-                    colors[i*3]   += (0.04 - colors[i*3]) * 0.06; 
-                    colors[i*3+1] += (0.08 - colors[i*3+1]) * 0.06; 
-                    colors[i*3+2] += (0.18 - colors[i*3+2]) * 0.06;
-                }
-                quantumPoints.geometry.attributes.position.needsUpdate = true; 
-                quantumPoints.geometry.attributes.color.needsUpdate = true;
-                quantumLines.material.opacity += (0.07 - quantumLines.material.opacity) * 0.06; 
-                
-                globeGroup.rotation.x += currentRotX; 
-                globeGroup.rotation.y += currentRotY; 
-                globeGroup.rotation.z += currentRotZ;
+                laserGroup.children.forEach((l) => { l.material.opacity *= 0.85; l.scale.y += (1 - l.scale.y) * 0.08; });
             }
             composer.render();
         }
