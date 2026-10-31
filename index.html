@@ -350,6 +350,8 @@
             initAudio(); 
             if(audioContext.state === 'suspended') await audioContext.resume().catch(e=>{});
             
+            // СБРОС НАКОПИТЕЛЬНЫХ ПЕРЕМЕННЫХ ПРИ НОВОМ ТРЕКЕ
+            accBass = 0; accMid = 0; accTreble = 0; trackFingerprint = 0;
             seedTrackEvolution1();
             seedTrackEvolution2();
 
@@ -543,7 +545,7 @@
         fig1Group.add(points1); fig1Group.add(lines1);
         globeGroup.add(fig1Group);
 
-        // ФИГУРА 2 (Энергетическая форма из index(6)_3)
+        // ФИГУРА 2 (Энергетическая форма из index(6)_4)
         const fig2Data = createAbstractGrid();
         const fig2Group = new THREE.Group();
         const points2 = new THREE.Points(fig2Data.geo, new THREE.PointsMaterial({ size: 1.4, map: ptTex, vertexColors: true, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false }));
@@ -817,7 +819,7 @@
                         let rawWave = (timeDataArray[tIdx] / 128.0 - 1.0);
 
                         // --- ФИГУРА 1 (Скелет/Био - как в файле 12) ---
-                        // Математика полностью из файла index(12)_3.html
+                        // Математика полностью из файла index(12)_4.html
                         let rSphere = dna1.baseScale * bioBreath + Math.sin(v * waveV + phaseAlpha) * (3.0 + flowMid * 7.0 + pulseMid * 3.5) + Math.cos(u * symU + phaseBeta) * sinV * (2.5 + flowBass * 6.0 + pulseBass * 7.0);
                         let twistSphere = u + Math.sin(v * 2.0 + phaseGamma * 0.4) * (0.5 + flowLowMid * 1.2) * dna1.twistDir;
                         let x0 = rSphere * Math.cos(twistSphere) * sinV; let z0 = rSphere * Math.sin(twistSphere) * sinV;
@@ -860,8 +862,8 @@
                         ty1 += (ty1 / dist1) * audioSwell1 + Math.sin(u * 20 + waltzPhase) * flutter1;
                         tz1 += (tz1 / dist1) * audioSwell1 + Math.cos(u * 20 + waltzPhase) * flutter1;
 
-                        // --- ФИГУРА 2 (Энергия/Математика - как в файле 6_3) ---
-                        // Математика полностью из файла index(6)_3.html
+                        // --- ФИГУРА 2 (Энергия/Математика - как в файле 6_4) ---
+                        // Математика полностью из файла index(6)_4.html
                         let R2 = dna2.baseScale + pulseBass * 18 + Math.sin(v * fV2 + evolveMid * 0.5) * (6 + mid * 12);
                         let twist2 = u + Math.sin(v * fU2 + evolveTreble * 0.4) * (Math.sin(evolveBass * 0.3) * 3.5 * dna2.morph);
                         let flare2 = Math.abs(Math.cos(u * (3 + chaos2 * 2) + t * 0.5)) * (8 + Math.pow(mid, 2) * 14);
