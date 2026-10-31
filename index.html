@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Quantum Radio 3D - Human Dance Symbiosis</title>
+    <title>Quantum Radio 3D - Ultimate Dance of Souls</title>
     <style>
         html, body { 
             margin: 0; padding: 0; width: 100vw; height: 100dvh; overflow: hidden; 
@@ -151,7 +151,7 @@
 
     <script>
         // ==========================================
-        // UI & AUDIO SETUP (ОБЩЕЕ)
+        // UI & AUDIO SETUP
         // ==========================================
         const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz-mIMwHe0AAz1xQxxmklBJFTkfRxhGDcllBKjYs3J8N77RvbROOlapD7YpiOgoBLQ/exec"; 
 
@@ -252,8 +252,8 @@
             currentPlayingTrack = track; initAudio(); 
             if(audioContext.state === 'suspended') await audioContext.resume().catch(e=>{});
             
-            seedTrackEvolution1(); // Инициализация 1-й фигуры (Мужской)
-            seedTrackEvolution2(); // Инициализация 2-й фигуры (Женской)
+            seedTrackEvolution1(); 
+            seedTrackEvolution2(); 
 
             isLoadingTrack = true; countdownValue = 10;
             playBtn.innerHTML = `<span style="color:#ef4444;">${countdownValue}</span>`; updatePlaylistUI(); 
@@ -317,7 +317,7 @@
         };
 
         // ==========================================
-        // 3D СЦЕНА И ТАНЕЦ ФИГУР (DANCE CHOREOGRAPHY)
+        // 3D СЦЕНА И ТАНЕЦ ФИГУР
         // ==========================================
         const container = document.getElementById('canvas-container');
         const scene = new THREE.Scene();
@@ -325,7 +325,7 @@
 
         const baseFov = 55;
         const camera = new THREE.PerspectiveCamera(baseFov, window.innerWidth / window.innerHeight, 0.1, 2000);
-        camera.position.set(0, 15, 80); 
+        camera.position.set(0, 15, 100); 
 
         const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, powerPreference: "high-performance" });
         renderer.setSize(window.innerWidth, window.innerHeight);
@@ -333,14 +333,13 @@
         container.appendChild(renderer.domElement);
 
         const controls = new THREE.OrbitControls(camera, renderer.domElement);
-        controls.enableDamping = true; controls.dampingFactor = 0.05; controls.minDistance = 20; controls.maxDistance = 200;
+        controls.enableDamping = true; controls.dampingFactor = 0.05; controls.minDistance = 20; controls.maxDistance = 250;
 
         const renderScene = new THREE.RenderPass(scene, camera);
         const bloomPass = new THREE.UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.2, 0.4, 0.85);
         const composer = new THREE.EffectComposer(renderer);
         composer.addPass(renderScene); composer.addPass(bloomPass);
 
-        // Функция для создания отдельной сетки фигуры
         const gridDim = 48; const pCount = gridDim * gridDim;
         function createFigureGrid() {
             const pOrig = new Float32Array(pCount * 3); 
@@ -364,37 +363,35 @@
             return { geo: pGeo, orig: pOrig, pos: pPos, color: pColor };
         }
 
-        // --- Группа Танцпола ---
         const danceFloor = new THREE.Group();
         scene.add(danceFloor);
 
-        // Фигура 1 (Из файла 12 - Скелетная/Био)
+        // Фигура 1 ("ОН" - большая)
         const fig1Data = createFigureGrid();
         const fig1Group = new THREE.Group();
         const pCanvas1 = document.createElement('canvas'); pCanvas1.width = 32; pCanvas1.height = 32; 
         const pCtx1 = pCanvas1.getContext('2d'); const pGrad1 = pCtx1.createRadialGradient(16, 16, 0, 16, 16, 16);
         pGrad1.addColorStop(0, 'rgba(255,255,255,1)'); pGrad1.addColorStop(0.3, 'rgba(255,255,255,0.85)'); pGrad1.addColorStop(1, 'rgba(0,0,0,0)'); 
         pCtx1.fillStyle = pGrad1; pCtx1.fillRect(0,0,32,32);
-        const points1 = new THREE.Points(fig1Data.geo, new THREE.PointsMaterial({ size: 1.6, map: new THREE.CanvasTexture(pCanvas1), vertexColors: true, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false }));
+        const points1 = new THREE.Points(fig1Data.geo, new THREE.PointsMaterial({ size: 1.8, map: new THREE.CanvasTexture(pCanvas1), vertexColors: true, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false }));
         const lines1 = new THREE.LineSegments(fig1Data.geo, new THREE.LineBasicMaterial({ vertexColors: true, transparent: true, opacity: 0.45, blending: THREE.AdditiveBlending, depthWrite: false }));
         fig1Group.add(points1); fig1Group.add(lines1);
-        fig1Group.position.x = -22.5; // Изначально разнесены далеко друг от друга
+        fig1Group.position.x = -25;
         danceFloor.add(fig1Group);
 
-        // Фигура 2 (Из файла 6 - Энергетическая/Математическая)
+        // Фигура 2 ("ОНА" - маленькая)
         const fig2Data = createFigureGrid();
         const fig2Group = new THREE.Group();
         const pCanvas2 = document.createElement('canvas'); pCanvas2.width = 16; pCanvas2.height = 16; 
         const pCtx2 = pCanvas2.getContext('2d'); const pGrad2 = pCtx2.createRadialGradient(8, 8, 0, 8, 8, 8);
         pGrad2.addColorStop(0, 'rgba(255,255,255,1)'); pGrad2.addColorStop(0.2, 'rgba(255,255,255,0.8)'); pGrad2.addColorStop(1, 'rgba(0,0,0,0)'); 
         pCtx2.fillStyle = pGrad2; pCtx2.fillRect(0,0,16,16);
-        const points2 = new THREE.Points(fig2Data.geo, new THREE.PointsMaterial({ size: 1.4, map: new THREE.CanvasTexture(pCanvas2), vertexColors: true, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false }));
+        const points2 = new THREE.Points(fig2Data.geo, new THREE.PointsMaterial({ size: 1.2, map: new THREE.CanvasTexture(pCanvas2), vertexColors: true, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false }));
         const lines2 = new THREE.LineSegments(fig2Data.geo, new THREE.LineBasicMaterial({ vertexColors: true, transparent: true, opacity: 0.40, blending: THREE.AdditiveBlending, depthWrite: false }));
         fig2Group.add(points2); fig2Group.add(lines2);
-        fig2Group.position.x = 22.5; 
+        fig2Group.position.x = 25; 
         danceFloor.add(fig2Group);
 
-        // --- Общие эффекты ---
         const laserGroup = new THREE.Group(); const laserMat = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0, blending: THREE.AdditiveBlending });
         for(let i=0; i<60; i++) {
             const laser = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0, 10, 0), new THREE.Vector3(0, 250, 0)]), laserMat.clone());
@@ -403,7 +400,7 @@
             laser.userData = { phase: Math.random() * Math.PI * 2, speed: 0.015 + Math.random() * 0.02, basex: phi, basey: theta };
             laserGroup.add(laser);
         }
-        danceFloor.add(laserGroup); // Лазеры идут из центра танцпола
+        danceFloor.add(laserGroup); 
 
         const strobeLight = new THREE.AmbientLight(0xffffff, 0); scene.add(strobeLight);
         const sunLight = new THREE.DirectionalLight(0xffffff, 1.0); sunLight.position.set(50, 20, 30); scene.add(sunLight);
@@ -414,28 +411,25 @@
             renderer.setSize(window.innerWidth, window.innerHeight); if(composer) composer.setSize(window.innerWidth, window.innerHeight);
         });
 
-        // --- Переменные Фигуры 1 ---
         const PHI = 1.618033988749895; const SQRT2 = 1.414213562373095; const SQRT3 = 1.732050807568877;
-        let dna = { baseScale: 13.0, symmetryA: 3, symmetryB: 5, knotP: 2, knotQ: 3, twistDir: 1, hueBase: 190, hueRange: 140, morphSpeed: 0.9, bioPulseRate: 1.1 };
+        let dna = { baseScale: 14.0, symmetryA: 3, symmetryB: 5, knotP: 2, knotQ: 3, twistDir: 1, hueBase: 190, hueRange: 140, morphSpeed: 0.9, bioPulseRate: 1.1 };
         let phaseAlpha = 0, phaseBeta = 0, phaseGamma = 0, waltzPhase = 0, audioMapOffset = 0;
 
         function seedTrackEvolution1() {
-            dna.baseScale = 9.0 + Math.random() * 3.0; // Немного уменьшили масштаб, так как вытянули по Y
+            dna.baseScale = 14.0; // "Он" зафиксирован большим
             dna.symmetryA = Math.floor(2 + Math.random() * 6);
             dna.twistDir = Math.random() > 0.5 ? 1 : -1;
             dna.hueBase = Math.random() * 360;
         }
 
-        // --- Переменные Фигуры 2 ---
-        let trackSeedR = 1.0, trackSeedFreqU = 2.0, trackSeedFreqV = 3.0, trackSeedMorph = 1.0, trackSeedHueShift = 0, trackSeedTwistSpeed = 1.0;
+        let trackSeedR = 7.0, trackSeedFreqU = 2.0, trackSeedFreqV = 3.0, trackSeedMorph = 1.0, trackSeedHueShift = 0, trackSeedTwistSpeed = 1.0;
         let currentBassLevel = 0, evolveBass = 0, evolveMid = 0, evolveTreble = 0;
 
         function seedTrackEvolution2() {
-            trackSeedR = 9 + Math.random() * 6; // Немного уменьшили масштаб, так как вытянули по Y
+            trackSeedR = 7.0; // "Она" зафиксирована маленькой
             trackSeedFreqU = 1.0 + Math.random() * 6.0;
             trackSeedFreqV = 1.0 + Math.random() * 6.0;
             trackSeedMorph = 0.5 + Math.random() * 1.5;
-            trackSeedHueShift = (dna.hueBase + 180) % 360; 
             trackSeedTwistSpeed = 0.5 + Math.random() * 2.0;
         }
 
@@ -445,7 +439,6 @@
         let pulseBass = 0, pulseMid = 0, pulseTreble = 0;
         let beatThreshold = 0.42, beatCooldown = 0;
 
-        // --- Главный цикл анимации ---
         function animate() {
             requestAnimationFrame(animate); 
             controls.update(); 
@@ -479,14 +472,12 @@
                 let targetVitality = Math.min(1.0, smoothedEnergy * 2.2 + pulseBass * 0.5 + energyFlux * 2.5);
                 vitality += (targetVitality - vitality) * 0.04;
 
-                // Переменные для Фигуры 1
                 let metabolism = (0.002 + vitality * 0.015) * dna.morphSpeed;
                 phaseAlpha += (metabolism + pulseBass * 0.02) * PHI;
                 phaseBeta  += (metabolism + pulseMid * 0.018) * SQRT2;
                 phaseGamma += (metabolism + pulseTreble * 0.018) * SQRT3;
                 waltzPhase += 0.003 + vitality * 0.012; audioMapOffset += 0.0015 + vitality * 0.007;
 
-                // Переменные для Фигуры 2
                 currentBassLevel += (Math.pow(bass, 3) - currentBassLevel) * 0.2; 
                 evolveBass += (Math.pow(bass, 3) * 0.04 + 0.002) * trackSeedTwistSpeed; 
                 evolveMid += (mid * 0.04 + 0.003) * trackSeedTwistSpeed; 
@@ -499,48 +490,55 @@
                 }
 
                 // ===============================================
-                // ХОРЕОГРАФИЯ (Движение и сближение фигур)
+                // ХОРЕОГРАФИЯ И ОРБИТАЛЬНОЕ ДВИЖЕНИЕ
                 // ===============================================
-                // Орбита танцпола меняет направление, реагируя на средние частоты (мелодию)
-                let orbitDirection = Math.sin(t * 0.3 + flowMid * 2.0); 
-                danceFloor.rotation.y += orbitDirection * 0.02 + pulseBass * 0.04 * Math.sign(orbitDirection);
-                danceFloor.rotation.z = Math.cos(t * 0.4) * 0.15 * vitality; // Плавные наклоны танцпола
+                // Непрерывное вращение танцпола без разворотов назад, зависящее от энергии
+                let rotationSpeed = 0.005 + smoothedEnergy * 0.03 + pulseBass * 0.05;
+                danceFloor.rotation.y += rotationSpeed; 
+                danceFloor.rotation.z = Math.sin(t * 0.2) * 0.15 * vitality;
 
-                // Фигуры крутятся вокруг своей оси в разных направлениях
-                fig1Group.rotation.y += 0.015 + pulseBass * 0.03;
-                fig2Group.rotation.y -= 0.015 + pulseBass * 0.03;
+                // Базовая дистанция зависит от общей энергии трека, на пиках они резко сближаются
+                let targetDistance = 45 - (smoothedEnergy * 30) - (Math.pow(pulseBass, 3) * 15.0);
+                targetDistance = Math.max(8, targetDistance); // Граница сближения, чтобы не сливались в одну точку
 
-                // Сближение ТОЛЬКО на сильных пиках (возводим бас в степень, чтобы отсечь слабые удары)
-                let peakPower = Math.pow(pulseBass, 3.5); 
-                let baseDistance = 45; // Разносим фигуры далеко друг от друга
-                let currentDistance = baseDistance - (peakPower * 32.0); // Резкий рывок друг к другу на пике
+                // Орбитальное кружение внутри танцпола (X и Z) для обволакивания друг друга
+                let orbitPhase = t * 0.4 + flowMid * 2.0; 
+                
+                // Фигура 1 ("Он") плавно движется по орбите
+                let targetX1 = Math.cos(orbitPhase) * (targetDistance / 2);
+                let targetZ1 = Math.sin(orbitPhase) * (targetDistance / 2);
+                fig1Group.position.x += (targetX1 - fig1Group.position.x) * 0.05;
+                fig1Group.position.z += (targetZ1 - fig1Group.position.z) * 0.05;
 
-                fig1Group.position.x += (-currentDistance/2 - fig1Group.position.x) * 0.08;
-                fig2Group.position.x += (currentDistance/2 - fig2Group.position.x) * 0.08;
+                // Фигура 2 ("Она") движется с противоположной стороны орбиты
+                let targetX2 = Math.cos(orbitPhase + Math.PI) * (targetDistance / 2);
+                let targetZ2 = Math.sin(orbitPhase + Math.PI) * (targetDistance / 2);
+                fig2Group.position.x += (targetX2 - fig2Group.position.x) * 0.05;
+                fig2Group.position.z += (targetZ2 - fig2Group.position.z) * 0.05;
+
+                // Вращение самих фигур: смотрят друг на друга или крутятся в вальсе
+                fig1Group.rotation.y += 0.01 + pulseBass * 0.02;
+                fig2Group.rotation.y -= 0.015 + pulseMid * 0.02;
 
                 // ===============================================
-                // РЕНДЕР ФИГУР И ЧЕЛОВЕЧЕСКИЙ СИЛУЭТ
+                // РЕНДЕР ФИГУР И ДИНАМИЧЕСКАЯ ПЛАСТИКА
                 // ===============================================
                 const pos1 = points1.geometry.attributes.position.array; 
                 const col1 = points1.geometry.attributes.color.array;
-                
                 const pos2 = points2.geometry.attributes.position.array; 
                 const col2 = points2.geometry.attributes.color.array;
 
                 let waveV = dna.symmetryB + Math.cos(phaseBeta * 0.12) * 2.0;
                 let bioBreath = 1.0 + Math.sin(waltzPhase * dna.bioPulseRate) * 0.1 + pulseBass * 0.2;
-                
                 let fU2 = trackSeedFreqU + Math.sin(evolveMid * 0.1) * 3.0; 
                 let chaos2 = Math.sin(evolveTreble * 0.2) * trackSeedMorph;
 
-                // Динамическая симметрия, которая постоянно течет (форма никогда не повторяется)
                 let dynamicSymU1 = dna.symmetryA + Math.sin(t * 0.1) * 2.0;
                 let dynamicFreqV2 = trackSeedFreqV + Math.cos(t * 0.15) * 3.0;
 
                 for(let i=0; i<gridDim; i++) {
                     let vNorm = i / (gridDim - 1); let v = vNorm * Math.PI; let sinV = Math.sin(v); let cosV = Math.cos(v);
                     
-                    // Создаем математический силуэт человека (Голова, торс, ноги)
                     let head = Math.exp(-Math.pow(vNorm - 0.1, 2) * 40); 
                     let torso = Math.exp(-Math.pow(vNorm - 0.45, 2) * 10); 
                     let limbs = Math.exp(-Math.pow(vNorm - 0.85, 2) * 5); 
@@ -555,19 +553,21 @@
                         let tIdx = (idx * 2 + Math.floor(audioMapOffset * 100)) % (analyser.fftSize - 2);
                         let rawWave = (timeDataArray[tIdx] / 128.0 - 1.0);
 
-                        // --- Расчет Фигуры 1 (Мужчина / Био-пластика) ---
-                        // Форма постоянно плывет за счет добавления t к углам
-                        let rSphere = (dna.baseScale * bioBreath + Math.sin(v * waveV + phaseAlpha + t) * (3.0 + flowMid * 5.0) + Math.cos(u * dynamicSymU1 + phaseBeta) * sinV * (2.0 + pulseBass * 5.0)) * humanSilhouette;
+                        // Умножение деформации на vitality (общая энергия), чтобы формы оживали на сильных звуках
+                        
+                        // --- Расчет Фигуры 1 ("Он") ---
+                        let deform1 = Math.sin(v * waveV + phaseAlpha + t) * (3.0 + flowMid * 5.0) * vitality;
+                        let deform1_2 = Math.cos(u * dynamicSymU1 + phaseBeta) * sinV * (2.0 + pulseBass * 5.0) * vitality;
+                        
+                        let rSphere = (dna.baseScale * bioBreath + deform1 + deform1_2) * humanSilhouette;
                         let tx1 = rSphere * Math.cos(u + t * 0.2) * sinV; 
                         let tz1 = rSphere * Math.sin(u + t * 0.2) * sinV;
-                        // Вытягиваем по вертикали (* 1.8) для имитации роста
-                        let ty1 = (rSphere * cosV * 1.8) + Math.sin(u * dynamicSymU1 + phaseBeta) * sinV * (2.0 + pulseTreble * 5.0);
+                        let ty1 = (rSphere * cosV * 1.8) + Math.sin(u * dynamicSymU1 + phaseBeta) * sinV * (2.0 + pulseTreble * 5.0) * vitality;
                         
                         let dist1 = Math.sqrt(tx1*tx1 + ty1*ty1 + tz1*tz1) || 1.0;
                         let audioSwell1 = fSharp * (2.5 + vitality * 5.0);
                         let flutter1 = rawWave * (3.0 + pulseTreble * 20.0 * vitality);
                         
-                        // Пластичные движения "рук/тела" от музыки
                         tx1 += (tx1 / dist1) * audioSwell1 + Math.cos(v * 20 + waltzPhase) * flutter1;
                         ty1 += (ty1 / dist1) * audioSwell1 + Math.sin(u * 20 + waltzPhase) * flutter1;
                         tz1 += (tz1 / dist1) * audioSwell1 + Math.cos(u * 20 + waltzPhase) * flutter1;
@@ -577,25 +577,27 @@
                         pos1[idx*3+1] += (ty1 - pos1[idx*3+1]) * pointLerp1; 
                         pos1[idx*3+2] += (tz1 - pos1[idx*3+2]) * pointLerp1;
                         
-                        let hue1 = (dna.hueBase + fSharp * 45 + t * 5) % 360;
+                        // Цвет постоянно перетекает от времени и общей энергии
+                        let hue1 = (dna.hueBase + t * 10 + smoothedEnergy * 100 + fSharp * 45) % 360;
                         colorObj.setHSL(hue1 / 360, 0.95, Math.min(0.85, 0.3 + fSharp * 0.6));
                         col1[idx*3] += (colorObj.r - col1[idx*3]) * 0.15; 
                         col1[idx*3+1] += (colorObj.g - col1[idx*3+1]) * 0.15; 
                         col1[idx*3+2] += (colorObj.b - col1[idx*3+2]) * 0.15;
 
-                        // --- Расчет Фигуры 2 (Женщина / Энерго-потоки) ---
-                        let R2 = (trackSeedR + pulseBass * 15 + Math.sin(v * dynamicFreqV2 + evolveMid * 0.5) * (4 + mid * 10)) * humanSilhouette;
-                        let twist2 = u + Math.sin(v * fU2 + evolveTreble * 0.4 + t) * (Math.sin(evolveBass * 0.3) * 3.0);
-                        let flare2 = Math.abs(Math.cos(u * (3 + chaos2 * 2) + t * 0.5)) * (5 + Math.pow(mid,2) * 10);
+                        // --- Расчет Фигуры 2 ("Она") ---
+                        let deform2 = Math.sin(v * dynamicFreqV2 + evolveMid * 0.5) * (4 + mid * 10) * vitality;
+                        let flare2 = Math.abs(Math.cos(u * (3 + chaos2 * 2) + t * 0.5)) * (5 + Math.pow(mid,2) * 10) * vitality;
+                        
+                        let R2 = (trackSeedR + pulseBass * 10 + deform2) * humanSilhouette;
+                        let twist2 = u + Math.sin(v * fU2 + evolveTreble * 0.4 + t) * (Math.sin(evolveBass * 0.3) * 3.0) * vitality;
                         let currentRadius2 = R2 + flare2 * humanSilhouette + fSharp * 12;
 
                         let tx2 = Math.cos(twist2) * Math.sin(v) * currentRadius2;
                         let tz2 = Math.sin(twist2) * Math.sin(v) * currentRadius2;
                         
                         let yVolume2 = Math.cos(v) * currentRadius2 * (0.65 + chaos2 * 0.35); 
-                        let yDrift2 = Math.cos(v * dynamicFreqV2 + t * 0.2) * (8 + chaos2 * 5);
-                        // Вытягиваем женский силуэт по вертикали
-                        let ty2 = (yVolume2 + yDrift2) * 1.7 + Math.sin(u * fU2 + evolveMid) * (3 + treble * 15);
+                        let yDrift2 = Math.cos(v * dynamicFreqV2 + t * 0.2) * (8 + chaos2 * 5) * vitality;
+                        let ty2 = (yVolume2 + yDrift2) * 1.7 + Math.sin(u * fU2 + evolveMid) * (3 + treble * 15) * vitality;
 
                         let rippleForce2 = rawWave * (3 + treble * 25); 
                         tx2 += Math.cos(v * 15 + t * 2) * rippleForce2; 
@@ -607,9 +609,10 @@
                         pos2[idx*3+1] += (ty2 - pos2[idx*3+1]) * lerpFactor2; 
                         pos2[idx*3+2] += (tz2 - pos2[idx*3+2]) * lerpFactor2;
                         
-                        let hue2 = (trackSeedHueShift + evolveMid * 40 + rawWave * 30 - t * 5) % 360;
+                        // Изменяющийся, живой цвет (зависит от всех тональностей и времени)
+                        let hue2 = (t * 20 + smoothedEnergy * 200 + evolveMid * 40 + rawWave * 30) % 360;
                         if (hue2 < 0) hue2 += 360;
-                        colorObj.setHSL(hue2 / 360, 1.0, 0.3 + fSharp * 0.7); // Сделали ярче
+                        colorObj.setHSL(hue2 / 360, 1.0, 0.4 + fSharp * 0.6); 
                         col2[idx*3] += (colorObj.r - col2[idx*3]) * lerpFactor2; 
                         col2[idx*3+1] += (colorObj.g - col2[idx*3+1]) * lerpFactor2; 
                         col2[idx*3+2] += (colorObj.b - col2[idx*3+2]) * lerpFactor2;
@@ -622,7 +625,6 @@
                 points2.geometry.attributes.position.needsUpdate = true; points2.geometry.attributes.color.needsUpdate = true;
                 lines2.material.opacity += (Math.min(0.8, energy * 1.5) - lines2.material.opacity) * 0.08;
 
-                // --- Камера и эффекты ---
                 if (bloomPass) bloomPass.strength += (0.8 + (energy * 1.0) + (pulseBass * 1.5) - bloomPass.strength) * 0.1;
                 let breathFov = Math.sin(waltzPhase) * 2.0;
                 let kickFov = -pulseBass * 10;
@@ -639,14 +641,15 @@
                 });
 
             } else {
-                // Плавное затухание и расхождение фигур, если музыка не играет
                 strobeLight.intensity += (0 - strobeLight.intensity) * 0.1;
                 if (bloomPass) bloomPass.strength += (0.4 - bloomPass.strength) * 0.05; 
                 camera.fov += (baseFov - camera.fov) * 0.05; camera.updateProjectionMatrix();
                 
                 danceFloor.rotation.y += 0.002;
-                fig1Group.position.x += (-22.5 - fig1Group.position.x) * 0.05;
-                fig2Group.position.x += (22.5 - fig2Group.position.x) * 0.05;
+                fig1Group.position.x += (-25 - fig1Group.position.x) * 0.05;
+                fig1Group.position.z += (0 - fig1Group.position.z) * 0.05;
+                fig2Group.position.x += (25 - fig2Group.position.x) * 0.05;
+                fig2Group.position.z += (0 - fig2Group.position.z) * 0.05;
                 
                 laserGroup.children.forEach((l) => { l.material.opacity *= 0.85; l.scale.y += (1 - l.scale.y) * 0.08; });
             }
