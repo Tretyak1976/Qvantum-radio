@@ -350,8 +350,6 @@
             initAudio(); 
             if(audioContext.state === 'suspended') await audioContext.resume().catch(e=>{});
             
-            // СБРОС НАКОПИТЕЛЬНЫХ ПЕРЕМЕННЫХ ПРИ НОВОМ ТРЕКЕ
-            accBass = 0; accMid = 0; accTreble = 0; trackFingerprint = 0;
             seedTrackEvolution1();
             seedTrackEvolution2();
 
@@ -505,7 +503,6 @@
         const globeGroup = new THREE.Group(); scene.add(globeGroup);
         const gridDim = 48; const pCount = gridDim * gridDim;
         
-        // Функция для создания базовой сетки
         function createAbstractGrid() {
             const pOrig = new Float32Array(pCount * 3); 
             const pPos = new Float32Array(pCount * 3); 
