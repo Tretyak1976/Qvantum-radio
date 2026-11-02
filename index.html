@@ -2,29 +2,153 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Quantum Radio 3D - GPU Symbiosis 10/10</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Quantum Radio 3D - Neural GPU Singularity</title>
     <style>
-        body, html { margin: 0; padding: 0; width: 100vw; height: 100vh; overflow: hidden; background: #000; font-family: 'Segoe UI', sans-serif; color: #fff; }
-        #canvas-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
-        #ui-layer { position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); z-index: 10; background: rgba(10, 10, 15, 0.85); padding: 15px 30px; border-radius: 30px; border: 1px solid rgba(255, 255, 255, 0.1); backdrop-filter: blur(15px); display: flex; gap: 15px; align-items: center; box-shadow: 0 10px 40px rgba(0,0,0,0.8); }
-        .btn { background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(59, 130, 246, 0.4); color: white; padding: 10px 20px; border-radius: 20px; cursor: pointer; transition: 0.3s; font-weight: bold; font-size: 0.9rem; text-transform: uppercase; }
-        .btn:hover { background: rgba(59, 130, 246, 0.3); box-shadow: 0 0 15px rgba(59, 130, 246, 0.5); }
-        #audio-upload { display: none; }
+        html, body { 
+            margin: 0; padding: 0; width: 100vw; height: 100dvh; overflow: hidden; 
+            background-color: #000000 !important; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            color: #fff; user-select: none; touch-action: none; -webkit-tap-highlight-color: transparent; 
+        }
+        
+        :fullscreen, ::backdrop, :-webkit-full-screen { background-color: #000000 !important; }
+
+        #canvas-container { width: 100vw; height: 100dvh; position: fixed; top: 0; left: 0; z-index: 1; cursor: grab; background-color: #000000; }
+        #canvas-container:active { cursor: grabbing; }
+        
+        #fullscreen-btn-top-left {
+            position: fixed; top: 20px; left: 20px; z-index: 15;
+            background: rgba(10, 10, 15, 0.6); border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 50%; width: 44px; height: 44px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.3rem; color: #fff; cursor: pointer; backdrop-filter: blur(10px);
+            transition: all 0.3s; padding: 0; outline: none;
+        }
+        #fullscreen-btn-top-left:hover { background: rgba(59, 130, 246, 0.4); transform: scale(1.1); }
+
+        #ui-bottom {
+            position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
+            width: 95%; max-width: 700px; z-index: 10;
+            transition: opacity 0.8s ease, transform 0.8s ease;
+        }
+        #ui-bottom.idle { opacity: 0; transform: translate(-50%, 20px); pointer-events: none; }
+
+        #player-panel {
+            width: 100%; background: rgba(10, 10, 15, 0.85); padding: 15px 20px; border-radius: 25px;
+            border: 1px solid rgba(255, 255, 255, 0.15); backdrop-filter: blur(20px);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8); box-sizing: border-box;
+            display: flex; flex-direction: column; gap: 12px;
+        }
+
+        #sidebar {
+            position: fixed; top: 0; left: 0; width: 350px; height: 100%;
+            background: rgba(10, 10, 15, 0.9); backdrop-filter: blur(20px);
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
+            z-index: 20; display: flex; flex-direction: column;
+            transform: translateX(-100%); transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 10px 0 30px rgba(0,0,0,0.7); box-sizing: border-box;
+        }
+        #sidebar.open { transform: translateX(0); }
+
+        #sidebar-header {
+            padding: 20px; border-bottom: 1px solid rgba(255,255,255,0.1);
+            display: flex; justify-content: space-between; align-items: center;
+            font-weight: bold; font-size: 1.1rem; color: #3b82f6; letter-spacing: 1px;
+        }
+        
+        .close-btn { background: none; border: none; color: #fff; font-size: 1.5rem; cursor: pointer; padding: 0; outline: none; transition: color 0.2s; }
+        .close-btn:hover { color: #ef4444; }
+
+        #playlist { flex: 1; overflow-y: auto; padding: 10px; transition: opacity 0.3s; }
+        
+        .track-item { 
+            display: flex; align-items: center; padding: 10px 15px; border-bottom: 1px solid rgba(255,255,255,0.05); 
+            border-radius: 12px; transition: background 0.2s; font-size: 0.9rem; margin-bottom: 4px;
+        }
+        .track-item:hover { background: rgba(255,255,255,0.05); }
+        .track-item.active { background: rgba(59, 130, 246, 0.1); border-color: transparent; font-weight: bold; }
+        
+        .track-play-icon {
+            min-width: 38px; height: 38px; display: flex; align-items: center; justify-content: center;
+            border-radius: 50%; background: rgba(255,255,255,0.08); color: #aaa; cursor: pointer;
+            margin-right: 15px; font-size: 1.1rem; transition: all 0.2s;
+        }
+        .track-play-icon:hover { background: rgba(59, 130, 246, 0.3); color: #fff; transform: scale(1.1); }
+        .track-item.active .track-play-icon { background: rgba(59, 130, 246, 0.2); color: #3b82f6; }
+
+        .track-title { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #eee; }
+        
+        .fav-btn { font-size: 1.3rem; cursor: pointer; transition: transform 0.2s; padding: 5px; margin-left: 10px; }
+        .fav-btn:hover { transform: scale(1.3); }
+
+        #progress-container { display: flex; align-items: center; gap: 10px; width: 100%; font-size: 0.75rem; color: #aaa; font-weight: 600; }
+        
+        input[type="range"] { flex: 1; -webkit-appearance: none; background: rgba(255,255,255,0.1); height: 6px; border-radius: 3px; outline: none; cursor: pointer; }
+        input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 14px; background: #3b82f6; border-radius: 50%; box-shadow: 0 0 10px rgba(59,130,246,0.8); }
+
+        #controls-bar { display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%; }
+
+        select, .btn {
+            background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(59, 130, 246, 0.3);
+            color: white; padding: 10px 14px; border-radius: 20px;
+            outline: none; cursor: pointer; transition: all 0.3s; font-weight: bold;
+            font-size: 0.8rem; text-transform: uppercase;
+        }
+        
+        select { flex: 1; min-width: 100px; text-overflow: ellipsis; }
+        select option { background: #111; color: #fff; }
+        
+        .btn.icon { display: flex; align-items: center; justify-content: center; min-width: 40px; font-size: 1.1rem; }
+        #play-pause-btn { font-size: 1.3rem; min-width: 50px; background: rgba(59, 130, 246, 0.15); color: #3b82f6; }
+        
+        select:hover, .btn:hover { background: rgba(59, 130, 246, 0.2); border-color: #3b82f6; box-shadow: 0 0 15px rgba(59, 130, 246, 0.4); }
+        
+        ::-webkit-scrollbar { width: 5px; }
+        ::-webkit-scrollbar-thumb { background: #3b82f6; border-radius: 3px; }
     </style>
 </head>
 <body>
 
-    <div id="ui-layer">
-        <label class="btn">
-            Загрузить трек <input type="file" id="audio-upload" accept="audio/*">
-        </label>
-        <button class="btn" id="play-btn">▶ Play / Pause</button>
+    <button id="fullscreen-btn-top-left" title="На весь экран">⛶</button>
+
+    <div id="sidebar">
+        <div id="sidebar-header">
+            <span>QUANTUM PLAYLIST</span>
+            <button id="close-sidebar" class="close-btn" title="Закрыть плейлист">✕</button>
+        </div>
+        <div id="playlist">
+            <div style="padding: 20px; color: #aaa; text-align: center;">Syncing with Global Core...</div>
+        </div>
+    </div>
+
+    <div id="ui-bottom">
+        <div id="player-panel">
+            <div id="progress-container">
+                <span id="time-current">0:00</span>
+                <input type="range" id="progress-bar" min="0" max="100" value="0">
+                <span id="time-total">0:00</span>
+            </div>
+
+            <div id="controls-bar">
+                <button id="toggle-sidebar-btn" class="btn icon" title="Открыть плейлист">☰</button>
+                <select id="genre-filter"><option value="all">Loading...</option></select>
+                
+                <label class="btn icon" title="Upload Local Track">
+                    ⇧ <input type="file" id="audio-upload" accept="audio/*" style="display:none;">
+                </label>
+                
+                <div style="display: flex; gap: 8px;">
+                    <button id="prev-btn" class="btn icon" title="Previous Track">⏮</button>
+                    <button id="play-pause-btn" class="btn icon" title="Play/Pause">▶</button>
+                    <button id="next-btn" class="btn icon" title="Next Track">⏭</button>
+                </div>
+            </div>
+        </div>
     </div>
 
     <div id="canvas-container"></div>
 
-    <!-- Зависимости Three.js (r128) -->
+    <!-- Библиотеки -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/EffectComposer.js"></script>
@@ -36,59 +160,349 @@
 
     <script>
         // ==========================================
-        // 1. КОНФИГУРАЦИЯ (CONFIG) - Легкая настройка
+        // 1. КОНФИГУРАЦИЯ БИО-МАТЕРИИ (10/10)
         // ==========================================
         const CONFIG = {
+            // Аудио-реактивность
             audio: {
-                fftSize: 2048,
-                smoothing: 0.85,
-                bassSensitivity: 2.5,
-                midSensitivity: 1.5,
-                highSensitivity: 3.0,
-                lerpSpeed: 0.15 // Плавность перехода значений (избегание дерганий)
+                smoothing: 0.85,    // Сглаживание анализатора
+                bassFactor: 4.5,    // Макро-искажения (Гравитация)
+                midFactor: 2.0,     // Средние (Натяжение линий)
+                trebleFactor: 6.0,  // Высокие (Микро-вспышки)
+                attack: 0.45,       // Мгновенная реакция
+                release: 0.05       // Плавное затухание
             },
+            // Физика и время
             motion: {
-                baseSpeed: 0.15,
-                beatMultiplier: 6.0,
-                speedDecay: 0.05, // Как быстро затухает скорость после бита
-                noiseScale: 0.08,
-                macroDistortion: 15.0
+                baseSpeed: 0.2,     // Скорость в тишине (органичное дыхание)
+                peakSpeed: 2.5,     // Скорость на дропе
+                rotationSpeed: 0.05
             },
-            visuals: {
-                baseRadius: 20,
-                detailLevel: 35, // Плотность нейросети (влияет на кол-во полигонов)
+            // Рендер
+            render: {
+                bloomThreshold: 0.15,
                 bloomStrength: 1.8,
-                bloomRadius: 0.6,
-                bloomThreshold: 0.1
+                bloomRadius: 0.35,
+                particleSize: 18.0
             },
+            // Цветовые палитры (HEX), между которыми фигура будет плавно перетекать
             palettes: [
-                // Палитра 1: Неон / Киберпанк (Blue -> Magenta)
-                [new THREE.Color(0x00f2fe), new THREE.Color(0x4facfe), new THREE.Color(0xf093fb), new THREE.Color(0xf5576c)],
-                // Палитра 2: Инопланетная биомасса (Green -> Gold)
-                [new THREE.Color(0x11998e), new THREE.Color(0x38ef7d), new THREE.Color(0xffb75e), new THREE.Color(0xed8f03)],
-                // Палитра 3: Плазма / Огонь (Red -> Yellow)
-                [new THREE.Color(0xff4b1f), new THREE.Color(0xff9068), new THREE.Color(0xf12711), new THREE.Color(0xf5af19)]
+                [0x00f0ff, 0x0055ff, 0x8a2be2, 0xff0055], // Cyberpunk
+                [0x00ffaa, 0x0088ff, 0x0000ff, 0x5500ff], // Bioluminescent Deep
+                [0xff3300, 0xffaa00, 0xff0055, 0x440000], // Solar Flare
+                [0xffffff, 0xaaaaff, 0x00aaff, 0x002255]  // Ethereal Quantum
             ]
         };
 
-        // ==========================================
-        // 2. ШЕЙДЕРЫ (Симбиотическая геометрия на GPU)
-        // ==========================================
+        const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz-mIMwHe0AAz1xQxxmklBJFTkfRxhGDcllBKjYs3J8N77RvbROOlapD7YpiOgoBLQ/exec"; 
+
+        // --- УПРАВЛЕНИЕ UI И ПЛЕЕРОМ ---
+        let uiTimeout;
+        const uiLayer = document.getElementById('ui-bottom');
+        const sidebar = document.getElementById('sidebar');
+        const fullscreenBtnTopLeft = document.getElementById('fullscreen-btn-top-left');
+        
+        function resetUiTimer() {
+            uiLayer.classList.remove('idle');
+            fullscreenBtnTopLeft.style.opacity = '1';
+            fullscreenBtnTopLeft.style.pointerEvents = 'auto';
+            document.body.style.cursor = 'default';
+            clearTimeout(uiTimeout);
+            uiTimeout = setTimeout(() => { 
+                if (isPlaying && !sidebar.classList.contains('open')) { 
+                    uiLayer.classList.add('idle'); 
+                    fullscreenBtnTopLeft.style.opacity = '0';
+                    fullscreenBtnTopLeft.style.pointerEvents = 'none';
+                    document.body.style.cursor = 'none'; 
+                } 
+            }, 3000);
+        }
+        
+        window.addEventListener('mousemove', resetUiTimer);
+        window.addEventListener('touchstart', resetUiTimer, {passive: true});
+        window.addEventListener('click', resetUiTimer);
+
+        document.getElementById('toggle-sidebar-btn').onclick = () => { sidebar.classList.add('open'); resetUiTimer(); };
+        document.getElementById('close-sidebar').onclick = () => { sidebar.classList.remove('open'); resetUiTimer(); };
+        fullscreenBtnTopLeft.onclick = () => {
+            let docEl = document.documentElement;
+            if (!document.fullscreenElement) {
+                if (docEl.requestFullscreen) docEl.requestFullscreen().catch(e => {});
+                else if (docEl.webkitRequestFullscreen) docEl.webkitRequestFullscreen().catch(e => {});
+            } else {
+                if (document.exitFullscreen) document.exitFullscreen();
+                else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+            }
+            resetUiTimer();
+        };
+
+        let audioContext, analyser, dataArray;
+        let audioElement = new Audio();
+        audioElement.crossOrigin = "anonymous"; 
+        
+        let isPlaying = false, isPreloadingNext = false, isLoadingTrack = false;
+        let loadingTimer = null, countdownValue = 10;
+        let fullPlaylist = [], currentPlaylist = [], currentPlayingTrack = null;
+        const audioCache = {}; 
+        let favorites = JSON.parse(localStorage.getItem('quantum_favorites')) || [];
+
+        function initAudio() {
+            if (audioContext) return;
+            audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            analyser = audioContext.createAnalyser();
+            analyser.fftSize = 2048; 
+            analyser.smoothingTimeConstant = CONFIG.audio.smoothing; 
+            const source = audioContext.createMediaElementSource(audioElement);
+            source.connect(analyser); analyser.connect(audioContext.destination);
+            dataArray = new Uint8Array(analyser.frequencyBinCount);
+        }
+
+        const progressBar = document.getElementById('progress-bar');
+        const timeCurrent = document.getElementById('time-current');
+        const timeTotal = document.getElementById('time-total');
+
+        function formatTime(seconds) {
+            if (isNaN(seconds)) return "0:00";
+            const m = Math.floor(seconds / 60);
+            const s = Math.floor(seconds % 60).toString().padStart(2, '0');
+            return `${m}:${s}`;
+        }
+
+        audioElement.addEventListener('timeupdate', () => {
+            if (audioElement.duration) {
+                progressBar.max = audioElement.duration;
+                progressBar.value = audioElement.currentTime;
+                timeCurrent.innerText = formatTime(audioElement.currentTime);
+                timeTotal.innerText = formatTime(audioElement.duration);
+                
+                let timeLeft = audioElement.duration - audioElement.currentTime;
+                if (timeLeft < 15 && currentPlaylist.length > 1 && !isPreloadingNext) {
+                    let currentIdx = currentPlaylist.findIndex(t => t.url === currentPlayingTrack.url);
+                    let nextTrack = currentPlaylist[(currentIdx + 1) % currentPlaylist.length];
+                    if (!nextTrack.isLocal && nextTrack.url.includes("script.google.com") && !audioCache[nextTrack.url]) {
+                        isPreloadingNext = true; 
+                        fetch(nextTrack.url).then(res => res.json()).then(data => {
+                            if (!data.error && data.base64) audioCache[nextTrack.url] = data.base64; 
+                        }).catch(e => console.error(e));
+                    }
+                }
+            }
+        });
+
+        progressBar.addEventListener('input', () => {
+            if(audioElement.duration) audioElement.currentTime = progressBar.value;
+            resetUiTimer();
+        });
+
+        window.addEventListener('DOMContentLoaded', async () => {
+            try {
+                const response = await fetch(APPS_SCRIPT_URL);
+                const data = await response.json();
+                if (data.error) throw new Error(data.error);
+
+                fullPlaylist = data; currentPlaylist = [...fullPlaylist];
+                const genres = [...new Set(fullPlaylist.map(t => t.genre).filter(Boolean))];
+                const filterSelect = document.getElementById('genre-filter');
+                filterSelect.innerHTML = '<option value="all">ALL GENRES</option><option value="favorites">❤ FAVORITES</option>';
+                genres.forEach(g => {
+                    const opt = document.createElement('option'); opt.value = g; opt.innerText = g.toUpperCase();
+                    filterSelect.appendChild(opt);
+                });
+                updatePlaylistUI();
+                if (currentPlaylist.length > 0) playTrack(currentPlaylist[0]);
+            } catch (err) {
+                document.getElementById('playlist').innerHTML = '<div style="color:#ef4444; padding:20px; text-align:center;">Database connection failed.</div>';
+            }
+        });
+
+        document.getElementById('genre-filter').addEventListener('change', (e) => {
+            if (isLoadingTrack) return; 
+            const selectedGenre = e.target.value;
+            if (selectedGenre === 'all') currentPlaylist = [...fullPlaylist];
+            else if (selectedGenre === 'favorites') currentPlaylist = fullPlaylist.filter(t => favorites.includes(t.url));
+            else currentPlaylist = fullPlaylist.filter(t => t.genre === selectedGenre);
+            updatePlaylistUI();
+            if (currentPlaylist.length > 0) playTrack(currentPlaylist[0]);
+            else { audioElement.pause(); isPlaying = false; document.getElementById('play-pause-btn').innerText = "▶"; }
+            resetUiTimer();
+        });
+
+        document.getElementById('audio-upload').onchange = (e) => {
+            if (isLoadingTrack) return;
+            if (e.target.files.length > 0) {
+                const file = e.target.files[0];
+                const localUrl = URL.createObjectURL(file);
+                fullPlaylist.unshift({ name: file.name.substring(0, 30) + '...', genre: "LOCAL", url: localUrl, isLocal: true }); 
+                const filter = document.getElementById('genre-filter');
+                if(filter.value !== 'all') { filter.value = 'all'; filter.dispatchEvent(new Event('change')); }
+                else { currentPlaylist = [...fullPlaylist]; updatePlaylistUI(); playTrack(currentPlaylist[0]); }
+                e.target.value = ''; resetUiTimer();
+            }
+        };
+
+        const playBtn = document.getElementById('play-pause-btn');
+
+        function playNext() {
+            if (isLoadingTrack || !currentPlayingTrack || currentPlaylist.length === 0) return;
+            let idx = currentPlaylist.findIndex(t => t.url === currentPlayingTrack.url);
+            playTrack(currentPlaylist[(idx + 1) % currentPlaylist.length]);
+        }
+
+        function playPrev() {
+            if (isLoadingTrack || !currentPlayingTrack || currentPlaylist.length === 0) return;
+            let idx = currentPlaylist.findIndex(t => t.url === currentPlayingTrack.url);
+            let prevIdx = (idx - 1 + currentPlaylist.length) % currentPlaylist.length;
+            playTrack(currentPlaylist[prevIdx]);
+        }
+
+        document.getElementById('next-btn').onclick = () => { playNext(); resetUiTimer(); };
+        document.getElementById('prev-btn').onclick = () => { playPrev(); resetUiTimer(); };
+        audioElement.addEventListener('ended', playNext);
+
+        async function playTrack(track) {
+            if (isLoadingTrack) return; 
+            currentPlayingTrack = track;
+            initAudio(); 
+            if(audioContext.state === 'suspended') await audioContext.resume().catch(e=>{});
+            
+            // Смена палитры при новом треке
+            targetPaletteIdx = (targetPaletteIdx + 1) % CONFIG.palettes.length;
+            isPreloadingNext = false; 
+
+            isLoadingTrack = true; countdownValue = 10;
+            playBtn.innerHTML = `<span style="color:#ef4444;">${countdownValue}</span>`;
+            updatePlaylistUI(); 
+            
+            clearInterval(loadingTimer);
+            loadingTimer = setInterval(() => {
+                if (countdownValue > 1) {
+                    countdownValue--; playBtn.innerHTML = `<span style="color:#ef4444;">${countdownValue}</span>`; updatePlaylistUI();
+                }
+            }, 1000);
+            
+            try {
+                if (!track.isLocal && track.url.includes("script.google.com")) {
+                     if (audioCache[track.url]) audioElement.src = audioCache[track.url];
+                     else {
+                         const response = await fetch(track.url); const data = await response.json();
+                         if (data.error || !data.base64) throw new Error("Load error");
+                         audioElement.src = data.base64; audioCache[track.url] = data.base64; 
+                     }
+                } else { audioElement.src = track.url; }
+
+                clearInterval(loadingTimer); isLoadingTrack = false;
+
+                let playPromise = audioElement.play();
+                if (playPromise !== undefined) {
+                    playPromise.then(() => {
+                        isPlaying = true; playBtn.innerText = "❚❚"; updatePlaylistUI(); resetUiTimer();
+                    }).catch(error => {
+                        isPlaying = false; playBtn.innerText = "▶"; updatePlaylistUI();
+                        document.body.addEventListener('click', function resumeAutoplay() {
+                            if(!isPlaying) { audioContext.resume(); audioElement.play(); isPlaying = true; playBtn.innerText = "❚❚"; updatePlaylistUI(); }
+                            document.body.removeEventListener('click', resumeAutoplay);
+                        }, {once: true});
+                    });
+                }
+            } catch (error) {
+                clearInterval(loadingTimer); isLoadingTrack = false;
+                playBtn.innerText = "⚠"; setTimeout(() => playNext(), 2000);
+            }
+        }
+
+        function updatePlaylistUI() {
+            const playlistDiv = document.getElementById('playlist');
+            playlistDiv.innerHTML = '';
+            if (isLoadingTrack) { playlistDiv.style.pointerEvents = 'none'; playlistDiv.style.opacity = '0.7'; } 
+            else { playlistDiv.style.pointerEvents = 'auto'; playlistDiv.style.opacity = '1'; }
+            
+            if (currentPlaylist.length === 0) { playlistDiv.innerHTML = '<div style="padding:10px; color:#aaa; text-align:center;">No tracks found</div>'; return; }
+
+            currentPlaylist.forEach((track) => {
+                const trackEl = document.createElement('div'); trackEl.className = 'track-item';
+                const isActive = (currentPlayingTrack && currentPlayingTrack.url === track.url);
+                if (isActive) trackEl.classList.add('active');
+                
+                const playIconBtn = document.createElement('div'); playIconBtn.className = 'track-play-icon';
+                if (isActive && isLoadingTrack) playIconBtn.innerHTML = `<span style="font-size:1.1rem; color:#ef4444; font-weight:bold;">${countdownValue}</span>`;
+                else playIconBtn.innerHTML = (isActive && isPlaying) ? '❚❚' : '▶';
+
+                playIconBtn.onclick = (e) => {
+                    e.stopPropagation(); if (isLoadingTrack) return;
+                    if (isActive) {
+                        if (isPlaying) { audioElement.pause(); isPlaying = false; }
+                        else { audioElement.play(); isPlaying = true; }
+                        updatePlaylistUI(); playBtn.innerText = isPlaying ? "❚❚" : "▶";
+                    } else playTrack(track);
+                    resetUiTimer();
+                };
+                
+                const titleSpan = document.createElement('span'); titleSpan.className = 'track-title'; titleSpan.innerHTML = track.name; 
+                const favBtn = document.createElement('span'); const isFav = favorites.includes(track.url);
+                favBtn.className = 'fav-btn'; favBtn.innerText = isFav ? '♥' : '♡'; favBtn.style.color = isFav ? '#ef4444' : '#aaa';
+                favBtn.onclick = (e) => {
+                    e.stopPropagation(); if (isLoadingTrack) return;
+                    if (isFav) favorites = favorites.filter(url => url !== track.url); else favorites.push(track.url);
+                    localStorage.setItem('quantum_favorites', JSON.stringify(favorites));
+                    if (document.getElementById('genre-filter').value === 'favorites' && isFav) currentPlaylist = currentPlaylist.filter(t => t.url !== track.url);
+                    updatePlaylistUI(); 
+                };
+
+                trackEl.appendChild(playIconBtn); trackEl.appendChild(titleSpan); trackEl.appendChild(favBtn);
+                playlistDiv.appendChild(trackEl);
+            });
+        }
+
+        playBtn.onclick = async () => {
+            if (isLoadingTrack) return; 
+            initAudio(); if(audioContext.state === 'suspended') await audioContext.resume().catch(e=>{});
+            if (isPlaying) { audioElement.pause(); isPlaying = false; playBtn.innerText = "▶"; } 
+            else {
+                if (!audioElement.src || audioElement.src.endsWith(window.location.host + "/")) { if (currentPlaylist.length > 0) playTrack(currentPlaylist[0]); } 
+                else { await audioElement.play(); isPlaying = true; playBtn.innerText = "❚❚"; }
+            }
+            updatePlaylistUI(); resetUiTimer();
+        };
+
+        // =========================================================================
+        // 3D SCENE: THE MASTERPIECE (GPU SHADER ENGINE)
+        // =========================================================================
+        const container = document.getElementById('canvas-container');
+        const scene = new THREE.Scene();
+        scene.fog = new THREE.FogExp2(0x020205, 0.005);
+
+        const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 2000);
+        camera.position.set(0, 0, 45); 
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, powerPreference: "high-performance" });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(window.devicePixelRatio); // 100% резкость
+        container.appendChild(renderer.domElement);
+
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true; controls.dampingFactor = 0.05; 
+        controls.minDistance = 15; controls.maxDistance = 100;
+        controls.autoRotate = true; controls.autoRotateSpeed = 0.5;
+
+        // --- POST-PROCESSING ---
+        const renderScene = new THREE.RenderPass(scene, camera);
+        const bloomPass = new THREE.UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), CONFIG.render.bloomStrength, CONFIG.render.bloomRadius, CONFIG.render.bloomThreshold);
+        const composer = new THREE.EffectComposer(renderer);
+        composer.addPass(renderScene); composer.addPass(bloomPass);
+
+        // --- GPU SHADERS (МАГИЯ ОРГАНИКИ И ЗВУКА) ---
         const vertexShader = `
             uniform float uTime;
-            uniform float uLow;
+            uniform float uBass;
             uniform float uMid;
-            uniform float uHigh;
-            uniform float uNoiseScale;
-            uniform float uMacroDistortion;
+            uniform float uTreble;
             
-            uniform vec3 uPalette[4];
-            uniform float uPaletteMix; // От 0.0 до 3.0 для морфинга палитр
-
-            varying vec3 vColor;
-            varying float vGlow;
-
-            // 3D Simplex Noise function (Ashima Arts)
+            attribute float randomData;
+            
+            varying vec3 vPos;
+            varying float vAudioReact;
+            
+            // 3D Simplex Noise Function (Ashima)
             vec4 permute(vec4 x){return mod(((x*34.0)+1.0)*x, 289.0);}
             vec4 taylorInvSqrt(vec4 r){return 1.79284291400159 - 0.85373472095314 * r;}
             float snoise(vec3 v){ 
@@ -104,10 +518,13 @@
                 vec3 x2 = x0 - i2 + 2.0 * C.xxx;
                 vec3 x3 = x0 - 1.0 + 3.0 * C.xxx;
                 i = mod(i, 289.0 ); 
-                vec4 p = permute( permute( permute( i.z + vec4(0.0, i1.z, i2.z, 1.0 )) + i.y + vec4(0.0, i1.y, i2.y, 1.0 )) + i.x + vec4(0.0, i1.x, i2.x, 1.0 ));
+                vec4 p = permute( permute( permute( 
+                            i.z + vec4(0.0, i1.z, i2.z, 1.0 ))
+                        + i.y + vec4(0.0, i1.y, i2.y, 1.0 )) 
+                        + i.x + vec4(0.0, i1.x, i2.x, 1.0 ));
                 float n_ = 1.0/7.0;
                 vec3  ns = n_ * D.wyz - D.xzx;
-                vec4 j = p - 49.0 * floor(p * ns.z.z.z);
+                vec4 j = p - 49.0 * floor(p * ns.z *ns.z);
                 vec4 x_ = floor(j * ns.z);
                 vec4 y_ = floor(j - 7.0 * x_ );
                 vec4 x = x_ *ns.x + ns.yyyy;
@@ -127,270 +544,224 @@
                 vec4 norm = taylorInvSqrt(vec4(dot(p0,p0), dot(p1,p1), dot(p2, p2), dot(p3,p3)));
                 p0 *= norm.x; p1 *= norm.y; p2 *= norm.z; p3 *= norm.w;
                 vec4 m = max(0.6 - vec4(dot(x0,x0), dot(x1,x1), dot(x2,x2), dot(x3,x3)), 0.0);
-                m = m * m; return 42.0 * dot( m*m, vec4( dot(p0,x0), dot(p1,x1), dot(p2,x2), dot(p3,x3) ) );
+                m = m * m;
+                return 42.0 * dot( m*m, vec4( dot(p0,x0), dot(p1,x1), dot(p2,x2), dot(p3,x3) ) );
             }
 
             void main() {
                 vec3 pos = position;
                 
-                // --- ДВИЖЕНИЕ И ФИЗИКА ---
-                // Базовое органичное "дыхание" + влияние средних частот на натяжение (масштаб шума)
-                float currentNoiseScale = uNoiseScale + (uMid * 0.02);
-                vec3 noiseCoord = pos * currentNoiseScale + vec3(0.0, uTime * 0.5, uTime * 0.2);
-                float noiseVal = snoise(noiseCoord);
-
-                // Макро-искажение от Баса (Low)
-                float bassDistortion = (1.0 + uLow * uMacroDistortion);
-                pos += normal * noiseVal * bassDistortion;
-
-                // Микро-реакции от Высоких (High): случайные резкие всплески вершин
-                float microHash = fract(sin(dot(position.xyz, vec3(12.9898, 78.233, 45.164))) * 43758.5453);
-                float isHighHit = step(0.95, microHash); // Только 5% вершин реагируют на верха
-                float spike = isHighHit * (uHigh * 8.0);
-                pos += normal * spike;
-
-                // --- ДИНАМИЧЕСКАЯ ПАЛИТРА ---
-                // Зависимость цвета от высоты (Y), шума и текущего аудио-состояния
-                float colorMixPos = (pos.y / (20.0 + bassDistortion)) * 0.5 + 0.5; // Нормализация от 0 до 1
-                colorMixPos += noiseVal * 0.2 + uMid * 0.2;
-                colorMixPos = clamp(colorMixPos, 0.0, 1.0);
-
-                // Плавный морфинг между цветами в активной палитре
-                vec3 colorA = mix(uPalette[0], uPalette[1], colorMixPos);
-                vec3 colorB = mix(uPalette[2], uPalette[3], colorMixPos);
+                // 1. БАЗОВОЕ ДЫХАНИЕ (Медленный органичный шум)
+                float noiseBase = snoise(pos * 0.15 + uTime * 0.3);
                 
-                // Выбор текущей палитры на основе uPaletteMix (изменение со временем/настроением)
-                // Для упрощения примера берем первую палитру как базу.
-                // В полном коде uPalette обновляется из JS массивами.
-                vColor = mix(colorA, colorB, smoothstep(0.3, 0.7, colorMixPos));
-                
-                vGlow = isHighHit * uHigh; // Передаем данные о вспышке во фрагментный шейдер
+                // 2. БАС (Гравитация и Макро-искажение)
+                float bassNoise = snoise(pos * 0.08 - uTime * 0.8) * uBass;
+                pos += normal * (bassNoise * 5.0 + noiseBase * 2.0);
 
-                gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
+                // 3. МЕЛОДИЯ (Натяжение и сдвиг по спирали)
+                float midNoise = snoise(pos * 0.4 + uTime * 0.5) * uMid;
+                pos.x += sin(pos.y * 0.1 + uTime) * midNoise * 3.0;
+                pos.z += cos(pos.x * 0.1 - uTime) * midNoise * 3.0;
+
+                // 4. ВЫСОКИЕ ЧАСТОТЫ (Микро-вспышки и фрактальная рябь)
+                float trebleNoise = snoise(pos * 2.5 + uTime * 1.5) * uTreble;
+                pos += normal * trebleNoise * randomData * 2.0;
+
+                vPos = pos;
+                vAudioReact = (bassNoise * 0.5 + midNoise * 0.3 + trebleNoise * 0.8);
+
+                vec4 mvPosition = modelViewMatrix * vec4(pos, 1.0);
+                gl_Position = projectionMatrix * mvPosition;
                 
-                // Размер точек зависит от близости к камере и высоких частот
-                gl_PointSize = (3.0 + spike) * (100.0 / gl_Position.z);
+                // Размер зависит от высоких частот и удаленности
+                gl_PointSize = (${CONFIG.render.particleSize.toFixed(1)} + uTreble * 15.0 * randomData) * (15.0 / -mvPosition.z);
             }
         `;
 
         const fragmentShader = `
-            varying vec3 vColor;
-            varying float vGlow;
+            uniform vec3 uColor1;
+            uniform vec3 uColor2;
+            uniform vec3 uColor3;
+            uniform vec3 uColor4;
+            uniform float uTime;
+            uniform float uTreble;
             
+            varying vec3 vPos;
+            varying float vAudioReact;
+
             void main() {
-                // Делаем точки круглыми с мягким краем
-                float dist = distance(gl_PointCoord, vec2(0.5));
+                // Создаем кристально чёткий круг для частицы
+                vec2 coord = gl_PointCoord - vec2(0.5);
+                float dist = length(coord);
                 if (dist > 0.5) discard;
                 
+                // Жесткое ядро + мягкое гало
                 float alpha = smoothstep(0.5, 0.1, dist);
-                
-                // Микро-реакция: изменение свечения (Bloom) на кончиках
-                vec3 finalColor = vColor + vec3(vGlow * 1.5);
+                float core = smoothstep(0.2, 0.0, dist) * 1.5;
 
-                gl_FragColor = vec4(finalColor, alpha * 0.9);
+                // Цветовой морфинг по высоте и реакции звука
+                float mix1 = sin(vPos.y * 0.1 + uTime * 0.5) * 0.5 + 0.5;
+                float mix2 = cos(vPos.x * 0.1 - uTime * 0.3) * 0.5 + 0.5;
+                
+                vec3 colorA = mix(uColor1, uColor2, mix1);
+                vec3 colorB = mix(uColor3, uColor4, mix2);
+                
+                // Влияние звука на цвет (при высоких частотах фигура вспыхивает ярче)
+                float soundMix = clamp(vAudioReact + (vPos.z * 0.05), 0.0, 1.0);
+                vec3 finalColor = mix(colorA, colorB, soundMix);
+                
+                // Добавляем яркость от ядра и Treble
+                finalColor += vec3(core) * (0.5 + uTreble);
+
+                gl_FragColor = vec4(finalColor, alpha * (0.3 + uTreble * 0.7));
             }
         `;
 
-        // ==========================================
-        // 3. ИНИЦИАЛИЗАЦИЯ СЦЕНЫ И AUDIO
-        // ==========================================
-        const container = document.getElementById('canvas-container');
-        const scene = new THREE.Scene();
-        scene.fog = new THREE.FogExp2(0x000000, 0.005);
-
-        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
-        camera.position.set(0, 0, 70);
-
-        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, powerPreference: "high-performance" });
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
-        container.appendChild(renderer.domElement);
-
-        const controls = new THREE.OrbitControls(camera, renderer.domElement);
-        controls.enableDamping = true; 
-        controls.dampingFactor = 0.05;
-        controls.autoRotate = true;
-        controls.autoRotateSpeed = 1.0;
-
-        // Эффекты (Bloom)
-        const renderScene = new THREE.RenderPass(scene, camera);
-        const bloomPass = new THREE.UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), CONFIG.visuals.bloomStrength, CONFIG.visuals.bloomRadius, CONFIG.visuals.bloomThreshold);
-        const composer = new THREE.EffectComposer(renderer);
-        composer.addPass(renderScene);
-        composer.addPass(bloomPass);
-
-        // ==========================================
-        // 4. ГЕОМЕТРИЯ (Нейросеть / Клетки)
-        // ==========================================
-        const uniforms = {
-            uTime: { value: 0.0 },
-            uLow: { value: 0.0 },
-            uMid: { value: 0.0 },
-            uHigh: { value: 0.0 },
-            uNoiseScale: { value: CONFIG.motion.noiseScale },
-            uMacroDistortion: { value: CONFIG.motion.macroDistortion },
-            uPalette: { value: CONFIG.palettes[0] }, // Стартуем с 1-й палитры
-            uPaletteMix: { value: 0.0 }
-        };
-
-        const material = new THREE.ShaderMaterial({
-            vertexShader,
-            fragmentShader,
-            uniforms,
-            transparent: true,
-            blending: THREE.AdditiveBlending,
-            depthWrite: false
-        });
-
-        // Используем Икосаэдр высокого разрешения — он формирует органичную сеть из треугольников
-        const geometry = new THREE.IcosahedronGeometry(CONFIG.visuals.baseRadius, CONFIG.visuals.detailLevel);
-        const wireframeGeom = new THREE.WireframeGeometry(geometry);
-
-        const organismGroup = new THREE.Group();
+        // Создаем единую высокополигональную сферу для точек и связей (Скелет)
+        // Icosahedron (15, 35) дает ~12 000 вершин. Идеально для нейросети.
+        const baseGeo = new THREE.IcosahedronGeometry(15, 35);
         
-        // Точки (ядра клеток / синапсы)
-        const points = new THREE.Points(geometry, material);
-        // Линии (связи / аксоны). Используют Тот же материал и деформируются идентично!
-        const linesMat = material.clone(); 
-        // Немного убавляем прозрачность линий для глубины
-        linesMat.transparent = true;
-        linesMat.opacity = 0.3;
-        const lines = new THREE.LineSegments(wireframeGeom, linesMat);
+        // Добавляем случайные данные для шейдера (чтобы каждая частица мерцала уникально)
+        const vCount = baseGeo.attributes.position.count;
+        const randoms = new Float32Array(vCount);
+        for(let i=0; i<vCount; i++) randoms[i] = Math.random();
+        baseGeo.setAttribute('randomData', new THREE.BufferAttribute(randoms, 1));
 
-        organismGroup.add(points);
-        organismGroup.add(lines);
-        scene.add(organismGroup);
-
-        // ==========================================
-        // 5. АУДИО АНАЛИЗАТОР (Web Audio API)
-        // ==========================================
-        let audioContext, analyser, dataArray;
-        let audioElement = new Audio();
-        audioElement.crossOrigin = "anonymous";
-        let isPlaying = false;
-
-        function initAudio() {
-            if (audioContext) return;
-            audioContext = new (window.AudioContext || window.webkitAudioContext)();
-            analyser = audioContext.createAnalyser();
-            analyser.fftSize = CONFIG.audio.fftSize;
-            analyser.smoothingTimeConstant = CONFIG.audio.smoothing;
-
-            const source = audioContext.createMediaElementSource(audioElement);
-            source.connect(analyser);
-            analyser.connect(audioContext.destination);
-
-            dataArray = new Uint8Array(analyser.frequencyBinCount);
-        }
-
-        // UI Логика
-        const playBtn = document.getElementById('play-btn');
-        document.getElementById('audio-upload').addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            if (file) {
-                initAudio();
-                audioElement.src = URL.createObjectURL(file);
-                audioElement.play();
-                isPlaying = true;
-                playBtn.innerText = "❚❚ Pause";
-                if(audioContext.state === 'suspended') audioContext.resume();
-            }
+        // Материал Шейдера
+        const shaderMat = new THREE.ShaderMaterial({
+            vertexShader, fragmentShader,
+            uniforms: {
+                uTime: { value: 0 },
+                uBass: { value: 0 },
+                uMid: { value: 0 },
+                uTreble: { value: 0 },
+                uColor1: { value: new THREE.Color() },
+                uColor2: { value: new THREE.Color() },
+                uColor3: { value: new THREE.Color() },
+                uColor4: { value: new THREE.Color() }
+            },
+            transparent: true, blending: THREE.AdditiveBlending, depthWrite: false
         });
 
-        playBtn.addEventListener('click', () => {
-            initAudio();
-            if (isPlaying) { audioElement.pause(); isPlaying = false; playBtn.innerText = "▶ Play"; } 
-            else { 
-                if(!audioElement.src) { alert('Сначала загрузите трек!'); return; }
-                audioElement.play(); isPlaying = true; playBtn.innerText = "❚❚ Pause"; 
-            }
+        // 1. Система частиц
+        const points = new THREE.Points(baseGeo, shaderMat);
+        scene.add(points);
+
+        // 2. Линии связей (Нейросеть)
+        // Используем тот же шейдер, но рендерим как линии (opacity будет ниже)
+        const lineMat = shaderMat.clone();
+        // В Three.js нет прямого способа менять opacity через uniform без модификации кода,
+        // но аддитивный блендинг линий уже будет слабее из-за тонкости.
+        const lines = new THREE.LineSegments(baseGeo, lineMat);
+        scene.add(lines);
+
+        window.addEventListener('resize', () => { 
+            camera.aspect = window.innerWidth / window.innerHeight; camera.updateProjectionMatrix(); 
+            renderer.setSize(window.innerWidth, window.innerHeight); if(composer) composer.setSize(window.innerWidth, window.innerHeight);
         });
 
-        // ==========================================
-        // 6. ANIMATION LOOP & PHYSICS
-        // ==========================================
-        let globalTime = 0;
-        let currentSpeed = CONFIG.motion.baseSpeed;
-        let activePaletteIndex = 0;
-        let paletteMorphTimer = 0;
+        // --- ЛОГИКА ЦВЕТА, ВРЕМЕНИ И АУДИО ---
+        let currentPaletteIdx = 0;
+        let targetPaletteIdx = 0;
+        let paletteLerp = 0;
+        const c1 = new THREE.Color(), c2 = new THREE.Color(), c3 = new THREE.Color(), c4 = new THREE.Color();
 
-        // Внутренние значения для Lerp
-        let targetLow = 0, targetMid = 0, targetHigh = 0;
-        let curLow = 0, curMid = 0, curHigh = 0;
+        let sBass = 0, sMid = 0, sTreble = 0;
+        let shaderTime = 0;
 
         function animate() {
-            requestAnimationFrame(animate);
-            controls.update();
-
-            if (isPlaying && analyser) {
-                analyser.getByteFrequencyData(dataArray);
+            requestAnimationFrame(animate); 
+            const delta = 0.016; // Примерно 60fps
+            
+            // 1. АУДИО АНАЛИЗ (Разбивка частот)
+            if (isPlaying && analyser && dataArray) {
+                analyser.getByteFrequencyData(dataArray); 
                 
-                let bassSum = 0, midSum = 0, highSum = 0;
+                let b = 0, m = 0, t = 0;
                 const bins = analyser.frequencyBinCount;
                 
-                // Разделяем полосы (примерные индексы для Sub-bass, Mid, High)
-                for (let i = 0; i < bins; i++) {
-                    const val = dataArray[i] / 255.0;
-                    if (i < 10) bassSum += val;         // 0 - 10: Sub/Bass
-                    else if (i < 150) midSum += val;    // 10 - 150: Mids
-                    else if (i > 300 && i < 600) highSum += val; // Highs / Cymbals
+                // Разделяем спектр
+                for(let i=0; i<bins; i++) {
+                    let val = dataArray[i] / 255.0;
+                    if(i < 10) b += val;          // Sub-bass
+                    else if(i < 150) m += val;    // Mids
+                    else t += val;                // Treble
                 }
+                b /= 10; m /= 140; t /= (bins - 150);
+                
+                // Применяем кривые чувствительности из CONFIG
+                b = Math.pow(b, 1.8) * CONFIG.audio.bassFactor;
+                m = Math.pow(m, 1.5) * CONFIG.audio.midFactor;
+                t = Math.pow(t, 2.0) * CONFIG.audio.trebleFactor;
 
-                targetLow = (bassSum / 10) * CONFIG.audio.bassSensitivity;
-                targetMid = (midSum / 140) * CONFIG.audio.midSensitivity;
-                targetHigh = (highSum / 300) * CONFIG.audio.highSensitivity;
-
-                // Усиливаем влияние битов (возведение в степень)
-                targetLow = Math.pow(targetLow, 1.5); 
-                targetHigh = Math.pow(targetHigh, 2.0);
-
+                // Attack / Release фильтры для плавности
+                sBass += (b > sBass ? CONFIG.audio.attack : CONFIG.audio.release) * (b - sBass);
+                sMid += (m > sMid ? CONFIG.audio.attack : CONFIG.audio.release) * (m - sMid);
+                sTreble += (t > sTreble ? CONFIG.audio.attack : CONFIG.audio.release) * (t - sTreble);
             } else {
-                targetLow = 0; targetMid = 0; targetHigh = 0;
+                sBass += (0 - sBass) * 0.05;
+                sMid += (0 - sMid) * 0.05;
+                sTreble += (0 - sTreble) * 0.05;
             }
 
-            // Математическое сглаживание (Lerp) частот для предотвращения дерганых кадров
-            curLow += (targetLow - curLow) * CONFIG.audio.lerpSpeed;
-            curMid += (targetMid - curMid) * CONFIG.audio.lerpSpeed;
-            curHigh += (targetHigh - curHigh) * CONFIG.audio.lerpSpeed;
+            // 2. СКОРОСТЬ ВРЕМЕНИ (Физика движения)
+            // Время течет медленно в тишине и ускоряется на басах
+            let currentSpeed = CONFIG.motion.baseSpeed + (sBass * CONFIG.motion.peakSpeed);
+            shaderTime += currentSpeed * delta;
 
-            // ФИЗИКА СКОРОСТИ: Ускорение на битах, плавное затухание
-            let targetMotionSpeed = CONFIG.motion.baseSpeed + (curLow > 0.5 ? curLow * CONFIG.motion.beatMultiplier : 0);
-            currentSpeed += (targetMotionSpeed - currentSpeed) * CONFIG.motion.speedDecay;
-            globalTime += currentSpeed * 0.01;
-
-            // СМЕНА НАСТРОЕНИЯ / ПАЛИТР (Переключаем каждые ~15 сек музыки)
-            paletteMorphTimer += currentSpeed * 0.005;
-            if (paletteMorphTimer > 10.0) {
-                paletteMorphTimer = 0;
-                activePaletteIndex = (activePaletteIndex + 1) % CONFIG.palettes.length;
-                uniforms.uPalette.value = CONFIG.palettes[activePaletteIndex];
-                linesMat.uniforms.uPalette.value = CONFIG.palettes[activePaletteIndex];
+            // 3. МОРФИНГ ЦВЕТА
+            // Плавно переходим к целевой палитре
+            paletteLerp += (1.0 - paletteLerp) * 0.01; 
+            if (paletteLerp > 0.99) {
+                currentPaletteIdx = targetPaletteIdx;
+                paletteLerp = 0;
+                // Автоматически меняем палитру каждые ~20 секунд если трек долгий
+                if(Math.random() < 0.001) targetPaletteIdx = (targetPaletteIdx + 1) % CONFIG.palettes.length;
             }
 
-            // Обновляем Uniforms
-            uniforms.uTime.value = globalTime;
-            uniforms.uLow.value = curLow;
-            uniforms.uMid.value = curMid;
-            uniforms.uHigh.value = curHigh;
+            const pCur = CONFIG.palettes[currentPaletteIdx];
+            const pTar = CONFIG.palettes[targetPaletteIdx];
+
+            c1.setHex(pCur[0]).lerp(new THREE.Color(pTar[0]), paletteLerp);
+            c2.setHex(pCur[1]).lerp(new THREE.Color(pTar[1]), paletteLerp);
+            c3.setHex(pCur[2]).lerp(new THREE.Color(pTar[2]), paletteLerp);
+            c4.setHex(pCur[3]).lerp(new THREE.Color(pTar[3]), paletteLerp);
+
+            // 4. ОБНОВЛЕНИЕ ШЕЙДЕРОВ
+            shaderMat.uniforms.uTime.value = shaderTime;
+            shaderMat.uniforms.uBass.value = sBass;
+            shaderMat.uniforms.uMid.value = sMid;
+            shaderMat.uniforms.uTreble.value = sTreble;
+            shaderMat.uniforms.uColor1.value.copy(c1);
+            shaderMat.uniforms.uColor2.value.copy(c2);
+            shaderMat.uniforms.uColor3.value.copy(c3);
+            shaderMat.uniforms.uColor4.value.copy(c4);
             
-            linesMat.uniforms.uTime.value = globalTime;
-            linesMat.uniforms.uLow.value = curLow;
-            linesMat.uniforms.uMid.value = curMid;
-            linesMat.uniforms.uHigh.value = curHigh;
+            lineMat.uniforms.uTime.value = shaderTime;
+            lineMat.uniforms.uBass.value = sBass;
+            lineMat.uniforms.uMid.value = sMid;
+            lineMat.uniforms.uTreble.value = sTreble;
+            lineMat.uniforms.uColor1.value.copy(c1);
+            lineMat.uniforms.uColor2.value.copy(c2);
+            lineMat.uniforms.uColor3.value.copy(c3);
+            lineMat.uniforms.uColor4.value.copy(c4);
 
-            // Динамический Bloom: пульсирует вместе с басом
-            bloomPass.strength = CONFIG.visuals.bloomStrength + (curLow * 1.5);
+            // 5. ГЛОБАЛЬНОЕ ВРАЩЕНИЕ
+            controls.autoRotateSpeed = (0.5 + sBass * 2.0);
+            controls.update();
+
+            // 6. КАМЕРА И BLOOM
+            // Бас делает "Зум", Требл делает вспышки Bloom
+            camera.fov += ((baseFov - sBass * 8.0) - camera.fov) * 0.1;
+            camera.updateProjectionMatrix();
+            
+            if (bloomPass) {
+                bloomPass.strength += ((CONFIG.render.bloomStrength + sTreble * 1.5) - bloomPass.strength) * 0.1;
+            }
 
             composer.render();
         }
-
-        window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            composer.setSize(window.innerWidth, window.innerHeight);
-        });
-
+        
         animate();
     </script>
 </body>
