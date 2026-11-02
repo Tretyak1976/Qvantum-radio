@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Quantum Radio 3D - Infinite Symbiosis</title>
+    <title>Quantum Radio 3D - 10 Infinite Modes</title>
     <style>
         html, body { 
             margin: 0; padding: 0; width: 100vw; height: 100dvh; overflow: hidden; 
@@ -16,7 +16,16 @@
         #canvas-container { width: 100vw; height: 100dvh; position: fixed; top: 0; left: 0; z-index: 1; cursor: grab; background-color: #000000; }
         #canvas-container:active { cursor: grabbing; }
         
-        /* Нижняя панель управления */
+        #fullscreen-btn-top-left {
+            position: fixed; top: 20px; left: 20px; z-index: 15;
+            background: rgba(10, 10, 15, 0.6); border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 50%; width: 44px; height: 44px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.3rem; color: #fff; cursor: pointer; backdrop-filter: blur(10px);
+            transition: all 0.3s; padding: 0; outline: none;
+        }
+        #fullscreen-btn-top-left:hover { background: rgba(59, 130, 246, 0.4); transform: scale(1.1); }
+
         #ui-bottom {
             position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
             width: 95%; max-width: 700px; z-index: 10;
@@ -31,7 +40,6 @@
             display: flex; flex-direction: column; gap: 12px;
         }
 
-        /* Левая панель плейлиста */
         #sidebar {
             position: fixed; top: 0; left: 0; width: 350px; height: 100%;
             background: rgba(10, 10, 15, 0.9); backdrop-filter: blur(20px);
@@ -51,7 +59,7 @@
         .close-btn { background: none; border: none; color: #fff; font-size: 1.5rem; cursor: pointer; padding: 0; outline: none; transition: color 0.2s; }
         .close-btn:hover { color: #ef4444; }
 
-        #playlist { flex: 1; overflow-y: auto; padding: 10px; }
+        #playlist { flex: 1; overflow-y: auto; padding: 10px; transition: opacity 0.3s; }
         
         .track-item { 
             display: flex; align-items: center; padding: 10px 15px; border-bottom: 1px solid rgba(255,255,255,0.05); 
@@ -78,7 +86,6 @@
         input[type="range"] { flex: 1; -webkit-appearance: none; background: rgba(255,255,255,0.1); height: 6px; border-radius: 3px; outline: none; cursor: pointer; }
         input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 14px; background: #3b82f6; border-radius: 50%; box-shadow: 0 0 10px rgba(59,130,246,0.8); }
 
-        /* Оптимизированная панель, которая всегда помещается в экран */
         #controls-bar { 
             display: flex; align-items: center; justify-content: space-between; 
             gap: 6px; width: 100%; flex-wrap: nowrap; overflow: visible;
@@ -99,14 +106,14 @@
         
         select:hover, .btn:hover { background: rgba(59, 130, 246, 0.2); border-color: #3b82f6; box-shadow: 0 0 15px rgba(59, 130, 246, 0.4); }
 
-        /* Блок переключателя визуализаций */
+        /* Блок переключателя 10 визуализаций (кнопки вместо Select) */
         #vis-switcher {
             display: flex; align-items: center; justify-content: space-between;
             background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(59, 130, 246, 0.4);
             border-radius: 20px; flex: 1.2; min-width: 100px; padding: 2px 4px; overflow: hidden;
         }
-        .vis-btn { background: none; border: none; color: #3b82f6; font-size: 1rem; cursor: pointer; padding: 4px; outline: none; }
-        .vis-btn:hover { color: #fff; transform: scale(1.1); }
+        .vis-btn { background: none; border: none; color: #3b82f6; font-size: 1rem; cursor: pointer; padding: 4px; outline: none; transition: transform 0.2s; }
+        .vis-btn:hover { color: #fff; transform: scale(1.2); }
         #vis-name { flex: 1; text-align: center; color: #fff; font-size: 0.65rem; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 0 4px; }
         
         ::-webkit-scrollbar { width: 5px; }
@@ -125,6 +132,8 @@
     </style>
 </head>
 <body>
+
+    <button id="fullscreen-btn-top-left" title="На весь экран">⛶</button>
 
     <div id="sidebar">
         <div id="sidebar-header">
@@ -148,7 +157,7 @@
                 <button id="toggle-sidebar-btn" class="btn icon" title="Открыть плейлист">☰</button>
                 <select id="genre-filter"><option value="all">GENRES</option></select>
                 
-                <!-- НОВЫЙ БЛОК ПЕРЕКЛЮЧЕНИЯ ВИЗУАЛИЗАЦИЙ -->
+                <!-- НОВЫЙ БЛОК ПЕРЕКЛЮЧЕНИЯ ИЗ 10 ВИЗУАЛИЗАЦИЙ -->
                 <div id="vis-switcher">
                     <button id="vis-prev" class="vis-btn" title="Предыдущая визуализация">◀</button>
                     <span id="vis-name">1. SYMBIOSIS</span>
@@ -186,14 +195,19 @@
         let uiTimeout;
         const uiLayer = document.getElementById('ui-bottom');
         const sidebar = document.getElementById('sidebar');
+        const fullscreenBtnTopLeft = document.getElementById('fullscreen-btn-top-left');
         
         function resetUiTimer() {
             uiLayer.classList.remove('idle');
+            fullscreenBtnTopLeft.style.opacity = '1';
+            fullscreenBtnTopLeft.style.pointerEvents = 'auto';
             document.body.style.cursor = 'default';
             clearTimeout(uiTimeout);
             uiTimeout = setTimeout(() => { 
                 if (isPlaying && !sidebar.classList.contains('open')) { 
                     uiLayer.classList.add('idle'); 
+                    fullscreenBtnTopLeft.style.opacity = '0';
+                    fullscreenBtnTopLeft.style.pointerEvents = 'none';
                     document.body.style.cursor = 'none'; 
                 } 
             }, 3000);
@@ -203,11 +217,19 @@
         window.addEventListener('touchstart', resetUiTimer, {passive: true});
         window.addEventListener('click', resetUiTimer);
 
-        document.getElementById('toggle-sidebar-btn').onclick = () => {
-            sidebar.classList.add('open'); resetUiTimer();
-        };
-        document.getElementById('close-sidebar').onclick = () => {
-            sidebar.classList.remove('open'); resetUiTimer();
+        document.getElementById('toggle-sidebar-btn').onclick = () => { sidebar.classList.add('open'); resetUiTimer(); };
+        document.getElementById('close-sidebar').onclick = () => { sidebar.classList.remove('open'); resetUiTimer(); };
+
+        fullscreenBtnTopLeft.onclick = () => {
+            let docEl = document.documentElement;
+            if (!document.fullscreenElement) {
+                if (docEl.requestFullscreen) docEl.requestFullscreen().catch(e => {});
+                else if (docEl.webkitRequestFullscreen) docEl.webkitRequestFullscreen().catch(e => {});
+            } else {
+                if (document.exitFullscreen) document.exitFullscreen();
+                else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+            }
+            resetUiTimer();
         };
 
         let audioContext, analyser, dataArray, timeDataArray;
@@ -215,6 +237,10 @@
         audioElement.crossOrigin = "anonymous"; 
         
         let isPlaying = false, isPreloadingNext = false; 
+        let isLoadingTrack = false;
+        let loadingTimer = null;
+        let countdownValue = 10;
+
         let fullPlaylist = [], currentPlaylist = [];
         let currentPlayingTrack = null;
         const audioCache = {}; 
@@ -225,10 +251,8 @@
             audioContext = new (window.AudioContext || window.webkitAudioContext)();
             analyser = audioContext.createAnalyser();
             analyser.fftSize = 2048; analyser.smoothingTimeConstant = 0.85; 
-            
             const source = audioContext.createMediaElementSource(audioElement);
             source.connect(analyser); analyser.connect(audioContext.destination);
-            
             dataArray = new Uint8Array(analyser.frequencyBinCount);
             timeDataArray = new Uint8Array(analyser.fftSize);
         }
@@ -258,10 +282,10 @@
                     let nextTrack = currentPlaylist[nextIdx];
                     
                     if (!nextTrack.isLocal && nextTrack.url.includes("script.google.com") && !audioCache[nextTrack.url]) {
-                        isPreloadingNext = true;
+                        isPreloadingNext = true; 
                         fetch(nextTrack.url).then(res => res.json()).then(data => {
-                            if (!data.error && data.base64) audioCache[nextTrack.url] = data.base64;
-                        }).catch(err => console.error(err));
+                            if (!data.error && data.base64) audioCache[nextTrack.url] = data.base64; 
+                        }).catch(e => console.error(e));
                     }
                 }
             }
@@ -279,19 +303,14 @@
                 const data = await response.json();
                 if (data.error) throw new Error(data.error);
 
-                fullPlaylist = data;
-                currentPlaylist = [...fullPlaylist];
-                
+                fullPlaylist = data; currentPlaylist = [...fullPlaylist];
                 const genres = [...new Set(fullPlaylist.map(t => t.genre).filter(Boolean))];
                 const filterSelect = document.getElementById('genre-filter');
                 filterSelect.innerHTML = '<option value="all">ALL GENRES</option><option value="favorites">❤ FAVORITES</option>';
-                
                 genres.forEach(g => {
-                    const opt = document.createElement('option');
-                    opt.value = g; opt.innerText = g.toUpperCase();
+                    const opt = document.createElement('option'); opt.value = g; opt.innerText = g.toUpperCase();
                     filterSelect.appendChild(opt);
                 });
-
                 updatePlaylistUI();
                 if (currentPlaylist.length > 0) playTrack(currentPlaylist[0]);
             } catch (err) {
@@ -300,11 +319,11 @@
         });
 
         document.getElementById('genre-filter').addEventListener('change', (e) => {
+            if (isLoadingTrack) return; 
             const selectedGenre = e.target.value;
             if (selectedGenre === 'all') currentPlaylist = [...fullPlaylist];
             else if (selectedGenre === 'favorites') currentPlaylist = fullPlaylist.filter(t => favorites.includes(t.url));
             else currentPlaylist = fullPlaylist.filter(t => t.genre === selectedGenre);
-            
             updatePlaylistUI();
             if (currentPlaylist.length > 0) playTrack(currentPlaylist[0]);
             else { audioElement.pause(); isPlaying = false; document.getElementById('play-pause-btn').innerText = "▶"; }
@@ -312,11 +331,11 @@
         });
 
         document.getElementById('audio-upload').onchange = (e) => {
+            if (isLoadingTrack) return;
             if (e.target.files.length > 0) {
                 const file = e.target.files[0];
                 const localUrl = URL.createObjectURL(file);
                 fullPlaylist.unshift({ name: file.name.substring(0, 30) + '...', genre: "LOCAL", url: localUrl, isLocal: true }); 
-                
                 const filter = document.getElementById('genre-filter');
                 if(filter.value !== 'all') { filter.value = 'all'; filter.dispatchEvent(new Event('change')); }
                 else { currentPlaylist = [...fullPlaylist]; updatePlaylistUI(); playTrack(currentPlaylist[0]); }
@@ -327,140 +346,123 @@
         const playBtn = document.getElementById('play-pause-btn');
 
         function playNext() {
-            if (!currentPlayingTrack || currentPlaylist.length === 0) return;
+            if (isLoadingTrack || !currentPlayingTrack || currentPlaylist.length === 0) return;
             let idx = currentPlaylist.findIndex(t => t.url === currentPlayingTrack.url);
             playTrack(currentPlaylist[(idx + 1) % currentPlaylist.length]);
         }
-
         function playPrev() {
-            if (!currentPlayingTrack || currentPlaylist.length === 0) return;
+            if (isLoadingTrack || !currentPlayingTrack || currentPlaylist.length === 0) return;
             let idx = currentPlaylist.findIndex(t => t.url === currentPlayingTrack.url);
             let prevIdx = (idx - 1 + currentPlaylist.length) % currentPlaylist.length;
             playTrack(currentPlaylist[prevIdx]);
         }
-
         document.getElementById('next-btn').onclick = () => { playNext(); resetUiTimer(); };
         document.getElementById('prev-btn').onclick = () => { playPrev(); resetUiTimer(); };
         audioElement.addEventListener('ended', playNext);
 
         async function playTrack(track) {
+            if (isLoadingTrack) return; 
             currentPlayingTrack = track;
             initAudio(); 
             if(audioContext.state === 'suspended') await audioContext.resume().catch(e=>{});
             
-            isPreloadingNext = false;
-            updatePlaylistUI();
-            playBtn.innerText = "↻"; 
+            seedTrackEvolution();
+            isPreloadingNext = false; 
+
+            isLoadingTrack = true; countdownValue = 10;
+            playBtn.innerHTML = `<span style="color:#ef4444;">${countdownValue}</span>`;
+            updatePlaylistUI(); 
+            
+            clearInterval(loadingTimer);
+            loadingTimer = setInterval(() => {
+                if (countdownValue > 1) {
+                    countdownValue--; playBtn.innerHTML = `<span style="color:#ef4444;">${countdownValue}</span>`; updatePlaylistUI();
+                }
+            }, 1000);
             
             try {
                 if (!track.isLocal && track.url.includes("script.google.com")) {
-                     if (audioCache[track.url]) {
-                         audioElement.src = audioCache[track.url];
-                     } else {
-                         const response = await fetch(track.url);
-                         const data = await response.json();
+                     if (audioCache[track.url]) { audioElement.src = audioCache[track.url]; } 
+                     else {
+                         const response = await fetch(track.url); const data = await response.json();
                          if (data.error || !data.base64) throw new Error("Load error");
-                         audioElement.src = data.base64;
-                         audioCache[track.url] = data.base64; 
+                         audioElement.src = data.base64; audioCache[track.url] = data.base64; 
                      }
-                } else {
-                     audioElement.src = track.url; 
-                }
+                } else { audioElement.src = track.url; }
 
+                clearInterval(loadingTimer); isLoadingTrack = false;
                 let playPromise = audioElement.play();
                 if (playPromise !== undefined) {
                     playPromise.then(() => {
-                        isPlaying = true; playBtn.innerText = "❚❚";
-                        updatePlaylistUI(); resetUiTimer();
+                        isPlaying = true; playBtn.innerText = "❚❚"; updatePlaylistUI(); resetUiTimer();
                     }).catch(error => {
-                        isPlaying = false; playBtn.innerText = "▶";
-                        updatePlaylistUI();
+                        isPlaying = false; playBtn.innerText = "▶"; updatePlaylistUI();
                         document.body.addEventListener('click', function resumeAutoplay() {
-                            if(!isPlaying) {
-                                audioContext.resume(); audioElement.play();
-                                isPlaying = true; playBtn.innerText = "❚❚";
-                                updatePlaylistUI();
-                            }
+                            if(!isPlaying) { audioContext.resume(); audioElement.play(); isPlaying = true; playBtn.innerText = "❚❚"; updatePlaylistUI(); }
                             document.body.removeEventListener('click', resumeAutoplay);
                         }, {once: true});
                     });
                 }
-            } catch (error) { playBtn.innerText = "⚠"; setTimeout(() => playNext(), 2000); }
+            } catch (error) {
+                clearInterval(loadingTimer); isLoadingTrack = false;
+                playBtn.innerText = "⚠"; setTimeout(() => playNext(), 2000);
+            }
         }
 
         function updatePlaylistUI() {
             const playlistDiv = document.getElementById('playlist');
             playlistDiv.innerHTML = '';
-            
-            if (currentPlaylist.length === 0) {
-                playlistDiv.innerHTML = '<div style="padding:10px; color:#aaa; text-align:center;">No tracks found</div>';
-                return;
-            }
+            if (isLoadingTrack) { playlistDiv.style.pointerEvents = 'none'; playlistDiv.style.opacity = '0.7'; } 
+            else { playlistDiv.style.pointerEvents = 'auto'; playlistDiv.style.opacity = '1'; }
+            if (currentPlaylist.length === 0) { playlistDiv.innerHTML = '<div style="padding:10px; color:#aaa; text-align:center;">No tracks found</div>'; return; }
 
             currentPlaylist.forEach((track) => {
-                const trackEl = document.createElement('div');
-                trackEl.className = 'track-item';
+                const trackEl = document.createElement('div'); trackEl.className = 'track-item';
                 const isActive = (currentPlayingTrack && currentPlayingTrack.url === track.url);
                 if (isActive) trackEl.classList.add('active');
                 
-                const playIconBtn = document.createElement('div');
-                playIconBtn.className = 'track-play-icon';
-                playIconBtn.innerHTML = (isActive && isPlaying) ? '❚❚' : '▶';
+                const playIconBtn = document.createElement('div'); playIconBtn.className = 'track-play-icon';
+                if (isActive && isLoadingTrack) playIconBtn.innerHTML = `<span style="font-size:1.1rem; color:#ef4444; font-weight:bold;">${countdownValue}</span>`;
+                else playIconBtn.innerHTML = (isActive && isPlaying) ? '❚❚' : '▶';
+
                 playIconBtn.onclick = (e) => {
-                    e.stopPropagation();
+                    e.stopPropagation(); if (isLoadingTrack) return; 
                     if (isActive) {
-                        if (isPlaying) { audioElement.pause(); isPlaying = false; }
-                        else { audioElement.play(); isPlaying = true; }
+                        if (isPlaying) { audioElement.pause(); isPlaying = false; } else { audioElement.play(); isPlaying = true; }
                         updatePlaylistUI(); playBtn.innerText = isPlaying ? "❚❚" : "▶";
                     } else playTrack(track);
                     resetUiTimer();
                 };
                 
-                const titleSpan = document.createElement('span');
-                titleSpan.className = 'track-title';
-                titleSpan.innerHTML = track.name;
-
-                const favBtn = document.createElement('span');
-                const isFav = favorites.includes(track.url);
-                favBtn.className = 'fav-btn';
-                favBtn.innerText = isFav ? '♥' : '♡';
-                favBtn.style.color = isFav ? '#ef4444' : '#aaa';
+                const titleSpan = document.createElement('span'); titleSpan.className = 'track-title'; titleSpan.innerHTML = track.name; 
+                const favBtn = document.createElement('span'); const isFav = favorites.includes(track.url);
+                favBtn.className = 'fav-btn'; favBtn.innerText = isFav ? '♥' : '♡'; favBtn.style.color = isFav ? '#ef4444' : '#aaa';
                 favBtn.onclick = (e) => {
-                    e.stopPropagation();
-                    if (isFav) favorites = favorites.filter(url => url !== track.url);
-                    else favorites.push(track.url);
+                    e.stopPropagation(); if (isLoadingTrack) return;
+                    if (isFav) favorites = favorites.filter(url => url !== track.url); else favorites.push(track.url);
                     localStorage.setItem('quantum_favorites', JSON.stringify(favorites));
-                    if (document.getElementById('genre-filter').value === 'favorites' && isFav) {
-                        currentPlaylist = currentPlaylist.filter(t => t.url !== track.url);
-                    }
+                    if (document.getElementById('genre-filter').value === 'favorites' && isFav) currentPlaylist = currentPlaylist.filter(t => t.url !== track.url);
                     updatePlaylistUI(); 
                 };
-
-                trackEl.appendChild(playIconBtn);
-                trackEl.appendChild(titleSpan);
-                trackEl.appendChild(favBtn);
+                trackEl.appendChild(playIconBtn); trackEl.appendChild(titleSpan); trackEl.appendChild(favBtn);
                 playlistDiv.appendChild(trackEl);
             });
         }
 
         playBtn.onclick = async () => {
-            initAudio();
-            if(audioContext.state === 'suspended') await audioContext.resume().catch(e=>{});
-            if (isPlaying) { 
-                audioElement.pause(); isPlaying = false; playBtn.innerText = "▶";
-            } else {
-                if (!audioElement.src || audioElement.src.endsWith(window.location.host + "/")) {
-                    if (currentPlaylist.length > 0) playTrack(currentPlaylist[0]);
-                } else { 
-                    await audioElement.play(); isPlaying = true; playBtn.innerText = "❚❚";
-                }
+            if (isLoadingTrack) return; 
+            initAudio(); if(audioContext.state === 'suspended') await audioContext.resume().catch(e=>{});
+            if (isPlaying) { audioElement.pause(); isPlaying = false; playBtn.innerText = "▶"; } 
+            else {
+                if (!audioElement.src || audioElement.src.endsWith(window.location.host + "/")) { if (currentPlaylist.length > 0) playTrack(currentPlaylist[0]); } 
+                else { await audioElement.play(); isPlaying = true; playBtn.innerText = "❚❚"; }
             }
             updatePlaylistUI(); resetUiTimer();
         };
 
 
         // =========================================================================
-        // ЛОГИКА ПЕРЕКЛЮЧЕНИЯ ВИЗУАЛИЗАЦИЙ
+        // ЛОГИКА ПЕРЕКЛЮЧЕНИЯ 10 ВИЗУАЛИЗАЦИЙ
         // =========================================================================
         const VIS_MODES = [
             "1. SYMBIOSIS", 
@@ -469,10 +471,12 @@
             "4. NEURAL CORE",
             "5. LIVING ARCHETYPES",
             "6. SOLAR FLARE",
-            "7. ETHEREAL GHOST"
+            "7. ETHEREAL GHOST",
+            "8. CYBER MATRIX",
+            "9. DEEP OCEAN",
+            "10. FRACTAL FLOWER"
         ];
         let currentVisMode = 0;
-        
         const visNameLabel = document.getElementById('vis-name');
         
         document.getElementById('vis-prev').addEventListener('click', () => {
@@ -487,11 +491,9 @@
             resetUiTimer();
         });
 
-        let targetHueOffset = 0;
-        let currentHueOffset = 0;
 
         // =========================================================================
-        // 3D СЦЕНА (Основа index 5 - CPU Math)
+        // 3D SCENE & MATH ENGINE (Основа 5)
         // =========================================================================
         const container = document.getElementById('canvas-container');
         const scene = new THREE.Scene();
@@ -518,30 +520,21 @@
 
         const globeGroup = new THREE.Group(); scene.add(globeGroup);
         const gridDim = 48; const pCount = gridDim * gridDim;
-        const pOrig = new Float32Array(pCount * 3); 
-        const pPos = new Float32Array(pCount * 3); 
-        const pColor = new Float32Array(pCount * 3); 
-        const lineIndices = [];
+        const pOrig = new Float32Array(pCount * 3); const pPos = new Float32Array(pCount * 3); const pColor = new Float32Array(pCount * 3); const lineIndices = [];
 
         for(let i=0; i<gridDim; i++){
             for(let j=0; j<gridDim; j++){
                 let idx = i*gridDim + j;
                 if (j < gridDim - 1) lineIndices.push(idx, idx + 1);
                 if (i < gridDim - 1) lineIndices.push(idx, idx + gridDim);
-                let u = (j / (gridDim - 1)) * Math.PI * 2; 
-                let v = (i / (gridDim - 1)) * Math.PI; 
-                let r = 10.3; 
-                pOrig[idx*3] = r * Math.cos(u) * Math.sin(v); 
-                pOrig[idx*3+1] = r * Math.cos(v); 
-                pOrig[idx*3+2] = r * Math.sin(u) * Math.sin(v);
+                let u = (j / (gridDim - 1)) * Math.PI * 2; let v = (i / (gridDim - 1)) * Math.PI; let r = 10.3; 
+                pOrig[idx*3] = r * Math.cos(u) * Math.sin(v); pOrig[idx*3+1] = r * Math.cos(v); pOrig[idx*3+2] = r * Math.sin(u) * Math.sin(v);
                 pPos[idx*3] = pOrig[idx*3]; pPos[idx*3+1] = pOrig[idx*3+1]; pPos[idx*3+2] = pOrig[idx*3+2];
             }
         }
 
         const pGeo = new THREE.BufferGeometry();
-        pGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3)); 
-        pGeo.setAttribute('color', new THREE.BufferAttribute(pColor, 3)); 
-        pGeo.setIndex(lineIndices);
+        pGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3)); pGeo.setAttribute('color', new THREE.BufferAttribute(pColor, 3)); pGeo.setIndex(lineIndices);
 
         const pCanvas = document.createElement('canvas'); pCanvas.width = 16; pCanvas.height = 16; 
         const pCtx = pCanvas.getContext('2d'); const pGrad = pCtx.createRadialGradient(8, 8, 0, 8, 8, 8);
@@ -584,6 +577,17 @@
         let evolveBass = 0, evolveMid = 0, evolveTreble = 0;
         let targetRotX = 0.001, targetRotY = 0.002, targetRotZ = 0.001;
         let currentRotX = 0.001, currentRotY = 0.002, currentRotZ = 0.001;
+        
+        let trackSeedR = 12.0, trackSeedFreqU = 2.0, trackSeedFreqV = 3.0, trackSeedMorph = 1.0, trackSeedTwistSpeed = 1.0;
+        let currentHueOffset = 0, targetHueOffset = 0;
+
+        function seedTrackEvolution() {
+            trackSeedR = 12 + Math.random() * 8;
+            trackSeedFreqU = 1.0 + Math.random() * 5.0;
+            trackSeedFreqV = 1.0 + Math.random() * 5.0;
+            trackSeedMorph = 0.5 + Math.random() * 1.5;
+            trackSeedTwistSpeed = 0.5 + Math.random() * 2.0;
+        }
 
         function animate() {
             requestAnimationFrame(animate); controls.update(); const t = Date.now() * 0.001;
@@ -622,32 +626,47 @@
                 currentRotY += (targetRotY - currentRotY) * 0.05; 
                 currentRotZ += (targetRotZ - currentRotZ) * 0.05;
 
-                // Цветовой морфинг
-                let hueOffsets = [0, 45, 120, 200, 280, 15, 60];
+                // Цветовой морфинг (Разные палитры для разных режимов)
+                let hueOffsets = [0, 45, 120, 200, 280, 15, 60, 310, 240, 340];
                 targetHueOffset = hueOffsets[currentVisMode];
                 currentHueOffset += (targetHueOffset - currentHueOffset) * 0.05;
                 const dynamicHue = (currentHueOffset + evolveMid * 50 + smoothedCentroid * 800 + energy * 200) % 360;
 
+                // ДИСКО-ЛАЗЕРЫ (Меняют угол и прозрачность на басу)
                 let laserPower = Math.pow(treble, 2) * 1.5 + sharpBass; 
                 laserGroup.children.forEach((l, i) => {
                     l.material.color.setHSL((dynamicHue + i*3)%360 / 360, 1.0, 0.6);
-                    if(sharpBass > 0.5 || laserPower > 0.4) { l.material.opacity = Math.min(1.0, laserPower); l.scale.y = 1 + sharpBass * 2; } 
-                    else { l.material.opacity *= 0.85; l.scale.y += (1 - l.scale.y) * 0.1; }
-                    let choreo = i % 3;
-                    if (choreo === 0) { l.rotation.x = l.userData.basex + Math.sin(t * l.userData.speed + l.userData.phase) * (0.2 + sharpBass*0.5); l.rotation.y = l.userData.basey + Math.cos(t * l.userData.speed + l.userData.phase) * (0.2 + sharpBass*0.5); } 
-                    else if (choreo === 1) { l.rotation.x = l.userData.basex + Math.sin(t * 0.5) * 0.3; l.rotation.z = Math.cos(t * 0.5) * 0.3; } 
-                    else { l.rotation.y = l.userData.basey + Math.cos(evolveBass * 0.5) * (0.5 * sharpBass); }
+                    if(sharpBass > 0.4 || laserPower > 0.3) { 
+                        l.material.opacity = Math.min(1.0, laserPower * 1.5); 
+                        l.scale.y = 1 + sharpBass * 2.5; 
+                    } else { 
+                        l.material.opacity *= 0.85; l.scale.y += (1 - l.scale.y) * 0.1; 
+                    }
+                    
+                    let choreo = i % 4;
+                    // Раскачка лазеров как в клубе
+                    if (choreo === 0) { 
+                        l.rotation.x = l.userData.basex + Math.sin(t * 1.5 + l.userData.phase) * (0.2 + sharpBass*1.2); 
+                        l.rotation.y = l.userData.basey + Math.cos(t * 1.5 + l.userData.phase) * (0.2 + sharpBass*1.2); 
+                    } else if (choreo === 1) { 
+                        l.rotation.x = l.userData.basex + Math.sin(t * 2.0) * (0.3 + sharpBass); 
+                        l.rotation.z = Math.cos(t * 2.0) * (0.3 + sharpBass); 
+                    } else if (choreo === 2) {
+                        l.rotation.y = l.userData.basey + Math.sin(evolveBass) * (0.8 * sharpBass);
+                    } else { 
+                        l.rotation.x = l.userData.basex + Math.cos(evolveBass * 0.5) * (0.5 * sharpBass); 
+                    }
                 });
 
-                if (isBeat && sharpBass > 0.7) { strobeLight.intensity = 4.0; sunLight.intensity = 3.0; } 
+                if (isBeat && sharpBass > 0.6) { strobeLight.intensity = 4.0; sunLight.intensity = 3.0; } 
                 else { strobeLight.intensity += (0 - strobeLight.intensity) * 0.2; sunLight.intensity += (1.0 - sunLight.intensity) * 0.1; }
 
                 const positions = quantumPoints.geometry.attributes.position.array; 
                 const colors = quantumPoints.geometry.attributes.color.array;
                 
-                let freqU = 2.0 + Math.sin(evolveMid * 0.2) * 5.0; 
-                let freqV = 3.0 + Math.cos(evolveBass * 0.15) * 6.0; 
-                let shapeChaos = Math.sin(evolveTreble * 0.3) * 0.5;
+                let freqU = trackSeedFreqU + Math.sin(evolveMid * 0.2) * 5.0; 
+                let freqV = trackSeedFreqV + Math.cos(evolveBass * 0.15) * 6.0; 
+                let shapeChaos = Math.sin(evolveTreble * 0.3) * trackSeedMorph;
 
                 for(let i=0; i<gridDim; i++) {
                     for(let j=0; j<gridDim; j++) {
@@ -656,17 +675,17 @@
                         let v = (i / (gridDim - 1)) * Math.PI;
                         
                         let audioIdx = Math.floor((idx / pCount) * (analyser.frequencyBinCount * 0.5)); 
-                        // Увеличена чувствительность rawF, чтобы фигура не пропадала на тихом звуке
+                        // Снижен порог реакции, чтобы форма оживала даже на тихой музыке
                         let rawF = dataArray[audioIdx] / 255.0; 
                         let fSharp = Math.pow(rawF, 1.5); 
                         let waveRipple = (timeDataArray[audioIdx]/128.0 - 1.0); 
                         
                         let tx = pOrig[idx*3], ty = pOrig[idx*3+1], tz = pOrig[idx*3+2];
 
-                        // Обработка даже при тихом звуке
+                        // Обработка геометрии (просыпается при energy > 0.002 вместо 0.01)
                         if (energy > 0.002) {
                             
-                            if (currentVisMode === 0) { // 1. SYMBIOSIS (Index 5 Base)
+                            if (currentVisMode === 0) { // 1. SYMBIOSIS (Original Base)
                                 let R = 15 + sharpBass * 20 + Math.sin(v * freqV + evolveMid) * (8 + mid * 10);
                                 let twist = u + Math.sin(v * freqU + evolveTreble) * (Math.sin(evolveBass) * 4);
                                 let flare = Math.abs(Math.cos(u * (4 + shapeChaos*2) + t)) * (10 + sharpMid * 15);
@@ -727,6 +746,33 @@
                                 tx = Math.cos(u) * Math.sin(v) * currentRadius; tz = Math.sin(u) * Math.sin(v) * currentRadius; ty = Math.cos(v) * currentRadius * 1.2;
                                 let rippleForce = waveRipple * (2 + treble * 10);
                                 tx += Math.sin(v*5) * rippleForce; ty += Math.cos(u*5) * rippleForce; tz += Math.sin(u*5) * rippleForce;
+                            
+                            } else if (currentVisMode === 7) { // 8. CYBER MATRIX
+                                let R = 15 + sharpBass * 15;
+                                let matrixU = Math.round(u * 6.0) / 6.0; let matrixV = Math.round(v * 6.0) / 6.0;
+                                let block = Math.sin(matrixU * 10 + evolveMid) * Math.cos(matrixV * 10 + evolveBass) * (5 + mid * 10);
+                                let currentRadius = R + block + fSharp * 10;
+                                tx = Math.cos(matrixU) * Math.sin(matrixV) * currentRadius; tz = Math.sin(matrixU) * Math.sin(matrixV) * currentRadius; ty = Math.cos(matrixV) * currentRadius;
+                                let rippleForce = waveRipple * (5 + treble * 15);
+                                tx += Math.cos(u*20) * rippleForce; ty += Math.sin(v*20) * rippleForce; tz += Math.cos(u*20) * rippleForce;
+
+                            } else if (currentVisMode === 8) { // 9. DEEP OCEAN
+                                let R = 8 + sharpBass * 12;
+                                let tentacles = Math.pow(Math.sin(u * 8 + evolveMid), 2) * (10 + mid * 20);
+                                let currentRadius = R + tentacles * (v / Math.PI) + fSharp * 15;
+                                let twist = u + Math.sin(v * 3.0 - t * 1.5) * 1.5;
+                                tx = Math.cos(twist) * Math.sin(v) * currentRadius; tz = Math.sin(twist) * Math.sin(v) * currentRadius; ty = Math.cos(v) * (R + fSharp*10) + Math.cos(v * 2 + t) * 5;
+                                let rippleForce = waveRipple * (3 + treble * 20);
+                                tx += Math.sin(v*10) * rippleForce; ty += Math.cos(u*10) * rippleForce; tz += Math.sin(u*10) * rippleForce;
+
+                            } else if (currentVisMode === 9) { // 10. FRACTAL FLOWER
+                                let R = 5 + sharpBass * 8;
+                                let petals = Math.abs(Math.sin(u * 5)) * Math.sin(v * 3 - t) * (15 + sharpMid * 20);
+                                let currentRadius = R + petals + fSharp * 12;
+                                let openAnim = Math.sin(t * 0.5) * 0.5 + 0.5; // Плавное раскрытие
+                                tx = Math.cos(u) * Math.sin(v * openAnim) * currentRadius; tz = Math.sin(u) * Math.sin(v * openAnim) * currentRadius; ty = Math.cos(v) * currentRadius * (1.0 + openAnim);
+                                let rippleForce = waveRipple * (4 + treble * 30);
+                                tx += Math.cos(u*15) * rippleForce; ty += Math.sin(v*15) * rippleForce; tz += Math.cos(u*15) * rippleForce;
                             }
                         }
 
