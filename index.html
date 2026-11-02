@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Quantum Radio 3D - 10 Infinite Modes</title>
+    <title>Quantum Radio 3D - Infinite Genesis</title>
     <style>
         html, body { 
             margin: 0; padding: 0; width: 100vw; height: 100dvh; overflow: hidden; 
@@ -13,8 +13,7 @@
         
         :fullscreen, ::backdrop, :-webkit-full-screen { background-color: #000000 !important; }
 
-        #canvas-container { width: 100vw; height: 100dvh; position: fixed; top: 0; left: 0; z-index: 1; cursor: grab; background-color: #000000; }
-        #canvas-container:active { cursor: grabbing; }
+        #canvas-container { width: 100vw; height: 100dvh; position: fixed; top: 0; left: 0; z-index: 1; cursor: pointer; background-color: #000000; }
         
         #fullscreen-btn-top-left {
             position: fixed; top: 20px; left: 20px; z-index: 15;
@@ -26,6 +25,7 @@
         }
         #fullscreen-btn-top-left:hover { background: rgba(59, 130, 246, 0.4); transform: scale(1.1); }
 
+        /* Нижняя панель управления */
         #ui-bottom {
             position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
             width: 95%; max-width: 700px; z-index: 10;
@@ -40,6 +40,7 @@
             display: flex; flex-direction: column; gap: 12px;
         }
 
+        /* Левая панель плейлиста */
         #sidebar {
             position: fixed; top: 0; left: 0; width: 350px; height: 100%;
             background: rgba(10, 10, 15, 0.9); backdrop-filter: blur(20px);
@@ -86,6 +87,7 @@
         input[type="range"] { flex: 1; -webkit-appearance: none; background: rgba(255,255,255,0.1); height: 6px; border-radius: 3px; outline: none; cursor: pointer; }
         input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 14px; background: #3b82f6; border-radius: 50%; box-shadow: 0 0 10px rgba(59,130,246,0.8); }
 
+        /* Оптимизированная панель, которая всегда помещается в экран */
         #controls-bar { 
             display: flex; align-items: center; justify-content: space-between; 
             gap: 6px; width: 100%; flex-wrap: nowrap; overflow: visible;
@@ -106,15 +108,13 @@
         
         select:hover, .btn:hover { background: rgba(59, 130, 246, 0.2); border-color: #3b82f6; box-shadow: 0 0 15px rgba(59, 130, 246, 0.4); }
 
-        /* Блок переключателя 10 визуализаций (кнопки вместо Select) */
+        /* Блок индикатора генератора (Без кнопок переключения) */
         #vis-switcher {
-            display: flex; align-items: center; justify-content: space-between;
+            display: flex; align-items: center; justify-content: center;
             background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(59, 130, 246, 0.4);
-            border-radius: 20px; flex: 1.2; min-width: 100px; padding: 2px 4px; overflow: hidden;
+            border-radius: 20px; flex: 1.2; min-width: 100px; padding: 8px 4px; overflow: hidden;
         }
-        .vis-btn { background: none; border: none; color: #3b82f6; font-size: 1rem; cursor: pointer; padding: 4px; outline: none; transition: transform 0.2s; }
-        .vis-btn:hover { color: #fff; transform: scale(1.2); }
-        #vis-name { flex: 1; text-align: center; color: #fff; font-size: 0.65rem; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 0 4px; }
+        #vis-name { flex: 1; text-align: center; color: #3b82f6; font-size: 0.65rem; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 0 4px; letter-spacing: 1px; }
         
         ::-webkit-scrollbar { width: 5px; }
         ::-webkit-scrollbar-thumb { background: #3b82f6; border-radius: 3px; }
@@ -157,11 +157,9 @@
                 <button id="toggle-sidebar-btn" class="btn icon" title="Открыть плейлист">☰</button>
                 <select id="genre-filter"><option value="all">GENRES</option></select>
                 
-                <!-- НОВЫЙ БЛОК ПЕРЕКЛЮЧЕНИЯ ИЗ 10 ВИЗУАЛИЗАЦИЙ -->
-                <div id="vis-switcher">
-                    <button id="vis-prev" class="vis-btn" title="Предыдущая визуализация">◀</button>
-                    <span id="vis-name">1. SYMBIOSIS</span>
-                    <button id="vis-next" class="vis-btn" title="Следующая визуализация">▶</button>
+                <!-- ИНДИКАТОР ГЕНЕРАТОРА (Tap to evolve) -->
+                <div id="vis-switcher" title="Кликни по экрану, чтобы создать новую форму">
+                    <span id="vis-name">TAP TO EVOLVE</span>
                 </div>
                 
                 <label class="btn icon" title="Upload Local Track">
@@ -215,11 +213,24 @@
         
         window.addEventListener('mousemove', resetUiTimer);
         window.addEventListener('touchstart', resetUiTimer, {passive: true});
-        window.addEventListener('click', resetUiTimer);
+        
+        // --- ГЕНЕРАЦИЯ НОВОЙ ФОРМЫ ПО КЛИКУ/ТАПУ ---
+        document.getElementById('canvas-container').addEventListener('click', () => {
+            resetUiTimer();
+            generateNewArchetype();
+            
+            // Визуальный отклик в UI
+            const visName = document.getElementById('vis-name');
+            visName.innerText = "EVOLVING...";
+            visName.style.color = "#fff";
+            setTimeout(() => {
+                visName.innerText = "QUANTUM GENESIS";
+                visName.style.color = "#3b82f6";
+            }, 800);
+        });
 
         document.getElementById('toggle-sidebar-btn').onclick = () => { sidebar.classList.add('open'); resetUiTimer(); };
         document.getElementById('close-sidebar').onclick = () => { sidebar.classList.remove('open'); resetUiTimer(); };
-
         fullscreenBtnTopLeft.onclick = () => {
             let docEl = document.documentElement;
             if (!document.fullscreenElement) {
@@ -236,13 +247,8 @@
         let audioElement = new Audio();
         audioElement.crossOrigin = "anonymous"; 
         
-        let isPlaying = false, isPreloadingNext = false; 
-        let isLoadingTrack = false;
-        let loadingTimer = null;
-        let countdownValue = 10;
-
-        let fullPlaylist = [], currentPlaylist = [];
-        let currentPlayingTrack = null;
+        let isPlaying = false, isPreloadingNext = false, isLoadingTrack = false, loadingTimer = null, countdownValue = 10;
+        let fullPlaylist = [], currentPlaylist = [], currentPlayingTrack = null;
         const audioCache = {}; 
         let favorites = JSON.parse(localStorage.getItem('quantum_favorites')) || [];
 
@@ -261,58 +267,39 @@
         const timeCurrent = document.getElementById('time-current');
         const timeTotal = document.getElementById('time-total');
 
-        function formatTime(seconds) {
-            if (isNaN(seconds)) return "0:00";
-            const m = Math.floor(seconds / 60);
-            const s = Math.floor(seconds % 60).toString().padStart(2, '0');
-            return `${m}:${s}`;
-        }
+        function formatTime(s) { if (isNaN(s)) return "0:00"; let m = Math.floor(s/60); let sec = Math.floor(s%60).toString().padStart(2, '0'); return `${m}:${sec}`; }
 
         audioElement.addEventListener('timeupdate', () => {
             if (audioElement.duration) {
-                progressBar.max = audioElement.duration;
-                progressBar.value = audioElement.currentTime;
-                timeCurrent.innerText = formatTime(audioElement.currentTime);
-                timeTotal.innerText = formatTime(audioElement.duration);
-                
+                progressBar.max = audioElement.duration; progressBar.value = audioElement.currentTime;
+                timeCurrent.innerText = formatTime(audioElement.currentTime); timeTotal.innerText = formatTime(audioElement.duration);
                 let timeLeft = audioElement.duration - audioElement.currentTime;
                 if (timeLeft < 15 && currentPlaylist.length > 1 && !isPreloadingNext) {
                     let currentIdx = currentPlaylist.findIndex(t => t.url === currentPlayingTrack.url);
                     let nextIdx = (currentIdx + 1) % currentPlaylist.length;
                     let nextTrack = currentPlaylist[nextIdx];
-                    
                     if (!nextTrack.isLocal && nextTrack.url.includes("script.google.com") && !audioCache[nextTrack.url]) {
                         isPreloadingNext = true; 
-                        fetch(nextTrack.url).then(res => res.json()).then(data => {
-                            if (!data.error && data.base64) audioCache[nextTrack.url] = data.base64; 
-                        }).catch(e => console.error(e));
+                        fetch(nextTrack.url).then(res => res.json()).then(data => { if (!data.error && data.base64) audioCache[nextTrack.url] = data.base64; }).catch(e => console.error(e));
                     }
                 }
             }
         });
 
-        progressBar.addEventListener('input', () => {
-            if(audioElement.duration) audioElement.currentTime = progressBar.value;
-            resetUiTimer();
-        });
+        progressBar.addEventListener('input', () => { if(audioElement.duration) audioElement.currentTime = progressBar.value; resetUiTimer(); });
 
         window.addEventListener('DOMContentLoaded', async () => {
-            if (APPS_SCRIPT_URL === "ВСТАВЬ_ССЫЛКУ_СЮДА") return;
             try {
-                const response = await fetch(APPS_SCRIPT_URL);
-                const data = await response.json();
-                if (data.error) throw new Error(data.error);
-
-                fullPlaylist = data; currentPlaylist = [...fullPlaylist];
-                const genres = [...new Set(fullPlaylist.map(t => t.genre).filter(Boolean))];
-                const filterSelect = document.getElementById('genre-filter');
-                filterSelect.innerHTML = '<option value="all">ALL GENRES</option><option value="favorites">❤ FAVORITES</option>';
-                genres.forEach(g => {
-                    const opt = document.createElement('option'); opt.value = g; opt.innerText = g.toUpperCase();
-                    filterSelect.appendChild(opt);
-                });
-                updatePlaylistUI();
-                if (currentPlaylist.length > 0) playTrack(currentPlaylist[0]);
+                const response = await fetch(APPS_SCRIPT_URL); const data = await response.json();
+                if (!data.error) {
+                    fullPlaylist = data; currentPlaylist = [...fullPlaylist];
+                    const genres = [...new Set(fullPlaylist.map(t => t.genre).filter(Boolean))];
+                    const filterSelect = document.getElementById('genre-filter');
+                    filterSelect.innerHTML = '<option value="all">ALL GENRES</option><option value="favorites">❤ FAVORITES</option>';
+                    genres.forEach(g => { const opt = document.createElement('option'); opt.value = g; opt.innerText = g.toUpperCase(); filterSelect.appendChild(opt); });
+                    updatePlaylistUI();
+                    if (currentPlaylist.length > 0) playTrack(currentPlaylist[0]);
+                }
             } catch (err) {
                 document.getElementById('playlist').innerHTML = '<div style="color:#ef4444; padding:20px; text-align:center;">Database connection failed.</div>';
             }
@@ -324,27 +311,20 @@
             if (selectedGenre === 'all') currentPlaylist = [...fullPlaylist];
             else if (selectedGenre === 'favorites') currentPlaylist = fullPlaylist.filter(t => favorites.includes(t.url));
             else currentPlaylist = fullPlaylist.filter(t => t.genre === selectedGenre);
-            updatePlaylistUI();
-            if (currentPlaylist.length > 0) playTrack(currentPlaylist[0]);
+            updatePlaylistUI(); if (currentPlaylist.length > 0) playTrack(currentPlaylist[0]);
             else { audioElement.pause(); isPlaying = false; document.getElementById('play-pause-btn').innerText = "▶"; }
             resetUiTimer();
         });
 
         document.getElementById('audio-upload').onchange = (e) => {
-            if (isLoadingTrack) return;
-            if (e.target.files.length > 0) {
-                const file = e.target.files[0];
-                const localUrl = URL.createObjectURL(file);
-                fullPlaylist.unshift({ name: file.name.substring(0, 30) + '...', genre: "LOCAL", url: localUrl, isLocal: true }); 
-                const filter = document.getElementById('genre-filter');
-                if(filter.value !== 'all') { filter.value = 'all'; filter.dispatchEvent(new Event('change')); }
-                else { currentPlaylist = [...fullPlaylist]; updatePlaylistUI(); playTrack(currentPlaylist[0]); }
-                e.target.value = ''; resetUiTimer();
-            }
+            if (isLoadingTrack || e.target.files.length === 0) return;
+            const file = e.target.files[0]; const localUrl = URL.createObjectURL(file);
+            fullPlaylist.unshift({ name: file.name.substring(0, 30) + '...', genre: "LOCAL", url: localUrl, isLocal: true }); 
+            document.getElementById('genre-filter').value = 'all'; currentPlaylist = [...fullPlaylist]; updatePlaylistUI(); playTrack(currentPlaylist[0]);
+            e.target.value = ''; resetUiTimer();
         };
 
         const playBtn = document.getElementById('play-pause-btn');
-
         function playNext() {
             if (isLoadingTrack || !currentPlayingTrack || currentPlaylist.length === 0) return;
             let idx = currentPlaylist.findIndex(t => t.url === currentPlayingTrack.url);
@@ -362,22 +342,18 @@
 
         async function playTrack(track) {
             if (isLoadingTrack) return; 
-            currentPlayingTrack = track;
-            initAudio(); 
+            currentPlayingTrack = track; initAudio(); 
             if(audioContext.state === 'suspended') await audioContext.resume().catch(e=>{});
             
-            seedTrackEvolution();
+            generateNewArchetype(); // Смена формы при новом треке
             isPreloadingNext = false; 
 
             isLoadingTrack = true; countdownValue = 10;
-            playBtn.innerHTML = `<span style="color:#ef4444;">${countdownValue}</span>`;
-            updatePlaylistUI(); 
+            playBtn.innerHTML = `<span style="color:#ef4444;">${countdownValue}</span>`; updatePlaylistUI(); 
             
             clearInterval(loadingTimer);
             loadingTimer = setInterval(() => {
-                if (countdownValue > 1) {
-                    countdownValue--; playBtn.innerHTML = `<span style="color:#ef4444;">${countdownValue}</span>`; updatePlaylistUI();
-                }
+                if (countdownValue > 1) { countdownValue--; playBtn.innerHTML = `<span style="color:#ef4444;">${countdownValue}</span>`; updatePlaylistUI(); }
             }, 1000);
             
             try {
@@ -391,6 +367,7 @@
                 } else { audioElement.src = track.url; }
 
                 clearInterval(loadingTimer); isLoadingTrack = false;
+
                 let playPromise = audioElement.play();
                 if (playPromise !== undefined) {
                     playPromise.then(() => {
@@ -404,14 +381,12 @@
                     });
                 }
             } catch (error) {
-                clearInterval(loadingTimer); isLoadingTrack = false;
-                playBtn.innerText = "⚠"; setTimeout(() => playNext(), 2000);
+                clearInterval(loadingTimer); isLoadingTrack = false; playBtn.innerText = "⚠"; setTimeout(() => playNext(), 2000);
             }
         }
 
         function updatePlaylistUI() {
-            const playlistDiv = document.getElementById('playlist');
-            playlistDiv.innerHTML = '';
+            const playlistDiv = document.getElementById('playlist'); playlistDiv.innerHTML = '';
             if (isLoadingTrack) { playlistDiv.style.pointerEvents = 'none'; playlistDiv.style.opacity = '0.7'; } 
             else { playlistDiv.style.pointerEvents = 'auto'; playlistDiv.style.opacity = '1'; }
             if (currentPlaylist.length === 0) { playlistDiv.innerHTML = '<div style="padding:10px; color:#aaa; text-align:center;">No tracks found</div>'; return; }
@@ -430,8 +405,7 @@
                     if (isActive) {
                         if (isPlaying) { audioElement.pause(); isPlaying = false; } else { audioElement.play(); isPlaying = true; }
                         updatePlaylistUI(); playBtn.innerText = isPlaying ? "❚❚" : "▶";
-                    } else playTrack(track);
-                    resetUiTimer();
+                    } else playTrack(track); resetUiTimer();
                 };
                 
                 const titleSpan = document.createElement('span'); titleSpan.className = 'track-title'; titleSpan.innerHTML = track.name; 
@@ -444,8 +418,7 @@
                     if (document.getElementById('genre-filter').value === 'favorites' && isFav) currentPlaylist = currentPlaylist.filter(t => t.url !== track.url);
                     updatePlaylistUI(); 
                 };
-                trackEl.appendChild(playIconBtn); trackEl.appendChild(titleSpan); trackEl.appendChild(favBtn);
-                playlistDiv.appendChild(trackEl);
+                trackEl.appendChild(playIconBtn); trackEl.appendChild(titleSpan); trackEl.appendChild(favBtn); playlistDiv.appendChild(trackEl);
             });
         }
 
@@ -460,40 +433,8 @@
             updatePlaylistUI(); resetUiTimer();
         };
 
-
         // =========================================================================
-        // ЛОГИКА ПЕРЕКЛЮЧЕНИЯ 10 ВИЗУАЛИЗАЦИЙ
-        // =========================================================================
-        const VIS_MODES = [
-            "1. SYMBIOSIS", 
-            "2. QUANTUM STAR", 
-            "3. HYPNOTIC WALTZ", 
-            "4. NEURAL CORE",
-            "5. LIVING ARCHETYPES",
-            "6. SOLAR FLARE",
-            "7. ETHEREAL GHOST",
-            "8. CYBER MATRIX",
-            "9. DEEP OCEAN",
-            "10. FRACTAL FLOWER"
-        ];
-        let currentVisMode = 0;
-        const visNameLabel = document.getElementById('vis-name');
-        
-        document.getElementById('vis-prev').addEventListener('click', () => {
-            currentVisMode = (currentVisMode - 1 + VIS_MODES.length) % VIS_MODES.length;
-            visNameLabel.innerText = VIS_MODES[currentVisMode];
-            resetUiTimer();
-        });
-        
-        document.getElementById('vis-next').addEventListener('click', () => {
-            currentVisMode = (currentVisMode + 1) % VIS_MODES.length;
-            visNameLabel.innerText = VIS_MODES[currentVisMode];
-            resetUiTimer();
-        });
-
-
-        // =========================================================================
-        // 3D SCENE & MATH ENGINE (Основа 5)
+        // 3D SCENE & INFINITE GENESIS ENGINE
         // =========================================================================
         const container = document.getElementById('canvas-container');
         const scene = new THREE.Scene();
@@ -545,6 +486,7 @@
         const quantumLines = new THREE.LineSegments(pGeo, new THREE.LineBasicMaterial({ vertexColors: true, transparent: true, opacity: 0.35, blending: THREE.AdditiveBlending, depthWrite: false }));
         globeGroup.add(quantumPoints); globeGroup.add(quantumLines);
 
+        // --- ДИСКО-ЛАЗЕРЫ (Реагируют на басы и танцуют) ---
         const laserGroup = new THREE.Group(); const laserMat = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0, blending: THREE.AdditiveBlending });
         for(let i=0; i<100; i++) {
             const laser = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0, 10, 0), new THREE.Vector3(0, 250, 0)]), laserMat.clone());
@@ -572,22 +514,36 @@
             renderer.setSize(window.innerWidth, window.innerHeight); if(composer) composer.setSize(window.innerWidth, window.innerHeight);
         });
 
+        // =========================================================================
+        // БЕСКОНЕЧНЫЙ ГЕНЕРАТОР ФОРМ И ПАЛИТР (GENESIS ENGINE)
+        // =========================================================================
         const colorObj = new THREE.Color();
         let currentBassLevel = 0, smoothedCentroid = 0.5, beatThreshold = 0.5;
         let evolveBass = 0, evolveMid = 0, evolveTreble = 0;
         let targetRotX = 0.001, targetRotY = 0.002, targetRotZ = 0.001;
         let currentRotX = 0.001, currentRotY = 0.002, currentRotZ = 0.001;
         
-        let trackSeedR = 12.0, trackSeedFreqU = 2.0, trackSeedFreqV = 3.0, trackSeedMorph = 1.0, trackSeedTwistSpeed = 1.0;
+        let genBaseType = 0; // Базовая форма (0-8)
+        let genModType = 0;  // Модификатор (0-5)
+        let genR = 12.0, genFreqU = 2.0, genFreqV = 3.0, genMorph = 1.0, genTwistSpeed = 1.0;
         let currentHueOffset = 0, targetHueOffset = 0;
 
-        function seedTrackEvolution() {
-            trackSeedR = 12 + Math.random() * 8;
-            trackSeedFreqU = 1.0 + Math.random() * 5.0;
-            trackSeedFreqV = 1.0 + Math.random() * 5.0;
-            trackSeedMorph = 0.5 + Math.random() * 1.5;
-            trackSeedTwistSpeed = 0.5 + Math.random() * 2.0;
+        function generateNewArchetype() {
+            // Бесконечное множество комбинаций: 8 баз * 5 модификаторов * рандомные параметры
+            genBaseType = Math.floor(Math.random() * 8); 
+            genModType = Math.floor(Math.random() * 5); 
+            
+            genR = 8 + Math.random() * 8; // Размер 8-16
+            genFreqU = 1.0 + Math.random() * 8.0; // Частота лепестков
+            genFreqV = 1.0 + Math.random() * 8.0; // Частота волн
+            genMorph = 0.5 + Math.random() * 2.0; // Сила искажения
+            genTwistSpeed = 0.2 + Math.random() * 2.5; // Скорость внутреннего вращения
+
+            targetHueOffset = Math.random() * 360; // Полностью случайная палитра
         }
+
+        // Вызов при старте, чтобы сразу сгенерировать уникальную форму
+        generateNewArchetype();
 
         function animate() {
             requestAnimationFrame(animate); controls.update(); const t = Date.now() * 0.001;
@@ -626,13 +582,11 @@
                 currentRotY += (targetRotY - currentRotY) * 0.05; 
                 currentRotZ += (targetRotZ - currentRotZ) * 0.05;
 
-                // Цветовой морфинг (Разные палитры для разных режимов)
-                let hueOffsets = [0, 45, 120, 200, 280, 15, 60, 310, 240, 340];
-                targetHueOffset = hueOffsets[currentVisMode];
-                currentHueOffset += (targetHueOffset - currentHueOffset) * 0.05;
+                // Цветовой морфинг (перетекание при смене архетипа)
+                currentHueOffset += (targetHueOffset - currentHueOffset) * 0.02;
                 const dynamicHue = (currentHueOffset + evolveMid * 50 + smoothedCentroid * 800 + energy * 200) % 360;
 
-                // ДИСКО-ЛАЗЕРЫ (Меняют угол и прозрачность на басу)
+                // ДИСКО-ЛАЗЕРЫ (Танцуют на басах)
                 let laserPower = Math.pow(treble, 2) * 1.5 + sharpBass; 
                 laserGroup.children.forEach((l, i) => {
                     l.material.color.setHSL((dynamicHue + i*3)%360 / 360, 1.0, 0.6);
@@ -643,8 +597,7 @@
                         l.material.opacity *= 0.85; l.scale.y += (1 - l.scale.y) * 0.1; 
                     }
                     
-                    let choreo = i % 4;
-                    // Раскачка лазеров как в клубе
+                    let choreo = i % 4; // Разные паттерны движения лучей
                     if (choreo === 0) { 
                         l.rotation.x = l.userData.basex + Math.sin(t * 1.5 + l.userData.phase) * (0.2 + sharpBass*1.2); 
                         l.rotation.y = l.userData.basey + Math.cos(t * 1.5 + l.userData.phase) * (0.2 + sharpBass*1.2); 
@@ -663,10 +616,6 @@
 
                 const positions = quantumPoints.geometry.attributes.position.array; 
                 const colors = quantumPoints.geometry.attributes.color.array;
-                
-                let freqU = trackSeedFreqU + Math.sin(evolveMid * 0.2) * 5.0; 
-                let freqV = trackSeedFreqV + Math.cos(evolveBass * 0.15) * 6.0; 
-                let shapeChaos = Math.sin(evolveTreble * 0.3) * trackSeedMorph;
 
                 for(let i=0; i<gridDim; i++) {
                     for(let j=0; j<gridDim; j++) {
@@ -675,105 +624,79 @@
                         let v = (i / (gridDim - 1)) * Math.PI;
                         
                         let audioIdx = Math.floor((idx / pCount) * (analyser.frequencyBinCount * 0.5)); 
-                        // Снижен порог реакции, чтобы форма оживала даже на тихой музыке
+                        // Снижен порог реакции, чтобы форма просыпалась быстрее
                         let rawF = dataArray[audioIdx] / 255.0; 
                         let fSharp = Math.pow(rawF, 1.5); 
                         let waveRipple = (timeDataArray[audioIdx]/128.0 - 1.0); 
                         
                         let tx = pOrig[idx*3], ty = pOrig[idx*3+1], tz = pOrig[idx*3+2];
 
-                        // Обработка геометрии (просыпается при energy > 0.002 вместо 0.01)
+                        // Обработка геометрии (работает при минимальном звуке > 0.002)
                         if (energy > 0.002) {
-                            
-                            if (currentVisMode === 0) { // 1. SYMBIOSIS (Original Base)
-                                let R = 15 + sharpBass * 20 + Math.sin(v * freqV + evolveMid) * (8 + mid * 10);
-                                let twist = u + Math.sin(v * freqU + evolveTreble) * (Math.sin(evolveBass) * 4);
-                                let flare = Math.abs(Math.cos(u * (4 + shapeChaos*2) + t)) * (10 + sharpMid * 15);
-                                let currentRadius = R + flare + fSharp * 15;
-                                tx = Math.cos(twist) * Math.sin(v) * currentRadius; tz = Math.sin(twist) * Math.sin(v) * currentRadius;
-                                ty = Math.cos(v) * currentRadius * (0.6 + shapeChaos * 0.4) + Math.cos(v * freqV) * (15 + shapeChaos * 10) + Math.sin(u * freqU + evolveMid) * (5 + treble * 25);
-                                let rippleForce = waveRipple * (5 + treble * 30); 
-                                tx += Math.cos(v*20) * rippleForce; ty += Math.sin(u*20) * rippleForce; tz += Math.cos(u*20) * rippleForce;
-                            
-                            } else if (currentVisMode === 1) { // 2. QUANTUM STAR
-                                let R = 10 + sharpBass * 25;
-                                let starFlare = Math.pow(Math.abs(Math.sin(u * 5 + t * 2.0) * Math.sin(v * 5 - t)), 4.0) * (20 + sharpMid * 30);
-                                let currentRadius = R + starFlare + fSharp * 20;
-                                tx = Math.cos(u) * Math.sin(v) * currentRadius; tz = Math.sin(u) * Math.sin(v) * currentRadius; ty = Math.cos(v) * currentRadius;
-                                let rippleForce = waveRipple * (8 + treble * 40);
-                                tx += Math.sin(v*30) * rippleForce; ty += Math.cos(u*30) * rippleForce; tz += Math.sin(u*30) * rippleForce;
-                            
-                            } else if (currentVisMode === 2) { // 3. HYPNOTIC WALTZ
-                                let R = 18 + sharpBass * 15;
-                                let waltz = Math.sin(u * 3 + evolveMid) * Math.cos(v * 3 + evolveBass) * (5 + mid * 15);
-                                let currentRadius = R + waltz + fSharp * 10;
-                                let twist = u + Math.sin(v * 2.0 + t) * 2.0;
-                                tx = Math.cos(twist) * Math.sin(v) * currentRadius; tz = Math.sin(twist) * Math.sin(v) * currentRadius; ty = Math.cos(v) * currentRadius * 1.5;
-                                let rippleForce = waveRipple * (3 + treble * 20);
-                                tx += Math.cos(v*10) * rippleForce; ty += Math.sin(u*10) * rippleForce; tz += Math.cos(u*10) * rippleForce;
-                            
-                            } else if (currentVisMode === 3) { // 4. NEURAL CORE
-                                let R = 12 + sharpBass * 10;
-                                let neural = Math.sin(u * 8 + evolveTreble) * Math.sin(v * 8 + evolveMid) * (6 + sharpMid * 20);
-                                let currentRadius = R + neural + fSharp * 12;
-                                tx = Math.cos(u) * Math.sin(v) * currentRadius; tz = Math.sin(u) * Math.sin(v) * currentRadius; ty = Math.cos(v) * currentRadius;
-                                let rippleForce = waveRipple * (10 + treble * 35);
-                                tx += Math.sin(u*15) * rippleForce; ty += Math.cos(v*15) * rippleForce; tz += Math.sin(v*15) * rippleForce;
-                            
-                            } else if (currentVisMode === 4) { // 5. LIVING ARCHETYPES
-                                let R = 5 + sharpBass * 10;
-                                let spiral = u * 3.0 + v * 2.0 + t;
-                                let ribbonWidth = (10 + mid * 20) * Math.sin(v);
-                                tx = (R + ribbonWidth * Math.cos(v * 4 + evolveMid)) * Math.cos(spiral);
-                                tz = (R + ribbonWidth * Math.cos(v * 4 + evolveMid)) * Math.sin(spiral);
-                                ty = ((v / Math.PI) - 0.5) * 60.0 + Math.sin(spiral * 2.0) * (5 + treble * 15);
-                                let rippleForce = waveRipple * (4 + treble * 25);
-                                tx += Math.cos(spiral*5) * rippleForce; ty += Math.sin(spiral*5) * rippleForce; tz += Math.cos(spiral*5) * rippleForce;
-                            
-                            } else if (currentVisMode === 5) { // 6. SOLAR FLARE
-                                let R = 14 + sharpBass * 30;
-                                let flare = Math.tan(Math.sin(u * 6 + t) * Math.cos(v * 6 - t)) * (2 + sharpMid * 10);
-                                flare = Math.max(-10, Math.min(25, flare)); 
-                                let currentRadius = R + flare + fSharp * 25;
-                                tx = Math.cos(u) * Math.sin(v) * currentRadius; tz = Math.sin(u) * Math.sin(v) * currentRadius; ty = Math.cos(v) * currentRadius;
-                                let rippleForce = waveRipple * (12 + treble * 50);
-                                tx += Math.cos(v*25) * rippleForce; ty += Math.sin(u*25) * rippleForce; tz += Math.cos(u*25) * rippleForce;
-                            
-                            } else if (currentVisMode === 6) { // 7. ETHEREAL GHOST
-                                let R = 20 + sharpBass * 10;
-                                let ghost = Math.sin(u * 2 + t * 0.5) * Math.cos(v * 2 + t * 0.3) * (15 + mid * 25);
-                                let currentRadius = R + ghost + fSharp * 8;
-                                tx = Math.cos(u) * Math.sin(v) * currentRadius; tz = Math.sin(u) * Math.sin(v) * currentRadius; ty = Math.cos(v) * currentRadius * 1.2;
-                                let rippleForce = waveRipple * (2 + treble * 10);
-                                tx += Math.sin(v*5) * rippleForce; ty += Math.cos(u*5) * rippleForce; tz += Math.sin(u*5) * rippleForce;
-                            
-                            } else if (currentVisMode === 7) { // 8. CYBER MATRIX
-                                let R = 15 + sharpBass * 15;
-                                let matrixU = Math.round(u * 6.0) / 6.0; let matrixV = Math.round(v * 6.0) / 6.0;
-                                let block = Math.sin(matrixU * 10 + evolveMid) * Math.cos(matrixV * 10 + evolveBass) * (5 + mid * 10);
-                                let currentRadius = R + block + fSharp * 10;
-                                tx = Math.cos(matrixU) * Math.sin(matrixV) * currentRadius; tz = Math.sin(matrixU) * Math.sin(matrixV) * currentRadius; ty = Math.cos(matrixV) * currentRadius;
-                                let rippleForce = waveRipple * (5 + treble * 15);
-                                tx += Math.cos(u*20) * rippleForce; ty += Math.sin(v*20) * rippleForce; tz += Math.cos(u*20) * rippleForce;
+                            let R = genR + sharpBass * 15;
+                            let currentRadius = R;
+                            let modU = u, modV = v;
 
-                            } else if (currentVisMode === 8) { // 9. DEEP OCEAN
-                                let R = 8 + sharpBass * 12;
-                                let tentacles = Math.pow(Math.sin(u * 8 + evolveMid), 2) * (10 + mid * 20);
-                                let currentRadius = R + tentacles * (v / Math.PI) + fSharp * 15;
-                                let twist = u + Math.sin(v * 3.0 - t * 1.5) * 1.5;
-                                tx = Math.cos(twist) * Math.sin(v) * currentRadius; tz = Math.sin(twist) * Math.sin(v) * currentRadius; ty = Math.cos(v) * (R + fSharp*10) + Math.cos(v * 2 + t) * 5;
-                                let rippleForce = waveRipple * (3 + treble * 20);
-                                tx += Math.sin(v*10) * rippleForce; ty += Math.cos(u*10) * rippleForce; tz += Math.sin(u*10) * rippleForce;
-
-                            } else if (currentVisMode === 9) { // 10. FRACTAL FLOWER
-                                let R = 5 + sharpBass * 8;
-                                let petals = Math.abs(Math.sin(u * 5)) * Math.sin(v * 3 - t) * (15 + sharpMid * 20);
-                                let currentRadius = R + petals + fSharp * 12;
-                                let openAnim = Math.sin(t * 0.5) * 0.5 + 0.5; // Плавное раскрытие
-                                tx = Math.cos(u) * Math.sin(v * openAnim) * currentRadius; tz = Math.sin(u) * Math.sin(v * openAnim) * currentRadius; ty = Math.cos(v) * currentRadius * (1.0 + openAnim);
-                                let rippleForce = waveRipple * (4 + treble * 30);
-                                tx += Math.cos(u*15) * rippleForce; ty += Math.sin(v*15) * rippleForce; tz += Math.cos(u*15) * rippleForce;
+                            // ПРИМЕНЯЕМ БАЗОВУЮ ФОРМУ (8 вариантов)
+                            if (genBaseType === 0) { // Сфера с пульсацией
+                                let bump = Math.sin(v * genFreqV + evolveMid) * (5 + mid * 10);
+                                currentRadius += bump;
+                                tx = Math.cos(u) * Math.sin(v) * currentRadius; tz = Math.sin(u) * Math.sin(v) * currentRadius; ty = Math.cos(v) * currentRadius;
+                            } else if (genBaseType === 1) { // Тор (Бублик)
+                                let torusR = R; let tubeR = 5 + Math.sin(u * genFreqU + evolveBass) * (2 + sharpMid * 5);
+                                tx = (torusR + tubeR * Math.cos(v)) * Math.cos(u); tz = (torusR + tubeR * Math.cos(v)) * Math.sin(u); ty = tubeR * Math.sin(v) + Math.cos(u * 3 + t) * (sharpBass * 10);
+                            } else if (genBaseType === 2) { // Лента Мёбиуса
+                                let mw = u * 0.5; let mx = Math.cos(u) * (1 + (v/Math.PI - 0.5) * Math.cos(mw));
+                                let my = Math.sin(u) * (1 + (v/Math.PI - 0.5) * Math.cos(mw)); let mz = (v/Math.PI - 0.5) * Math.sin(mw);
+                                tx = mx * R; ty = mz * R; tz = my * R;
+                            } else if (genBaseType === 3) { // Спираль ДНК
+                                let dnaTwist = u * genFreqU + v * 2.0 + evolveMid;
+                                let ribbon = (5 + mid * 15) * Math.sin(v);
+                                tx = (R + ribbon * Math.cos(v * genFreqV)) * Math.cos(dnaTwist); tz = (R + ribbon * Math.cos(v * genFreqV)) * Math.sin(dnaTwist); ty = ((v / Math.PI) - 0.5) * 60.0;
+                            } else if (genBaseType === 4) { // Кубическая Матрица
+                                let mU = Math.round(u * genFreqU) / genFreqU; let mV = Math.round(v * genFreqV) / genFreqV;
+                                let block = Math.sin(mU * 10 + evolveMid) * Math.cos(mV * 10 + evolveBass) * (5 + mid * 10);
+                                currentRadius += block;
+                                tx = Math.cos(mU) * Math.sin(mV) * currentRadius; tz = Math.sin(mU) * Math.sin(mV) * currentRadius; ty = Math.cos(mV) * currentRadius;
+                            } else if (genBaseType === 5) { // Песочные часы (Гиперболоид)
+                                let hyp = Math.sqrt(1 + Math.pow((v/Math.PI - 0.5)*2, 2)) * R;
+                                tx = hyp * Math.cos(u); tz = hyp * Math.sin(u); ty = ((v/Math.PI)-0.5) * R * 3;
+                            } else if (genBaseType === 6) { // Звезда с лучами
+                                let starFlare = Math.pow(Math.abs(Math.sin(u * genFreqU + t * 2.0) * Math.sin(v * genFreqV - t)), 4.0) * (20 + sharpMid * 30);
+                                currentRadius += starFlare;
+                                tx = Math.cos(u) * Math.sin(v) * currentRadius; tz = Math.sin(u) * Math.sin(v) * currentRadius; ty = Math.cos(v) * currentRadius;
+                            } else if (genBaseType === 7) { // Вихрь (Vortex)
+                                let vortR = (v/Math.PI) * R * 1.5;
+                                let vortU = u + (v/Math.PI) * genFreqU * Math.PI + evolveBass;
+                                tx = Math.cos(vortU) * vortR; tz = Math.sin(vortU) * vortR; ty = (v/Math.PI - 0.5) * R * 4;
                             }
+
+                            // ПРИМЕНЯЕМ МОДИФИКАЦИЮ (Исказители)
+                            if (genModType === 0) { // Скручивание (Twist)
+                                let twistAngle = ty * 0.05 * genTwistSpeed * Math.sin(evolveBass);
+                                let tx_new = tx * Math.cos(twistAngle) - tz * Math.sin(twistAngle);
+                                let tz_new = tx * Math.sin(twistAngle) + tz * Math.cos(twistAngle);
+                                tx = tx_new; tz = tz_new;
+                            } else if (genModType === 1) { // Пульсирующие шипы
+                                let spike = Math.abs(Math.cos(u * genFreqU + t)) * Math.abs(Math.sin(v * genFreqV - t)) * (10 + sharpMid * 20);
+                                let norm = Math.sqrt(tx*tx + ty*ty + tz*tz) || 1;
+                                tx += (tx/norm) * spike; ty += (ty/norm) * spike; tz += (tz/norm) * spike;
+                            } else if (genModType === 2) { // Волновое искривление
+                                tx += Math.sin(ty * 0.1 + evolveMid) * (5 + mid * 15);
+                                tz += Math.cos(tx * 0.1 + evolveTreble) * (5 + mid * 15);
+                            } else if (genModType === 3) { // Гравитационное сплющивание
+                                ty *= 0.5 + Math.sin(evolveBass) * 0.4;
+                                tx *= 1.0 + sharpBass * 0.5; tz *= 1.0 + sharpBass * 0.5;
+                            } // genModType === 4 (Чистая форма, без искажений)
+
+                            // НАКЛАДЫВАЕМ ОБЩИЙ АУДИО-ВСПЛЕСК (Дыхание музыки)
+                            let norm = Math.sqrt(tx*tx + ty*ty + tz*tz) || 1;
+                            let audioSwell = fSharp * 15;
+                            tx += (tx/norm) * audioSwell; ty += (ty/norm) * audioSwell; tz += (tz/norm) * audioSwell;
+
+                            // ВЕРХНИЕ ЧАСТОТЫ (Микро-рябь на коже)
+                            let rippleForce = waveRipple * (5 + treble * 30 * genMorph); 
+                            tx += Math.cos(v*20 + t) * rippleForce; ty += Math.sin(u*20 + t) * rippleForce; tz += Math.cos(u*20 + t) * rippleForce;
                         }
 
                         let lerpFactor = fSharp > 0.4 ? 0.35 : 0.08; 
@@ -783,7 +706,7 @@
                         positions[idx*3+1] += (ty - positions[idx*3+1]) * lerpFactor; 
                         positions[idx*3+2] += (tz - positions[idx*3+2]) * lerpFactor;
                         
-                        colorObj.setHSL((dynamicHue + idx*0.02 + waveRipple*40)/360, 1.0, energy > 0.002 ? (0.15 + fSharp*0.85) : 0.02);
+                        colorObj.setHSL((dynamicHue + idx*0.015 + waveRipple*40)/360, 1.0, energy > 0.002 ? (0.15 + fSharp*0.85) : 0.02);
                         colors[idx*3] += (colorObj.r - colors[idx*3]) * lerpFactor; 
                         colors[idx*3+1] += (colorObj.g - colors[idx*3+1]) * lerpFactor; 
                         colors[idx*3+2] += (colorObj.b - colors[idx*3+2]) * lerpFactor;
