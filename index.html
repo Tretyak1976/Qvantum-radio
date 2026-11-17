@@ -1,867 +1,813 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="ru" class="h-full bg-black select-none overflow-hidden">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Quantum Radio 3D - 10 Infinite Modes</title>
-    <style>
-        html, body { 
-            margin: 0; padding: 0; width: 100vw; height: 100dvh; overflow: hidden; 
-            background-color: #000000 !important; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-            color: #fff; user-select: none; touch-action: none; -webkit-tap-highlight-color: transparent; 
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>REALITY RADIO 3D :: FESTIVAL SHOW (OPTIMIZED & PHYSICS)</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: { extend: { fontFamily: { sans: ['Inter', 'sans-serif'], mono: ['JetBrains Mono', 'monospace'] }, colors: { glass: 'rgba(10, 10, 15, 0.75)', glassBorder: 'rgba(255, 255, 255, 0.1)' } } }
         }
-        
-        :fullscreen, ::backdrop, :-webkit-full-screen { background-color: #000000 !important; }
-
-        #canvas-container { width: 100vw; height: 100dvh; position: fixed; top: 0; left: 0; z-index: 1; cursor: grab; background-color: #000000; }
-        #canvas-container:active { cursor: grabbing; }
-        
-        #fullscreen-btn-top-left {
-            position: fixed; top: 20px; left: 20px; z-index: 15;
-            background: rgba(10, 10, 15, 0.6); border: 1px solid rgba(255, 255, 255, 0.15);
-            border-radius: 50%; width: 44px; height: 44px;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 1.3rem; color: #fff; cursor: pointer; backdrop-filter: blur(10px);
-            transition: all 0.3s; padding: 0; outline: none;
-        }
-        #fullscreen-btn-top-left:hover { background: rgba(59, 130, 246, 0.4); transform: scale(1.1); }
-
-        #ui-bottom {
-            position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
-            width: 95%; max-width: 700px; z-index: 10;
-            transition: opacity 0.8s ease, transform 0.8s ease;
-        }
-        #ui-bottom.idle { opacity: 0; transform: translate(-50%, 20px); pointer-events: none; }
-
-        #player-panel {
-            width: 100%; background: rgba(10, 10, 15, 0.85); padding: 15px 20px; border-radius: 25px;
-            border: 1px solid rgba(255, 255, 255, 0.15); backdrop-filter: blur(20px);
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8); box-sizing: border-box;
-            display: flex; flex-direction: column; gap: 12px;
-        }
-
-        #sidebar {
-            position: fixed; top: 0; left: 0; width: 350px; height: 100%;
-            background: rgba(10, 10, 15, 0.9); backdrop-filter: blur(20px);
-            border-right: 1px solid rgba(255, 255, 255, 0.1);
-            z-index: 20; display: flex; flex-direction: column;
-            transform: translateX(-100%); transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-            box-shadow: 10px 0 30px rgba(0,0,0,0.7); box-sizing: border-box;
-        }
-        #sidebar.open { transform: translateX(0); }
-
-        #sidebar-header {
-            padding: 20px; border-bottom: 1px solid rgba(255,255,255,0.1);
-            display: flex; justify-content: space-between; align-items: center;
-            font-weight: bold; font-size: 1.1rem; color: #3b82f6; letter-spacing: 1px;
-        }
-        
-        .close-btn { background: none; border: none; color: #fff; font-size: 1.5rem; cursor: pointer; padding: 0; outline: none; transition: color 0.2s; }
-        .close-btn:hover { color: #ef4444; }
-
-        #playlist { flex: 1; overflow-y: auto; padding: 10px; transition: opacity 0.3s; }
-        
-        .track-item { 
-            display: flex; align-items: center; padding: 10px 15px; border-bottom: 1px solid rgba(255,255,255,0.05); 
-            border-radius: 12px; transition: background 0.2s; font-size: 0.9rem; margin-bottom: 4px;
-        }
-        .track-item:hover { background: rgba(255,255,255,0.05); }
-        .track-item.active { background: rgba(59, 130, 246, 0.1); border-color: transparent; font-weight: bold; }
-        
-        .track-play-icon {
-            min-width: 38px; height: 38px; display: flex; align-items: center; justify-content: center;
-            border-radius: 50%; background: rgba(255,255,255,0.08); color: #aaa; cursor: pointer;
-            margin-right: 15px; font-size: 1.1rem; transition: all 0.2s;
-        }
-        .track-play-icon:hover { background: rgba(59, 130, 246, 0.3); color: #fff; transform: scale(1.1); }
-        .track-item.active .track-play-icon { background: rgba(59, 130, 246, 0.2); color: #3b82f6; }
-
-        .track-title { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #eee; }
-        
-        .fav-btn { font-size: 1.3rem; cursor: pointer; transition: transform 0.2s; padding: 5px; margin-left: 10px; }
-        .fav-btn:hover { transform: scale(1.3); }
-
-        #progress-container { display: flex; align-items: center; gap: 10px; width: 100%; font-size: 0.75rem; color: #aaa; font-weight: 600; }
-        
-        input[type="range"] { flex: 1; -webkit-appearance: none; background: rgba(255,255,255,0.1); height: 6px; border-radius: 3px; outline: none; cursor: pointer; }
-        input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 14px; background: #3b82f6; border-radius: 50%; box-shadow: 0 0 10px rgba(59,130,246,0.8); }
-
-        #controls-bar { 
-            display: flex; align-items: center; justify-content: space-between; 
-            gap: 6px; width: 100%; flex-wrap: nowrap; overflow: visible;
-        }
-
-        select, .btn {
-            background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(59, 130, 246, 0.3);
-            color: white; padding: 10px; border-radius: 20px;
-            outline: none; cursor: pointer; transition: all 0.3s; font-weight: bold;
-            font-size: 0.8rem; text-transform: uppercase; flex-shrink: 0;
-        }
-        
-        select { flex: 0.8; min-width: 60px; text-overflow: ellipsis; padding: 8px; }
-        select option { background: #111; color: #fff; }
-        
-        .btn.icon { display: flex; align-items: center; justify-content: center; min-width: 36px; padding: 8px; font-size: 1.1rem; }
-        #play-pause-btn { font-size: 1.3rem; min-width: 45px; background: rgba(59, 130, 246, 0.15); color: #3b82f6; }
-        
-        select:hover, .btn:hover { background: rgba(59, 130, 246, 0.2); border-color: #3b82f6; box-shadow: 0 0 15px rgba(59, 130, 246, 0.4); }
-
-        /* Блок переключателя 10 визуализаций (кнопки вместо Select) */
-        #vis-switcher {
-            display: flex; align-items: center; justify-content: space-between;
-            background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(59, 130, 246, 0.4);
-            border-radius: 20px; flex: 1.2; min-width: 100px; padding: 2px 4px; overflow: hidden;
-        }
-        .vis-btn { background: none; border: none; color: #3b82f6; font-size: 1rem; cursor: pointer; padding: 4px; outline: none; transition: transform 0.2s; }
-        .vis-btn:hover { color: #fff; transform: scale(1.2); }
-        #vis-name { flex: 1; text-align: center; color: #fff; font-size: 0.65rem; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 0 4px; }
-        
-        ::-webkit-scrollbar { width: 5px; }
-        ::-webkit-scrollbar-thumb { background: #3b82f6; border-radius: 3px; }
-
-        @media (max-width: 768px) {
-            #sidebar { width: 100%; }
-            #ui-bottom { bottom: 15px; width: 95%; }
-            #player-panel { padding: 12px 10px; border-radius: 20px; }
-            select { padding: 6px; font-size: 0.6rem; min-width: 50px; }
-            .btn.icon { padding: 6px; font-size: 1rem; min-width: 30px; }
-            #play-pause-btn { min-width: 40px; }
-            #vis-name { font-size: 0.55rem; }
-            #controls-bar { gap: 4px; }
-        }
-    </style>
-</head>
-<body>
-
-    <button id="fullscreen-btn-top-left" title="На весь экран">⛶</button>
-
-    <div id="sidebar">
-        <div id="sidebar-header">
-            <span>QUANTUM PLAYLIST</span>
-            <button id="close-sidebar" class="close-btn" title="Закрыть плейлист">✕</button>
-        </div>
-        <div id="playlist">
-            <div style="padding: 20px; color: #aaa; text-align: center;">Syncing with Global Core...</div>
-        </div>
-    </div>
-
-    <div id="ui-bottom">
-        <div id="player-panel">
-            <div id="progress-container">
-                <span id="time-current">0:00</span>
-                <input type="range" id="progress-bar" min="0" max="100" value="0">
-                <span id="time-total">0:00</span>
-            </div>
-
-            <div id="controls-bar">
-                <button id="toggle-sidebar-btn" class="btn icon" title="Открыть плейлист">☰</button>
-                <select id="genre-filter"><option value="all">GENRES</option></select>
-                
-                <!-- НОВЫЙ БЛОК ПЕРЕКЛЮЧЕНИЯ ИЗ 10 ВИЗУАЛИЗАЦИЙ -->
-                <div id="vis-switcher">
-                    <button id="vis-prev" class="vis-btn" title="Предыдущая визуализация">◀</button>
-                    <span id="vis-name">1. SYMBIOSIS</span>
-                    <button id="vis-next" class="vis-btn" title="Следующая визуализация">▶</button>
-                </div>
-                
-                <label class="btn icon" title="Upload Local Track">
-                    ⇧ <input type="file" id="audio-upload" accept="audio/*" style="display:none;">
-                </label>
-                
-                <div style="display: flex; gap: 4px; flex-shrink: 0;">
-                    <button id="prev-btn" class="btn icon" title="Previous Track">⏮</button>
-                    <button id="play-pause-btn" class="btn icon" title="Play/Pause">▶</button>
-                    <button id="next-btn" class="btn icon" title="Next Track">⏭</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div id="canvas-container"></div>
-
+    </script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Базовый Three.js (БЕЗ тяжелой постобработки для макс. производительности) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/EffectComposer.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/RenderPass.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/ShaderPass.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/CopyShader.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/LuminosityHighPassShader.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/UnrealBloomPass.js"></script>
+
+    <style>
+        :root { --accent-primary: #3b82f6; --accent-glow: rgba(59, 130, 246, 0.6); --accent-rgb: 59, 130, 246; --accent-gradient: linear-gradient(135deg, rgba(var(--accent-rgb), 0.25) 0%, rgba(16, 185, 129, 0.2) 100%); transition: --accent-primary 0.3s ease, --accent-glow 0.3s ease; }
+        body { font-family: 'Inter', sans-serif; background-color: #000000; color: #fff; margin: 0; overflow: hidden; }
+        .glass-panel { background: var(--glass); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border: 1px solid var(--glassBorder); border-radius: 20px; box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5); transition: opacity 0.6s ease, transform 0.6s ease; }
+        .zen-hidden-left { transform: translateX(-120%); opacity: 0 !important; pointer-events: none; }
+        .zen-hidden-right { transform: translateX(120%); opacity: 0 !important; pointer-events: none; }
+        .zen-hidden-bottom { transform: translateY(120%); opacity: 0 !important; pointer-events: none; }
+        ::-webkit-scrollbar { width: 5px; } ::-webkit-scrollbar-track { background: transparent; } ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.2); border-radius: 10px; } ::-webkit-scrollbar-thumb:hover { background: var(--accent-primary); }
+        input[type=range] { -webkit-appearance: none; background: transparent; }
+        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; height: 14px; width: 14px; border-radius: 50%; background: var(--accent-primary); cursor: pointer; margin-top: -5px; box-shadow: 0 0 12px var(--accent-glow); transition: background 0.3s ease; }
+        input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 4px; background: rgba(255, 255, 255, 0.2); border-radius: 2px; }
+        select { appearance: none; background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23FFFFFF%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E"); background-repeat: no-repeat; background-position: right 12px top 50%; background-size: 10px auto; }
+        .active-station-card { background: var(--accent-gradient); border: 1px solid var(--accent-primary) !important; box-shadow: 0 0 25px var(--accent-glow); }
+        @keyframes glowingPulse { 0% { box-shadow: 0 0 15px rgba(var(--accent-rgb), 0.3); } 50% { box-shadow: 0 0 35px rgba(var(--accent-rgb), 0.7); transform: scale(1.01); } 100% { box-shadow: 0 0 15px rgba(var(--accent-rgb), 0.3); } }
+        .pulsing-active { animation: glowingPulse 2s infinite ease-in-out; z-index: 40; }
+        .station-item:active { transform: scale(0.98); }
+        #stations-list-container { overflow-y: auto; position: relative; scroll-behavior: smooth; } #stations-list-content { position: absolute; top: 0; left: 0; width: 100%; }
+        .dynamic-bg { transition: background-color 0.3s ease; } .dynamic-text { transition: color 0.3s ease; }
+        .flag-circle { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); box-shadow: 0 0 10px rgba(0,0,0,0.5); }
+    </style>
+</head>
+<body class="h-screen w-screen relative overflow-hidden bg-black select-none">
+
+    <div id="globe-container" class="absolute inset-0 w-full h-full z-0 cursor-grab active:cursor-grabbing"></div>
+    <div id="toast-container" class="fixed top-20 left-1/2 transform -translate-x-1/2 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+    <!-- ЛЕВАЯ ПАНЕЛЬ -->
+    <div id="ui-left" class="fixed top-4 left-4 bottom-32 z-30 w-80 pointer-events-none transition-all duration-700 flex flex-col gap-4">
+        <div class="glass-panel px-5 py-4 flex flex-col gap-3 pointer-events-auto shrink-0 relative">
+            <button onclick="toggleLeftPanel()" class="absolute -right-3 top-1/2 transform -translate-y-1/2 bg-black/80 border border-white/20 rounded-full w-8 h-8 flex items-center justify-center text-white hover:bg-white/10 active:scale-90 transition z-50 shadow-lg">
+                <i data-lucide="chevron-left" class="w-4 h-4"></i>
+            </button>
+            <div class="flex items-center gap-3.5">
+                <div id="logo-icon-bg" class="w-10 h-10 rounded-full dynamic-bg bg-blue-600 flex items-center justify-center shadow-[0_0_20px_var(--accent-glow)] shrink-0 transition-transform duration-100">
+                    <i id="logo-icon" data-lucide="globe" class="text-white w-6 h-6 transition-transform duration-100"></i>
+                </div>
+                <div class="flex-1 flex justify-between items-center">
+                    <div>
+                        <h1 class="text-base font-extrabold tracking-wider text-white flex items-center gap-2">QUANTUM SHOW</h1>
+                        <p class="text-[10px] text-gray-400 font-semibold tracking-widest uppercase">Global Live Stream</p>
+                    </div>
+                    <div id="location-flag-container" class="hidden flex items-center transition-opacity duration-500">
+                        <div class="flag-circle" id="current-flag">🌍</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pt-2 border-t border-white/10 flex items-center justify-between">
+                <div class="flex items-center gap-4">
+                    <div class="flex flex-col border-r border-white/10 pr-3">
+                        <span class="text-[9px] font-bold text-gray-400 uppercase tracking-wider">Станций</span>
+                        <span id="left-stations-count" class="text-xs font-mono font-extrabold dynamic-text text-blue-400 tracking-wider">0</span> 
+                    </div>
+                    <div class="flex flex-col">
+                        <span class="text-[9px] font-bold text-gray-400 uppercase tracking-wider flex items-center gap-1">
+                            <span class="relative flex h-2 w-2"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span><span class="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span></span>
+                            Слушают
+                        </span>
+                        <span id="global-listeners-counter" class="text-xs font-mono font-extrabold text-red-400 tracking-wider">0</span> 
+                    </div>
+                </div>
+                <span id="current-location-text" class="text-[10px] font-bold text-white truncate max-w-[100px] text-right">--</span>
+            </div>
+        </div>
+
+        <aside class="w-full glass-panel flex-1 pointer-events-auto flex flex-col shadow-2xl overflow-hidden">
+            <div class="p-4 flex flex-col gap-3 shrink-0">
+                <div class="grid grid-cols-2 gap-1.5 text-[10px]">
+                    <button class="col-span-1 bg-black/50 hover:bg-white/10 active:scale-95 text-gray-300 py-2 px-1 rounded-xl border border-white/10 flex flex-col items-center justify-center gap-1 transition font-medium" onclick="toggleFavoritesMode(this)"><i data-lucide="heart" class="w-3.5 h-3.5 text-red-500"></i> Избранное</button>
+                    <button class="col-span-1 bg-black/50 hover:bg-white/10 active:scale-95 text-gray-300 py-2 px-1 rounded-xl border border-white/10 flex flex-col items-center justify-center gap-1 transition font-medium" onclick="toggleHistoryMode(this)"><i data-lucide="history" class="w-3.5 h-3.5 dynamic-text text-blue-400"></i> История</button>
+                </div>
+                
+                <div class="flex flex-col gap-2 pt-2 border-t border-white/10">
+                    <div class="grid grid-cols-2 gap-2">
+                        <select id="filter-genre" class="w-full bg-black/60 border border-white/10 rounded-xl pl-3 pr-8 py-2 text-xs text-white focus:outline-none transition cursor-pointer hover:border-white/30 focus:border-[var(--accent-primary)]"><option value="">Все жанры</option></select>
+                        <select id="filter-subgenre" disabled class="w-full bg-black/60 border border-white/10 rounded-xl pl-3 pr-8 py-2 text-xs text-white focus:outline-none transition cursor-pointer disabled:opacity-40 hover:border-white/30 focus:border-[var(--accent-primary)]"><option value="">Все поджанры</option></select>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <select id="filter-country" class="w-full bg-black/60 border border-white/10 rounded-xl pl-3 pr-8 py-2 text-xs text-white focus:outline-none transition cursor-pointer hover:border-white/30 focus:border-[var(--accent-primary)]"><option value="">Загрузка стран...</option></select>
+                        <button id="btn-more-countries" class="shrink-0 bg-black/60 border border-white/10 rounded-xl w-9 h-9 flex items-center justify-center text-gray-400 hover:text-white transition" onclick="toggleMinorCountries()" title="Показать остальные страны"><i data-lucide="plus" class="w-4 h-4"></i></button>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-2 pt-1">
+                    <div class="relative flex-1">
+                        <i data-lucide="search" class="w-4 h-4 absolute left-3 top-2.5 text-gray-400"></i>
+                        <input type="text" id="input-search" placeholder="Поиск станций..." autocomplete="off" class="w-full bg-black/60 border border-white/10 rounded-xl pl-9 pr-3 py-2 text-xs text-white placeholder-gray-500 focus:outline-none transition hover:border-white/30 focus:border-[var(--accent-primary)]">
+                    </div>
+                    <button class="bg-black/60 hover:bg-white/10 active:scale-95 text-gray-400 p-2 rounded-xl border border-white/10 text-xs font-bold transition dynamic-bg" onclick="toggleHQFilter(this)">HQ</button>
+                </div>
+            </div>
+        </aside>
+    </div>
+
+    <button id="btn-show-left" onclick="toggleLeftPanel()" class="hidden fixed left-4 top-4 z-40 bg-black/80 border border-white/20 rounded-xl p-3 text-white hover:bg-white/10 transition shadow-lg pointer-events-auto">
+        <i data-lucide="sliders" class="w-5 h-5"></i>
+    </button>
+
+    <!-- ПРАВАЯ ПАНЕЛЬ -->
+    <div id="ui-right" class="fixed top-4 right-4 bottom-32 z-30 w-[360px] pointer-events-none transition-all duration-700 md:block hidden md:opacity-100 flex flex-col">
+        <aside class="w-full glass-panel h-full pointer-events-auto flex flex-col shadow-2xl overflow-hidden relative">
+            <div class="p-3 border-b border-white/10 flex items-center justify-between bg-black/40 shrink-0">
+                <h2 class="text-xs font-bold uppercase tracking-wider flex items-center gap-2 text-gray-200"><i data-lucide="radio" class="w-4 h-4 dynamic-text text-blue-400"></i> Эфирная сетка</h2>
+            </div>
+            <div id="active-station-pinned-container" class="hidden shrink-0 border-b border-white/20 bg-black/60 p-2 z-40"></div>
+            <div id="stations-list-container" class="flex-1 relative scroll-smooth p-2">
+                <div id="stations-list" class="w-full h-full relative overflow-y-auto"><div id="stations-list-content"></div></div>
+                <div id="list-loader" class="absolute inset-0 flex flex-col items-center justify-center text-gray-400 text-xs gap-2 bg-black/60 backdrop-blur-sm z-10"><i data-lucide="loader-2" class="w-6 h-6 animate-spin dynamic-text text-blue-400"></i> Синхронизация...</div>
+            </div>
+        </aside>
+    </div>
+
+    <!-- НИЖНЯЯ ПАНЕЛЬ ПЛЕЕРА -->
+    <footer id="ui-player" class="fixed bottom-4 left-4 right-4 z-40 pointer-events-none transition-all duration-700 max-w-7xl mx-auto">
+        <div class="glass-panel w-full p-4 pointer-events-auto flex flex-col gap-3 shadow-2xl">
+            <div id="player-controls-wrap" class="flex flex-wrap md:flex-nowrap items-center justify-between gap-3 w-full transition-all duration-500 overflow-hidden">
+                
+                <div class="w-full md:w-1/3 md:flex-1 flex items-center justify-between md:justify-start gap-3">
+                    <div class="flex items-center gap-3 overflow-hidden">
+                        <div class="relative group shrink-0">
+                            <img id="player-logo" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='1'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Cpath d='M12 16v-4'/%3E%3Cpath d='M12 8h.01'/%3E%3C/svg%3E" class="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-black/60 border border-white/10 object-cover" alt="Logo">
+                            <button id="btn-fav-current" title="Добавить в избранное" class="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-black/80 border border-white/20 flex items-center justify-center text-gray-400 hover:text-red-500 active:scale-90 transition shadow"><i data-lucide="heart" class="w-3 h-3"></i></button>
+                        </div>
+                        <div class="flex flex-col overflow-hidden">
+                            <div class="flex items-center gap-2"><span id="player-title" class="font-bold text-white text-sm truncate">Выберите станцию</span></div>
+                            <span id="player-location" class="text-xs dynamic-text text-blue-400 truncate">Ожидание...</span>
+                        </div>
+                    </div>
+                    <div class="flex md:hidden items-center gap-1.5 bg-black/40 p-1.5 rounded-xl border border-white/10 shrink-0">
+                        <button class="text-gray-400 transition" onclick="toggleMute()"><i data-lucide="volume-2" id="icon-volume-mobile" class="w-4 h-4"></i></button>
+                        <input type="range" id="master-volume-mobile" min="0" max="1" step="0.01" value="0.8" class="w-16">
+                    </div>
+                </div>
+
+                <div class="w-full md:w-auto flex items-center justify-center gap-2 sm:gap-4 order-3 md:order-none pt-2 md:pt-0 border-t border-white/10 md:border-t-0">
+                    <button id="btn-prev" class="w-8 h-8 md:w-9 md:h-9 rounded-full bg-white/10 border border-white/10 text-white flex items-center justify-center hover:bg-white/20 active:scale-90 transition shrink-0"><i data-lucide="skip-back" class="w-4 h-4 fill-white"></i></button>
+                    <button id="btn-play" class="w-10 h-10 md:w-12 md:h-12 rounded-full dynamic-bg bg-blue-500 text-white flex items-center justify-center hover:scale-105 active:scale-95 transition shadow-[0_0_20px_var(--accent-glow)] shrink-0"><i data-lucide="play" class="w-4 h-4 md:w-5 md:h-5 fill-white ml-0.5"></i></button>
+                    <button id="btn-next" class="w-8 h-8 md:w-9 md:h-9 rounded-full bg-white/10 border border-white/10 text-white flex items-center justify-center hover:bg-white/20 active:scale-90 transition shrink-0"><i data-lucide="skip-forward" class="w-4 h-4 fill-white"></i></button>
+                    <div class="flex items-center gap-1.5 md:gap-3 ml-1 md:ml-3 border-l border-white/10 pl-2 md:pl-4">
+                        <button class="flex items-center gap-1.5 bg-red-500/20 hover:bg-red-500/40 text-red-300 border border-red-500/30 px-3 md:px-4 py-1.5 rounded-xl transition active:scale-95" onclick="likeCurrentStation()"><i data-lucide="heart" id="icon-like" class="w-4 h-4 shrink-0"></i><span class="text-xs font-mono font-bold tracking-wide">Лайки: <span id="btn-like-text">--</span></span></button>
+                    </div>
+                </div>
+
+                <div class="hidden md:flex md:w-1/3 md:flex-1 items-center justify-end gap-3 min-w-0">
+                    <button title="ZEN Режим (F)" class="text-gray-400 hover:text-white transition p-2 rounded-xl border border-white/10 bg-white/5 ml-2" onclick="isUIHidden = !isUIHidden; setZenMode(isUIHidden);"><i data-lucide="maximize" class="w-4 h-4"></i></button>
+                    <div class="flex items-center gap-2 bg-black/40 p-2 rounded-xl border border-white/10">
+                        <button class="text-gray-400 hover:text-white transition p-0.5" onclick="toggleMute()"><i data-lucide="volume-2" id="icon-volume-desktop" class="w-4 h-4"></i></button>
+                        <input type="range" id="master-volume-desktop" min="0" max="1" step="0.01" value="0.8" class="w-24">
+                    </div>
+                </div>
+            </div>
+
+            <!-- ПОЛОСА 2D ЭКВАЛАЙЗЕРА -->
+            <div id="equalizer-container" class="w-full h-8 bg-black/60 rounded-xl overflow-hidden border border-white/10 relative flex items-center transition-all duration-500">
+                <canvas id="equalizer-canvas" class="w-full h-full block"></canvas>
+            </div>
+        </div>
+    </footer>
+
+    <audio id="audio-player" crossorigin="anonymous" preload="none"></audio>
 
     <script>
-        const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz-mIMwHe0AAz1xQxxmklBJFTkfRxhGDcllBKjYs3J8N77RvbROOlapD7YpiOgoBLQ/exec"; 
-
-        // --- УПРАВЛЕНИЕ UI ---
-        let uiTimeout;
-        const uiLayer = document.getElementById('ui-bottom');
-        const sidebar = document.getElementById('sidebar');
-        const fullscreenBtnTopLeft = document.getElementById('fullscreen-btn-top-left');
+        let globalStationCount = 0, dynamicCountries = []; 
+        let showAllCountries = false;
         
-        function resetUiTimer() {
-            uiLayer.classList.remove('idle');
-            fullscreenBtnTopLeft.style.opacity = '1';
-            fullscreenBtnTopLeft.style.pointerEvents = 'auto';
-            document.body.style.cursor = 'default';
-            clearTimeout(uiTimeout);
-            uiTimeout = setTimeout(() => { 
-                if (isPlaying && !sidebar.classList.contains('open')) { 
-                    uiLayer.classList.add('idle'); 
-                    fullscreenBtnTopLeft.style.opacity = '0';
-                    fullscreenBtnTopLeft.style.pointerEvents = 'none';
-                    document.body.style.cursor = 'none'; 
-                } 
-            }, 3000);
-        }
-        
-        window.addEventListener('mousemove', resetUiTimer);
-        window.addEventListener('touchstart', resetUiTimer, {passive: true});
-        window.addEventListener('click', resetUiTimer);
-
-        document.getElementById('toggle-sidebar-btn').onclick = () => { sidebar.classList.add('open'); resetUiTimer(); };
-        document.getElementById('close-sidebar').onclick = () => { sidebar.classList.remove('open'); resetUiTimer(); };
-
-        fullscreenBtnTopLeft.onclick = () => {
-            let docEl = document.documentElement;
-            if (!document.fullscreenElement) {
-                if (docEl.requestFullscreen) docEl.requestFullscreen().catch(e => {});
-                else if (docEl.webkitRequestFullscreen) docEl.webkitRequestFullscreen().catch(e => {});
-            } else {
-                if (document.exitFullscreen) document.exitFullscreen();
-                else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
-            }
-            resetUiTimer();
+        const GENRE_MAP = {
+            'pop': ['k-pop', 'j-pop', 'indie pop', 'synthpop', 'top 40', 'electro pop'],
+            'dance': ['club', 'house', 'techno', 'trance', 'eurodance', 'hardstyle'],
+            'rock': ['hard rock', 'metal', 'indie rock', 'classic rock', 'punk', 'alternative'],
+            'jazz': ['smooth jazz', 'bebop', 'swing', 'big band', 'blues'],
+            'electronic': ['ambient', 'dubstep', 'drum and bass', 'synthwave', 'chillout', 'lo-fi'],
+            'chillout': ['lounge', 'ambient', 'lo-fi', 'new age', 'meditation'],
+            'news': ['world news', 'local news', 'business', 'sports news', 'weather'],
+            'talk': ['interview', 'comedy', 'podcast', 'politics', 'education'],
+            'classical': ['symphony', 'baroque', 'romantic', 'opera', 'piano', 'contemporary'],
+            'hiphop': ['rap', 'trap', 'old school', 'rnb', 'lo-fi hip hop'],
+            'folk': ['country', 'bluegrass', 'celtic', 'latin', 'world']
         };
 
-        let audioContext, analyser, dataArray, timeDataArray;
-        let audioElement = new Audio();
-        audioElement.crossOrigin = "anonymous"; 
-        
-        let isPlaying = false, isPreloadingNext = false; 
-        let isLoadingTrack = false;
-        let loadingTimer = null;
-        let countdownValue = 10;
-
-        let fullPlaylist = [], currentPlaylist = [];
-        let currentPlayingTrack = null;
-        const audioCache = {}; 
-        let favorites = JSON.parse(localStorage.getItem('quantum_favorites')) || [];
-
-        function initAudio() {
-            if (audioContext) return;
-            audioContext = new (window.AudioContext || window.webkitAudioContext)();
-            analyser = audioContext.createAnalyser();
-            analyser.fftSize = 2048; analyser.smoothingTimeConstant = 0.85; 
-            const source = audioContext.createMediaElementSource(audioElement);
-            source.connect(analyser); analyser.connect(audioContext.destination);
-            dataArray = new Uint8Array(analyser.frequencyBinCount);
-            timeDataArray = new Uint8Array(analyser.fftSize);
-        }
-
-        const progressBar = document.getElementById('progress-bar');
-        const timeCurrent = document.getElementById('time-current');
-        const timeTotal = document.getElementById('time-total');
-
-        function formatTime(seconds) {
-            if (isNaN(seconds)) return "0:00";
-            const m = Math.floor(seconds / 60);
-            const s = Math.floor(seconds % 60).toString().padStart(2, '0');
-            return `${m}:${s}`;
-        }
-
-        audioElement.addEventListener('timeupdate', () => {
-            if (audioElement.duration) {
-                progressBar.max = audioElement.duration;
-                progressBar.value = audioElement.currentTime;
-                timeCurrent.innerText = formatTime(audioElement.currentTime);
-                timeTotal.innerText = formatTime(audioElement.duration);
-                
-                let timeLeft = audioElement.duration - audioElement.currentTime;
-                if (timeLeft < 15 && currentPlaylist.length > 1 && !isPreloadingNext) {
-                    let currentIdx = currentPlaylist.findIndex(t => t.url === currentPlayingTrack.url);
-                    let nextIdx = (currentIdx + 1) % currentPlaylist.length;
-                    let nextTrack = currentPlaylist[nextIdx];
-                    
-                    if (!nextTrack.isLocal && nextTrack.url.includes("script.google.com") && !audioCache[nextTrack.url]) {
-                        isPreloadingNext = true; 
-                        fetch(nextTrack.url).then(res => res.json()).then(data => {
-                            if (!data.error && data.base64) audioCache[nextTrack.url] = data.base64; 
-                        }).catch(e => console.error(e));
-                    }
-                }
-            }
-        });
-
-        progressBar.addEventListener('input', () => {
-            if(audioElement.duration) audioElement.currentTime = progressBar.value;
-            resetUiTimer();
-        });
-
-        window.addEventListener('DOMContentLoaded', async () => {
-            if (APPS_SCRIPT_URL === "ВСТАВЬ_ССЫЛКУ_СЮДА") return;
-            try {
-                const response = await fetch(APPS_SCRIPT_URL);
-                const data = await response.json();
-                if (data.error) throw new Error(data.error);
-
-                fullPlaylist = data; currentPlaylist = [...fullPlaylist];
-                const genres = [...new Set(fullPlaylist.map(t => t.genre).filter(Boolean))];
-                const filterSelect = document.getElementById('genre-filter');
-                filterSelect.innerHTML = '<option value="all">ALL GENRES</option><option value="favorites">❤ FAVORITES</option>';
-                genres.forEach(g => {
-                    const opt = document.createElement('option'); opt.value = g; opt.innerText = g.toUpperCase();
-                    filterSelect.appendChild(opt);
-                });
-                updatePlaylistUI();
-                if (currentPlaylist.length > 0) playTrack(currentPlaylist[0]);
-            } catch (err) {
-                document.getElementById('playlist').innerHTML = '<div style="color:#ef4444; padding:20px; text-align:center;">Database connection failed.</div>';
-            }
-        });
-
-        document.getElementById('genre-filter').addEventListener('change', (e) => {
-            if (isLoadingTrack) return; 
-            const selectedGenre = e.target.value;
-            if (selectedGenre === 'all') currentPlaylist = [...fullPlaylist];
-            else if (selectedGenre === 'favorites') currentPlaylist = fullPlaylist.filter(t => favorites.includes(t.url));
-            else currentPlaylist = fullPlaylist.filter(t => t.genre === selectedGenre);
-            updatePlaylistUI();
-            if (currentPlaylist.length > 0) playTrack(currentPlaylist[0]);
-            else { audioElement.pause(); isPlaying = false; document.getElementById('play-pause-btn').innerText = "▶"; }
-            resetUiTimer();
-        });
-
-        document.getElementById('audio-upload').onchange = (e) => {
-            if (isLoadingTrack) return;
-            if (e.target.files.length > 0) {
-                const file = e.target.files[0];
-                const localUrl = URL.createObjectURL(file);
-                fullPlaylist.unshift({ name: file.name.substring(0, 30) + '...', genre: "LOCAL", url: localUrl, isLocal: true }); 
-                const filter = document.getElementById('genre-filter');
-                if(filter.value !== 'all') { filter.value = 'all'; filter.dispatchEvent(new Event('change')); }
-                else { currentPlaylist = [...fullPlaylist]; updatePlaylistUI(); playTrack(currentPlaylist[0]); }
-                e.target.value = ''; resetUiTimer();
-            }
+        const GENRE_LABELS = {
+            'pop': 'Поп-музыка', 'dance': 'Танцевальная', 'rock': 'Рок', 'jazz': 'Джаз / Блюз',
+            'electronic': 'Электронная', 'chillout': 'Чиллаут', 'news': 'Новостные', 'talk': 'Разговорные',
+            'classical': 'Классическая музыка', 'hiphop': 'Хип-Хоп / R&B', 'folk': 'Фолк / Этно'
         };
 
-        const playBtn = document.getElementById('play-pause-btn');
-
-        function playNext() {
-            if (isLoadingTrack || !currentPlayingTrack || currentPlaylist.length === 0) return;
-            let idx = currentPlaylist.findIndex(t => t.url === currentPlayingTrack.url);
-            playTrack(currentPlaylist[(idx + 1) % currentPlaylist.length]);
-        }
-        function playPrev() {
-            if (isLoadingTrack || !currentPlayingTrack || currentPlaylist.length === 0) return;
-            let idx = currentPlaylist.findIndex(t => t.url === currentPlayingTrack.url);
-            let prevIdx = (idx - 1 + currentPlaylist.length) % currentPlaylist.length;
-            playTrack(currentPlaylist[prevIdx]);
-        }
-        document.getElementById('next-btn').onclick = () => { playNext(); resetUiTimer(); };
-        document.getElementById('prev-btn').onclick = () => { playPrev(); resetUiTimer(); };
-        audioElement.addEventListener('ended', playNext);
-
-        async function playTrack(track) {
-            if (isLoadingTrack) return; 
-            currentPlayingTrack = track;
-            initAudio(); 
-            if(audioContext.state === 'suspended') await audioContext.resume().catch(e=>{});
-            
-            seedTrackEvolution();
-            isPreloadingNext = false; 
-
-            isLoadingTrack = true; countdownValue = 10;
-            playBtn.innerHTML = `<span style="color:#ef4444;">${countdownValue}</span>`;
-            updatePlaylistUI(); 
-            
-            clearInterval(loadingTimer);
-            loadingTimer = setInterval(() => {
-                if (countdownValue > 1) {
-                    countdownValue--; playBtn.innerHTML = `<span style="color:#ef4444;">${countdownValue}</span>`; updatePlaylistUI();
-                }
-            }, 1000);
-            
-            try {
-                if (!track.isLocal && track.url.includes("script.google.com")) {
-                     if (audioCache[track.url]) { audioElement.src = audioCache[track.url]; } 
-                     else {
-                         const response = await fetch(track.url); const data = await response.json();
-                         if (data.error || !data.base64) throw new Error("Load error");
-                         audioElement.src = data.base64; audioCache[track.url] = data.base64; 
-                     }
-                } else { audioElement.src = track.url; }
-
-                clearInterval(loadingTimer); isLoadingTrack = false;
-                let playPromise = audioElement.play();
-                if (playPromise !== undefined) {
-                    playPromise.then(() => {
-                        isPlaying = true; playBtn.innerText = "❚❚"; updatePlaylistUI(); resetUiTimer();
-                    }).catch(error => {
-                        isPlaying = false; playBtn.innerText = "▶"; updatePlaylistUI();
-                        document.body.addEventListener('click', function resumeAutoplay() {
-                            if(!isPlaying) { audioContext.resume(); audioElement.play(); isPlaying = true; playBtn.innerText = "❚❚"; updatePlaylistUI(); }
-                            document.body.removeEventListener('click', resumeAutoplay);
-                        }, {once: true});
-                    });
-                }
-            } catch (error) {
-                clearInterval(loadingTimer); isLoadingTrack = false;
-                playBtn.innerText = "⚠"; setTimeout(() => playNext(), 2000);
-            }
-        }
-
-        function updatePlaylistUI() {
-            const playlistDiv = document.getElementById('playlist');
-            playlistDiv.innerHTML = '';
-            if (isLoadingTrack) { playlistDiv.style.pointerEvents = 'none'; playlistDiv.style.opacity = '0.7'; } 
-            else { playlistDiv.style.pointerEvents = 'auto'; playlistDiv.style.opacity = '1'; }
-            if (currentPlaylist.length === 0) { playlistDiv.innerHTML = '<div style="padding:10px; color:#aaa; text-align:center;">No tracks found</div>'; return; }
-
-            currentPlaylist.forEach((track) => {
-                const trackEl = document.createElement('div'); trackEl.className = 'track-item';
-                const isActive = (currentPlayingTrack && currentPlayingTrack.url === track.url);
-                if (isActive) trackEl.classList.add('active');
-                
-                const playIconBtn = document.createElement('div'); playIconBtn.className = 'track-play-icon';
-                if (isActive && isLoadingTrack) playIconBtn.innerHTML = `<span style="font-size:1.1rem; color:#ef4444; font-weight:bold;">${countdownValue}</span>`;
-                else playIconBtn.innerHTML = (isActive && isPlaying) ? '❚❚' : '▶';
-
-                playIconBtn.onclick = (e) => {
-                    e.stopPropagation(); if (isLoadingTrack) return; 
-                    if (isActive) {
-                        if (isPlaying) { audioElement.pause(); isPlaying = false; } else { audioElement.play(); isPlaying = true; }
-                        updatePlaylistUI(); playBtn.innerText = isPlaying ? "❚❚" : "▶";
-                    } else playTrack(track);
-                    resetUiTimer();
-                };
-                
-                const titleSpan = document.createElement('span'); titleSpan.className = 'track-title'; titleSpan.innerHTML = track.name; 
-                const favBtn = document.createElement('span'); const isFav = favorites.includes(track.url);
-                favBtn.className = 'fav-btn'; favBtn.innerText = isFav ? '♥' : '♡'; favBtn.style.color = isFav ? '#ef4444' : '#aaa';
-                favBtn.onclick = (e) => {
-                    e.stopPropagation(); if (isLoadingTrack) return;
-                    if (isFav) favorites = favorites.filter(url => url !== track.url); else favorites.push(track.url);
-                    localStorage.setItem('quantum_favorites', JSON.stringify(favorites));
-                    if (document.getElementById('genre-filter').value === 'favorites' && isFav) currentPlaylist = currentPlaylist.filter(t => t.url !== track.url);
-                    updatePlaylistUI(); 
-                };
-                trackEl.appendChild(playIconBtn); trackEl.appendChild(titleSpan); trackEl.appendChild(favBtn);
-                playlistDiv.appendChild(trackEl);
-            });
-        }
-
-        playBtn.onclick = async () => {
-            if (isLoadingTrack) return; 
-            initAudio(); if(audioContext.state === 'suspended') await audioContext.resume().catch(e=>{});
-            if (isPlaying) { audioElement.pause(); isPlaying = false; playBtn.innerText = "▶"; } 
-            else {
-                if (!audioElement.src || audioElement.src.endsWith(window.location.host + "/")) { if (currentPlaylist.length > 0) playTrack(currentPlaylist[0]); } 
-                else { await audioElement.play(); isPlaying = true; playBtn.innerText = "❚❚"; }
-            }
-            updatePlaylistUI(); resetUiTimer();
-        };
-
-
-        // =========================================================================
-        // ЛОГИКА ПЕРЕКЛЮЧЕНИЯ 10 ВИЗУАЛИЗАЦИЙ
-        // =========================================================================
-        const VIS_MODES = [
-            "1. SYMBIOSIS", 
-            "2. QUANTUM STAR", 
-            "3. HYPNOTIC WALTZ", 
-            "4. NEURAL CORE",
-            "5. LIVING ARCHETYPES",
-            "6. SOLAR FLARE",
-            "7. ETHEREAL GHOST",
-            "8. CYBER MATRIX",
-            "9. DEEP OCEAN",
-            "10. FRACTAL FLOWER"
-        ];
-        let currentVisMode = 0;
-        const visNameLabel = document.getElementById('vis-name');
+        let stationsData = [], allStationsMaster = [], currentStationIndex = -1, currentStation = null;
+        let isHQOnly = false, isOnlyFavorites = false, isOnlyHistory = false, lastVolume = 0.8, isUIHidden = false;
         
-        document.getElementById('vis-prev').addEventListener('click', () => {
-            currentVisMode = (currentVisMode - 1 + VIS_MODES.length) % VIS_MODES.length;
-            visNameLabel.innerText = VIS_MODES[currentVisMode];
-            resetUiTimer();
-        });
+        let favorites = JSON.parse(localStorage.getItem('radio_favs') || '[]');
+        let historyStations = JSON.parse(localStorage.getItem('radio_history') || '[]');
+        let likedStations = JSON.parse(localStorage.getItem('radio_likes') || '{}');
+
+        const audio = document.getElementById('audio-player');
+        let isPlaying = false, isAudioActuallyPlaying = false, isBuffering = false;            
+        let corsEnabled = true;
+
+        let idleTimer = null, currentBassLevel = 0, currentGlobalListeners = 0; 
+        const ITEM_HEIGHT = 65; let scrollTimeout, searchTimeout, playErrorCount = 0, MAX_PLAY_ERRORS = 3; 
+        let currentApiBase = 'https://de1.api.radio-browser.info', currentStationHash = 0;
+
+        // 3D SHOW ENGINE (Optimized)
+        let scene, camera, renderer, controls, globeGroup, pointsMesh;
+        let sunLight, strobeLight;
+        let quantumPoints, quantumLines, radioWavesGroup, radioRings = [];
+        let eqCanvas, eqCtx, eqAnimationId, audioCtx, analyser, dataArray, timeDataArray;
+        let leftPanelVisible = true;
         
-        document.getElementById('vis-next').addEventListener('click', () => {
-            currentVisMode = (currentVisMode + 1) % VIS_MODES.length;
-            visNameLabel.innerText = VIS_MODES[currentVisMode];
-            resetUiTimer();
-        });
+        // Оптимизированный космос
+        const NUM_GALAXIES = 5; // Снижено для FPS
+        let galaxies = [];
+        const NUM_PLANETS = 8; // Снижено для FPS
+        let planets = [];
+        let ambientDust;
+        let nebulasSystem;
+        
+        // STATE
+        let visualizerOffset = 0, smoothedCentroid = 0.5, beatThreshold = 0.5, isBeat = false, transitionFlash = 0.0; 
 
-
-        // =========================================================================
-        // 3D SCENE & MATH ENGINE (Основа 5)
-        // =========================================================================
-        const container = document.getElementById('canvas-container');
-        const scene = new THREE.Scene();
-        scene.fog = new THREE.FogExp2(0x020205, 0.002);
-
-        const baseFov = 50;
-        const camera = new THREE.PerspectiveCamera(baseFov, window.innerWidth / window.innerHeight, 0.1, 2000);
-        camera.position.set(0, 10, 55); 
-
-        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, powerPreference: "high-performance" });
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
-        container.appendChild(renderer.domElement);
-
-        const controls = new THREE.OrbitControls(camera, renderer.domElement);
-        controls.enableDamping = true; controls.dampingFactor = 0.05; controls.minDistance = 20; controls.maxDistance = 150;
-
-        const renderScene = new THREE.RenderPass(scene, camera);
-        const bloomPass = new THREE.UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
-        bloomPass.threshold = 0.15; bloomPass.strength = 1.0; bloomPass.radius = 0.5;
-
-        const composer = new THREE.EffectComposer(renderer);
-        composer.addPass(renderScene); composer.addPass(bloomPass);
-
-        const globeGroup = new THREE.Group(); scene.add(globeGroup);
-        const gridDim = 48; const pCount = gridDim * gridDim;
-        const pOrig = new Float32Array(pCount * 3); const pPos = new Float32Array(pCount * 3); const pColor = new Float32Array(pCount * 3); const lineIndices = [];
-
+        // ОПТИМИЗИРОВАННАЯ СЕТКА КОРАБЛЯ (в 4 раза быстрее)
+        const gridDim = 32, pCount = gridDim * gridDim;
+        const pOrig = new Float32Array(pCount * 3), lineIndices = [];
         for(let i=0; i<gridDim; i++){
             for(let j=0; j<gridDim; j++){
                 let idx = i*gridDim + j;
                 if (j < gridDim - 1) lineIndices.push(idx, idx + 1);
                 if (i < gridDim - 1) lineIndices.push(idx, idx + gridDim);
-                let u = (j / (gridDim - 1)) * Math.PI * 2; let v = (i / (gridDim - 1)) * Math.PI; let r = 10.3; 
-                pOrig[idx*3] = r * Math.cos(u) * Math.sin(v); pOrig[idx*3+1] = r * Math.cos(v); pOrig[idx*3+2] = r * Math.sin(u) * Math.sin(v);
-                pPos[idx*3] = pOrig[idx*3]; pPos[idx*3+1] = pOrig[idx*3+1]; pPos[idx*3+2] = pOrig[idx*3+2];
             }
         }
 
-        const pGeo = new THREE.BufferGeometry();
-        pGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3)); pGeo.setAttribute('color', new THREE.BufferAttribute(pColor, 3)); pGeo.setIndex(lineIndices);
-
-        const pCanvas = document.createElement('canvas'); pCanvas.width = 16; pCanvas.height = 16; 
-        const pCtx = pCanvas.getContext('2d'); const pGrad = pCtx.createRadialGradient(8, 8, 0, 8, 8, 8);
-        pGrad.addColorStop(0, 'rgba(255,255,255,1)'); pGrad.addColorStop(0.2, 'rgba(255,255,255,0.8)'); pGrad.addColorStop(1, 'rgba(0,0,0,0)'); 
-        pCtx.fillStyle = pGrad; pCtx.fillRect(0,0,16,16);
-
-        const quantumPoints = new THREE.Points(pGeo, new THREE.PointsMaterial({ size: 1.0, map: new THREE.CanvasTexture(pCanvas), vertexColors: true, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false }));
-        const quantumLines = new THREE.LineSegments(pGeo, new THREE.LineBasicMaterial({ vertexColors: true, transparent: true, opacity: 0.35, blending: THREE.AdditiveBlending, depthWrite: false }));
-        globeGroup.add(quantumPoints); globeGroup.add(quantumLines);
-
-        const laserGroup = new THREE.Group(); const laserMat = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0, blending: THREE.AdditiveBlending });
-        for(let i=0; i<100; i++) {
-            const laser = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0, 10, 0), new THREE.Vector3(0, 250, 0)]), laserMat.clone());
-            const phi = Math.acos(-1 + (2 * i) / 100); const theta = Math.sqrt(100 * Math.PI) * phi;
-            laser.rotation.set(phi, theta, 0); 
-            laser.userData = { phase: Math.random() * Math.PI * 2, speed: 0.02 + Math.random() * 0.03, basex: phi, basey: theta };
-            laserGroup.add(laser);
+        /* ================= ФУНКЦИИ ИНТЕРФЕЙСА ================= */
+        async function resolveFastestApiServer() { currentApiBase = 'https://de1.api.radio-browser.info'; return true; }
+        async function fetchAPILists() { return true; }
+        function loadStaticCatalogs() {
+            const genreSelect = document.getElementById('filter-genre');
+            if (genreSelect) { genreSelect.innerHTML = '<option value="">Все жанры</option>'; for (const [key, label] of Object.entries(GENRE_LABELS)) { genreSelect.innerHTML += `<option value="${key}">${label}</option>`; } }
+            const countrySelect = document.getElementById('filter-country');
+            if (countrySelect) { const commonCountries = ['Russia', 'USA', 'Germany', 'France', 'UK', 'Japan', 'Ukraine', 'Belarus']; countrySelect.innerHTML = '<option value="">Все страны</option>'; commonCountries.forEach(c => { countrySelect.innerHTML += `<option value="${c}">${c}</option>`; }); }
         }
-        globeGroup.add(laserGroup);
-
-        const radioWavesGroup = new THREE.Group(); globeGroup.add(radioWavesGroup);
-        const radioRings = [];
-        for(let i=0; i<4; i++) {
-            const ringMesh = new THREE.LineLoop(new THREE.BufferGeometry().setAttribute('position', new THREE.BufferAttribute(new Float32Array(256 * 3), 3)), new THREE.LineBasicMaterial({ color: 0x3b82f6, transparent: true, opacity: 0, blending: THREE.AdditiveBlending }));
-            ringMesh.rotation.set(Math.random()*Math.PI, Math.random()*Math.PI, Math.random()*Math.PI);
-            radioRings.push({ mesh: ringMesh, baseRadius: 10.4 + i*0.8, speed: (Math.random()-0.5)*0.02 }); radioWavesGroup.add(ringMesh);
+        function updateSubgenreCatalog(genre) {
+            const sub = document.getElementById('filter-subgenre'); if (!sub) return;
+            if (!genre || !GENRE_MAP[genre]) { sub.innerHTML = '<option value="">Все поджанры</option>'; sub.disabled = true; return; }
+            sub.innerHTML = '<option value="">Все поджанры</option>'; GENRE_MAP[genre].forEach(sg => { sub.innerHTML += `<option value="${sg}">${sg}</option>`; }); sub.disabled = false;
         }
+        function toggleLeftPanel() {
+            leftPanelVisible = !leftPanelVisible; const left = document.getElementById('ui-left'), showBtn = document.getElementById('btn-show-left');
+            if (!leftPanelVisible) { left.classList.add('zen-hidden-left'); if(showBtn) showBtn.classList.remove('hidden'); } 
+            else { left.classList.remove('zen-hidden-left'); if(showBtn) showBtn.classList.add('hidden'); }
+        }
+        function toggleMinorCountries() { showToast("Эта функция будет доступна в полной версии"); }
+        function toggleHQFilter(btn) {
+            isHQOnly = !isHQOnly; btn.classList.toggle('bg-blue-600'); btn.classList.toggle('text-white');
+            showToast(isHQOnly ? "Режим HQ включен" : "Режим HQ выключен"); fetchStations(5000, document.getElementById('filter-country').value, '', document.getElementById('filter-genre').value, true);
+        }
+        function likeCurrentStation() {
+            if (!currentStation) return; let count = (likedStations[currentStation.id] || 0) + 1; likedStations[currentStation.id] = count; localStorage.setItem('radio_likes', JSON.stringify(likedStations));
+            const likeText = document.getElementById('btn-like-text'); if (likeText) likeText.innerText = (currentStation.clickcount + count).toLocaleString('ru-RU'); showToast("Лайк отправлен!");
+        }
+        function getFlagEmojiByName(country) { return "🌍"; }
 
-        const strobeLight = new THREE.AmbientLight(0xffffff, 0); scene.add(strobeLight);
-        const sunLight = new THREE.DirectionalLight(0xffffff, 1.0); sunLight.position.set(50, 20, 30); scene.add(sunLight);
-        scene.add(new THREE.AmbientLight(0x050510, 2.0));
-
-        window.addEventListener('resize', () => { 
-            camera.aspect = window.innerWidth / window.innerHeight; camera.updateProjectionMatrix(); 
-            renderer.setSize(window.innerWidth, window.innerHeight); if(composer) composer.setSize(window.innerWidth, window.innerHeight);
+        window.addEventListener('DOMContentLoaded', async () => {
+            lucide.createIcons(); init3DEarth(); initEqualizer(); setupZenMode(); setupAudioEvents(); 
+            try { await resolveFastestApiServer(); await fetchAPILists(); loadStaticCatalogs(); setupEvents(); await geolocateAndInit(); } 
+            catch (error) { document.getElementById('list-loader').style.display = 'none'; console.error(error); }
+            document.getElementById('stations-list').addEventListener('scroll', handleScroll);
         });
 
-        const colorObj = new THREE.Color();
-        let currentBassLevel = 0, smoothedCentroid = 0.5, beatThreshold = 0.5;
-        let evolveBass = 0, evolveMid = 0, evolveTreble = 0;
-        let targetRotX = 0.001, targetRotY = 0.002, targetRotZ = 0.001;
-        let currentRotX = 0.001, currentRotY = 0.002, currentRotZ = 0.001;
-        
-        let trackSeedR = 12.0, trackSeedFreqU = 2.0, trackSeedFreqV = 3.0, trackSeedMorph = 1.0, trackSeedTwistSpeed = 1.0;
-        let currentHueOffset = 0, targetHueOffset = 0;
-
-        function seedTrackEvolution() {
-            trackSeedR = 12 + Math.random() * 8;
-            trackSeedFreqU = 1.0 + Math.random() * 5.0;
-            trackSeedFreqV = 1.0 + Math.random() * 5.0;
-            trackSeedMorph = 0.5 + Math.random() * 1.5;
-            trackSeedTwistSpeed = 0.5 + Math.random() * 2.0;
+        function setZenMode(active) {
+            isUIHidden = active; const left = document.getElementById('ui-left'), right = document.getElementById('ui-right'), showBtn = document.getElementById('btn-show-left'), player = document.getElementById('ui-player');
+            if (active) {
+                left.classList.add('zen-hidden-left'); right.classList.add('zen-hidden-right');
+                if(showBtn) showBtn.classList.add('zen-hidden-left'); if(player) player.classList.add('zen-hidden-bottom'); document.body.style.cursor = 'none';
+            } else {
+                if(leftPanelVisible) left.classList.remove('zen-hidden-left'); if(!leftPanelVisible && showBtn) showBtn.classList.remove('zen-hidden-left');
+                right.classList.remove('zen-hidden-right'); if(player) player.classList.remove('zen-hidden-bottom'); document.body.style.cursor = 'default';
+            }
         }
 
-        function animate() {
-            requestAnimationFrame(animate); controls.update(); const t = Date.now() * 0.001;
+        function resetZenTimer() { if (isUIHidden) setZenMode(false); clearTimeout(idleTimer); if (!document.activeElement.matches('select, input')) { idleTimer = setTimeout(() => { setZenMode(true); }, 5000); } }
+        function setupZenMode() {
+            window.addEventListener('mousemove', resetZenTimer); window.addEventListener('mousedown', resetZenTimer); window.addEventListener('touchstart', resetZenTimer);
+            window.addEventListener('keydown', (e) => { if (e.key.toLowerCase() === 'f' || e.code === 'KeyF') { isUIHidden = !isUIHidden; setZenMode(isUIHidden); } else { resetZenTimer(); } });
+            document.querySelectorAll('select, input').forEach(el => { el.addEventListener('focus', () => clearTimeout(idleTimer)); el.addEventListener('blur', resetZenTimer); }); resetZenTimer();
+        }
 
-            if (isPlaying && analyser && dataArray && timeDataArray) {
-                analyser.getByteFrequencyData(dataArray); analyser.getByteTimeDomainData(timeDataArray);
-                let bass = 0, mid = 0, treble = 0, energy = 0, centroid = 0, weightSum = 0;
-                for(let i=0; i<analyser.frequencyBinCount; i++) {
-                    let val = dataArray[i] / 255.0; energy += val; centroid += val * i; weightSum += val;
-                    if(i < 32) bass += val; else if(i < 360) mid += val; else treble += val; 
+        function setupAudioEvents() {
+            audio.addEventListener('playing', () => { isAudioActuallyPlaying = true; isBuffering = false; playErrorCount = 0; updatePlayBtn(); });
+            audio.addEventListener('waiting', () => { isAudioActuallyPlaying = false; isBuffering = true; zeroAudioArrays(); updatePlayBtn(); });
+            audio.addEventListener('pause', () => { isAudioActuallyPlaying = false; isBuffering = false; zeroAudioArrays(); updatePlayBtn(); });
+            audio.addEventListener('error', () => { isAudioActuallyPlaying = false; isBuffering = false; zeroAudioArrays(); handlePlayError(); });
+        }
+        function zeroAudioArrays() { if(dataArray) dataArray.fill(0); if(timeDataArray) timeDataArray.fill(128); }
+
+        async function selectStation(st) { 
+            prepareStation(st); setupWebAudio(); if (audioCtx && audioCtx.state === 'suspended') await audioCtx.resume();
+            transitionFlash = 1.0; visualizerOffset += Math.floor(Math.random() * 1000) + 137; if (window.danceState) window.danceState.silenceTime = 0; 
+            audio.pause(); audio.removeAttribute('src'); audio.load(); isAudioActuallyPlaying = false; isBuffering = true; isPlaying = true; zeroAudioArrays(); updatePlayBtn();
+            audio.crossOrigin = "anonymous"; audio.src = st.url; audio.load();
+            try { await audio.play(); } catch(e) { if (e.name !== 'AbortError') handlePlayError(); }
+        }
+
+        function togglePlay() { 
+            setupWebAudio(); if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume(); 
+            if (!currentStation && stationsData.length > 0) return selectStation(stationsData[0]); 
+            if (!audio.hasAttribute('src') || audio.src === "") return;
+            if (isPlaying) { audio.pause(); isPlaying = false; } else { isPlaying = true; isBuffering = true; updatePlayBtn(); audio.play().catch(e => { if(e.name !== 'AbortError') handlePlayError(); }); }
+        }
+
+        function handlePlayError() {
+            isPlaying = false; isBuffering = false; updatePlayBtn();
+            if (playErrorCount >= MAX_PLAY_ERRORS) { showToast("🚨 Ошибка потока."); audio.pause(); audio.removeAttribute('src'); return; }
+            playErrorCount++; showToast("⚠ Переподключение..."); setTimeout(playNextStation, 1000); 
+        }
+
+        function updatePlayBtn() { 
+            const btn = document.getElementById('btn-play');
+            if (isBuffering && isPlaying) btn.innerHTML = `<i data-lucide="loader-2" class="w-5 h-5 fill-white animate-spin"></i>`;
+            else if (isPlaying) btn.innerHTML = `<i data-lucide="pause" class="w-5 h-5 fill-white"></i>`;
+            else btn.innerHTML = `<i data-lucide="play" class="w-5 h-5 fill-white ml-0.5"></i>`; lucide.createIcons(); 
+        }
+
+        /* ================= 3D OPTIMIZED ENGINE ================= */
+        function createStarTexture() {
+            const c = document.createElement('canvas'); c.width = 32; c.height = 32; const ctx = c.getContext('2d'); const grad = ctx.createRadialGradient(16, 16, 0, 16, 16, 16);
+            grad.addColorStop(0, 'rgba(255,255,255,1)'); grad.addColorStop(0.2, 'rgba(255,255,255,0.8)'); grad.addColorStop(1, 'rgba(255,255,255,0)'); ctx.fillStyle = grad; ctx.fillRect(0,0,32,32); return new THREE.CanvasTexture(c);
+        }
+        function createCloudTexture() {
+            const c = document.createElement('canvas'); c.width = 64; c.height = 64; const ctx = c.getContext('2d'); const grad = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
+            grad.addColorStop(0, 'rgba(255,255,255,1)'); grad.addColorStop(0.3, 'rgba(255,255,255,0.5)'); grad.addColorStop(1, 'rgba(255,255,255,0)'); ctx.fillStyle = grad; ctx.fillRect(0,0,64,64); return new THREE.CanvasTexture(c);
+        }
+
+        function init3DEarth() {
+            const container = document.getElementById('globe-container'); scene = new THREE.Scene();
+            scene.fog = new THREE.FogExp2(0x020205, 0.0006);
+            
+            let isMobile = window.innerWidth < 768;
+            camera = new THREE.PerspectiveCamera(isMobile ? 65 : 45, window.innerWidth / window.innerHeight, 0.1, 8000);
+            camera.position.set(0, 0, isMobile ? 55 : 45); 
+
+            // Оптимизированный рендерер без Bloom (максимум FPS)
+            renderer = new THREE.WebGLRenderer({ antialias: false, alpha: false, powerPreference: "high-performance" });
+            renderer.setSize(window.innerWidth, window.innerHeight); 
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5)); 
+            container.appendChild(renderer.domElement);
+
+            globeGroup = new THREE.Group(); scene.add(globeGroup);
+            
+            // Наклоняем фигуру, чтобы она "летела" передом (носом вглубь экрана)
+            globeGroup.rotation.x = Math.PI / 2.5;
+            
+            const pGeo = new THREE.BufferGeometry(); const pPos = new Float32Array(pCount * 3); const pColor = new Float32Array(pCount * 3);
+            for(let i=0; i<gridDim; i++) {
+                for(let j=0; j<gridDim; j++) {
+                    let idx = i*gridDim + j; let u = (j / (gridDim - 1)) * Math.PI * 2; let v = (i / (gridDim - 1)) * Math.PI; let r = 10.3; 
+                    pOrig[idx*3] = r * Math.cos(u) * Math.sin(v); pOrig[idx*3+1] = r * Math.cos(v); pOrig[idx*3+2] = r * Math.sin(u) * Math.sin(v);
+                    pPos[idx*3] = pOrig[idx*3]; pPos[idx*3+1] = pOrig[idx*3+1]; pPos[idx*3+2] = pOrig[idx*3+2];
+                    pColor[idx*3] = 0.05; pColor[idx*3+1] = 0.05; pColor[idx*3+2] = 0.1;
                 }
-                bass /= 32; mid /= 328; treble /= (analyser.frequencyBinCount - 360); energy /= analyser.frequencyBinCount; if(weightSum > 0) centroid /= weightSum;
-                smoothedCentroid += ((centroid / analyser.frequencyBinCount) - smoothedCentroid) * 0.05;
+            }
+            pGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3)); pGeo.setAttribute('color', new THREE.BufferAttribute(pColor, 3)); pGeo.setIndex(lineIndices);
+            
+            const pCanvas = document.createElement('canvas'); pCanvas.width = 16; pCanvas.height = 16; const pCtx = pCanvas.getContext('2d'); const pGrad = pCtx.createRadialGradient(8, 8, 0, 8, 8, 8);
+            pGrad.addColorStop(0, 'rgba(255,255,255,1)'); pGrad.addColorStop(0.2, 'rgba(255,255,255,0.8)'); pGrad.addColorStop(1, 'rgba(0,0,0,0)'); pCtx.fillStyle = pGrad; pCtx.fillRect(0,0,16,16);
+            
+            // AdditiveBlending заменяет тяжелый Bloom
+            quantumPoints = new THREE.Points(pGeo, new THREE.PointsMaterial({ size: 0.8, map: new THREE.CanvasTexture(pCanvas), vertexColors: true, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false })); globeGroup.add(quantumPoints);
+            quantumLines = new THREE.LineSegments(pGeo, new THREE.LineBasicMaterial({ vertexColors: true, transparent: true, opacity: 0.35, blending: THREE.AdditiveBlending, depthWrite: false })); globeGroup.add(quantumLines);
 
-                const sharpBass = Math.pow(bass, 3); const sharpMid = Math.pow(mid, 2); 
-                currentBassLevel += (sharpBass - currentBassLevel) * 0.2; 
-                
-                evolveBass += (sharpBass * 0.05) + 0.001; 
-                evolveMid += (mid * 0.05) + 0.002; 
-                evolveTreble += (treble * 0.05) + 0.0015;
-                
-                if (bloomPass) bloomPass.strength = 0.5 + (energy * 1.5) + (sharpBass * 2.0);
-                if (sharpBass > 0.8) camera.fov += ((baseFov - sharpBass * 15) - camera.fov) * 0.2; 
-                else camera.fov += (baseFov - camera.fov) * 0.1;
-                camera.updateProjectionMatrix();
+            strobeLight = new THREE.AmbientLight(0xffffff, 0.0); scene.add(strobeLight);
 
-                beatThreshold = Math.max(0.2, beatThreshold * 0.95); let isBeat = false;
-                if (sharpBass > beatThreshold) { 
-                    isBeat = true; beatThreshold = Math.min(1.0, sharpBass * 1.2); 
-                    targetRotX = (Math.random() - 0.5) * 0.06 * sharpBass; 
-                    targetRotY = (Math.random() - 0.5) * 0.08 * sharpBass; 
-                    targetRotZ = (Math.random() - 0.5) * 0.04 * sharpBass;
+            radioWavesGroup = new THREE.Group(); globeGroup.add(radioWavesGroup);
+            for(let i=0; i<3; i++) { // Уменьшено до 3 колец
+                const ringGeo = new THREE.BufferGeometry(); ringGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(128 * 3), 3)); // 128 вместо 256
+                const ringMesh = new THREE.LineLoop(ringGeo, new THREE.LineBasicMaterial({ color: 0x3b82f6, transparent: true, opacity: 0, blending: THREE.AdditiveBlending }));
+                ringMesh.rotation.set(Math.random()*Math.PI, Math.random()*Math.PI, Math.random()*Math.PI);
+                radioRings.push({ mesh: ringMesh, baseRadius: 10.4 + i*0.8, speed: (Math.random()-0.5)*0.015 }); radioWavesGroup.add(ringMesh);
+            }
+
+            scene.add(new THREE.AmbientLight(0x050510, 2.0));
+            sunLight = new THREE.DirectionalLight(0xffffff, 1.0); sunLight.position.set(50, 50, 50); scene.add(sunLight);
+
+            const starTex = createStarTexture(); const cloudTex = createCloudTexture();
+            
+            // Туманности (Легкая версия)
+            let nebGeo = new THREE.BufferGeometry(); let nebPos = new Float32Array(50 * 3); let nebCol = new Float32Array(50 * 3);
+            for(let i=0; i<50; i++) {
+                nebPos[i*3] = (Math.random()-0.5) * 4000; nebPos[i*3+1] = (Math.random()-0.5) * 4000; nebPos[i*3+2] = -Math.random() * 8000;
+                nebCol[i*3] = Math.random(); nebCol[i*3+1] = Math.random(); nebCol[i*3+2] = Math.random();
+            }
+            nebGeo.setAttribute('position', new THREE.BufferAttribute(nebPos, 3)); nebGeo.setAttribute('color', new THREE.BufferAttribute(nebCol, 3));
+            nebulasSystem = new THREE.Points(nebGeo, new THREE.PointsMaterial({ size: 1500, map: cloudTex, transparent: true, opacity: 0.1, blending: THREE.AdditiveBlending, vertexColors: true, depthWrite: false }));
+            scene.add(nebulasSystem);
+
+            // Галактики (Мало полигонов)
+            for(let i=0; i<NUM_GALAXIES; i++) {
+                let starsCount = 1000; let gGeo = new THREE.BufferGeometry(); let gPos = new Float32Array(starsCount * 3); let gCol = new Float32Array(starsCount * 3);
+                let branches = Math.floor(Math.random() * 3) + 2; let spin = (Math.random() - 0.5) * 12; let size = 200 + Math.random() * 400; 
+                for(let j=0; j<starsCount; j++) {
+                    let r = Math.random() * size; r = Math.pow(r/size, 1.5) * size; 
+                    let finalAngle = ((j % branches) / branches) * Math.PI * 2 + r * spin * 0.003 + (Math.random() - 0.5) * (0.5 + (r/size)*5.0);
+                    gPos[j*3] = Math.cos(finalAngle) * r; gPos[j*3+1] = (Math.random() - 0.5) * (size - r) * 0.2; gPos[j*3+2] = Math.sin(finalAngle) * r;
+                    gCol[j*3] = 1.0; gCol[j*3+1] = 1.0; gCol[j*3+2] = 1.0;
                 }
+                gGeo.setAttribute('position', new THREE.BufferAttribute(gPos, 3)); gGeo.setAttribute('color', new THREE.BufferAttribute(gCol, 3));
+                let galaxy = new THREE.Points(gGeo, new THREE.PointsMaterial({ size: 8.0, map: starTex, transparent: true, opacity: 0.9, blending: THREE.AdditiveBlending, vertexColors: true, depthWrite: false }));
+                galaxy.position.set((Math.random()-0.5)*3000, (Math.random()-0.5)*2000, -Math.random()*8000 - 500); galaxy.rotation.set(Math.random()*Math.PI, Math.random()*Math.PI, Math.random()*Math.PI);
+                galaxy.userData = { baseRotX: (Math.random() - 0.5) * 0.001, baseRotY: (Math.random() - 0.5) * 0.001, baseRotZ: (Math.random() - 0.5) * 0.001, hueOffset: Math.random() * 360 };
+                scene.add(galaxy); galaxies.push(galaxy);
+            }
 
-                currentRotX += (targetRotX - currentRotX) * 0.05; 
-                currentRotY += (targetRotY - currentRotY) * 0.05; 
-                currentRotZ += (targetRotZ - currentRotZ) * 0.05;
+            // Планеты (Дешевые материалы)
+            const planetGeo = new THREE.SphereGeometry(1, 24, 24); const ringGeo = new THREE.RingGeometry(1.4, 2.4, 32);
+            for(let i=0; i<NUM_PLANETS; i++) {
+                let pGroup = new THREE.Group(); let type = Math.floor(Math.random() * 4); let pColor = new THREE.Color();
+                if(type === 0) pColor.setHSL(Math.random(), 0.6, 0.4); else if(type === 1) pColor.setHex(0xff3300); else if(type === 2) pColor.setHex(0x00ffff); else pColor.setHSL(Math.random(), 1.0, 0.5); 
+                let planetMat = new THREE.MeshPhongMaterial({ color: pColor, emissive: type === 1 || type === 3 ? pColor : 0x000000, emissiveIntensity: 0.2 });
+                let pMesh = new THREE.Mesh(planetGeo, planetMat); pGroup.add(pMesh);
+                
+                let pAtmos = new THREE.Mesh(new THREE.SphereGeometry(1.08, 16, 16), new THREE.MeshBasicMaterial({ color: type === 1 ? 0xff0000 : pColor, transparent: true, opacity: 0.2, blending: THREE.AdditiveBlending, side: THREE.BackSide })); pGroup.add(pAtmos);
+                if (type === 0 || Math.random() > 0.6) {
+                    let ring = new THREE.Mesh(ringGeo, new THREE.MeshBasicMaterial({ color: pColor, transparent: true, opacity: 0.4, blending: THREE.AdditiveBlending, side: THREE.DoubleSide }));
+                    ring.rotation.x = Math.PI / 2 + (Math.random()-0.5)*0.8; ring.rotation.y = (Math.random()-0.5)*0.5; pGroup.add(ring);
+                }
+                let scale = 150 + Math.random() * 300; pGroup.scale.set(scale, scale, scale);
+                pGroup.position.set((Math.random()-0.5)*2500, (Math.random()-0.5)*1500, -Math.random()*8000 - 800);
+                pGroup.userData = { hueOffset: Math.random()*360, rotSpeedY: (Math.random()-0.5)*0.003, type: type, atmos: pAtmos, baseScale: scale };
+                scene.add(pGroup); planets.push(pGroup);
+            }
 
-                // Цветовой морфинг (Разные палитры для разных режимов)
-                let hueOffsets = [0, 45, 120, 200, 280, 15, 60, 310, 240, 340];
-                targetHueOffset = hueOffsets[currentVisMode];
-                currentHueOffset += (targetHueOffset - currentHueOffset) * 0.05;
-                const dynamicHue = (currentHueOffset + evolveMid * 50 + smoothedCentroid * 800 + energy * 200) % 360;
+            // Пыль (2000 вместо 15000)
+            let dGeo = new THREE.BufferGeometry(); let dPos = new Float32Array(2000 * 3);
+            for(let i=0; i<2000; i++){ dPos[i*3] = (Math.random()-0.5)*3500; dPos[i*3+1] = (Math.random()-0.5)*3500; dPos[i*3+2] = -Math.random()*6000; }
+            dGeo.setAttribute('position', new THREE.BufferAttribute(dPos, 3));
+            ambientDust = new THREE.Points(dGeo, new THREE.PointsMaterial({ size: 4.0, map: starTex, transparent: true, opacity: 0.8, blending: THREE.AdditiveBlending, color: 0xffffff })); scene.add(ambientDust);
 
-                // ДИСКО-ЛАЗЕРЫ (Меняют угол и прозрачность на басу)
-                let laserPower = Math.pow(treble, 2) * 1.5 + sharpBass; 
-                laserGroup.children.forEach((l, i) => {
-                    l.material.color.setHSL((dynamicHue + i*3)%360 / 360, 1.0, 0.6);
-                    if(sharpBass > 0.4 || laserPower > 0.3) { 
-                        l.material.opacity = Math.min(1.0, laserPower * 1.5); 
-                        l.scale.y = 1 + sharpBass * 2.5; 
-                    } else { 
-                        l.material.opacity *= 0.85; l.scale.y += (1 - l.scale.y) * 0.1; 
-                    }
+            window.addEventListener('resize', () => { 
+                let m = window.innerWidth < 768; camera.aspect = window.innerWidth / window.innerHeight; camera.fov = m ? 65 : 45; 
+                if(m && camera.position.z < 55) camera.position.setZ(55); 
+                camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth, window.innerHeight); 
+            });
+
+            const colorObj = new THREE.Color(), logoIcon = document.getElementById('logo-icon'), logoBg = document.getElementById('logo-icon-bg');
+            const baseFov = window.innerWidth < 768 ? 65 : 45;
+            let globalFlightTime = 0;
+            let currentBankAngle = 0; // Крен
+            let targetShipX = 0, targetShipY = 0;
+
+            function animate() {
+                requestAnimationFrame(animate); 
+                globalFlightTime += 0.003;
+
+                let flightSpeed = 3.0; 
+                let bassImpact = 0;
+
+                if (isPlaying && isAudioActuallyPlaying && analyser && dataArray && timeDataArray) {
+                    analyser.getByteFrequencyData(dataArray); analyser.getByteTimeDomainData(timeDataArray);
+                    let bass = 0, mid = 0, treble = 0, energy = 0, centroid = 0, weightSum = 0;
                     
-                    let choreo = i % 4;
-                    // Раскачка лазеров как в клубе
-                    if (choreo === 0) { 
-                        l.rotation.x = l.userData.basex + Math.sin(t * 1.5 + l.userData.phase) * (0.2 + sharpBass*1.2); 
-                        l.rotation.y = l.userData.basey + Math.cos(t * 1.5 + l.userData.phase) * (0.2 + sharpBass*1.2); 
-                    } else if (choreo === 1) { 
-                        l.rotation.x = l.userData.basex + Math.sin(t * 2.0) * (0.3 + sharpBass); 
-                        l.rotation.z = Math.cos(t * 2.0) * (0.3 + sharpBass); 
-                    } else if (choreo === 2) {
-                        l.rotation.y = l.userData.basey + Math.sin(evolveBass) * (0.8 * sharpBass);
-                    } else { 
-                        l.rotation.x = l.userData.basex + Math.cos(evolveBass * 0.5) * (0.5 * sharpBass); 
+                    const binCount = analyser.frequencyBinCount;
+                    for(let i=0; i<binCount; i++) {
+                        let val = dataArray[i] / 255.0; energy += val; centroid += val * i; weightSum += val;
+                        if(i < 32) bass += val; else if(i < 360) mid += val; else treble += val; 
                     }
-                });
+                    bass /= 32; mid /= 328; treble /= (binCount - 360); energy /= binCount; if(weightSum > 0) centroid /= weightSum;
+                    let normalizedCentroid = centroid / binCount; smoothedCentroid += (normalizedCentroid - smoothedCentroid) * 0.05;
 
-                if (isBeat && sharpBass > 0.6) { strobeLight.intensity = 4.0; sunLight.intensity = 3.0; } 
-                else { strobeLight.intensity += (0 - strobeLight.intensity) * 0.2; sunLight.intensity += (1.0 - sunLight.intensity) * 0.1; }
+                    let instantBass = Math.pow(bass, 1.5);
+                    let instantTreble = Math.pow(treble, 1.5);
+                    bassImpact = instantBass;
 
-                const positions = quantumPoints.geometry.attributes.position.array; 
-                const colors = quantumPoints.geometry.attributes.color.array;
-                
-                let freqU = trackSeedFreqU + Math.sin(evolveMid * 0.2) * 5.0; 
-                let freqV = trackSeedFreqV + Math.cos(evolveBass * 0.15) * 6.0; 
-                let shapeChaos = Math.sin(evolveTreble * 0.3) * trackSeedMorph;
+                    const sharpBass = Math.pow(bass, 3);
+                    currentBassLevel += (sharpBass - currentBassLevel) * 0.2; 
+                    
+                    if (!window.danceState) window.danceState = { time: 0, phaseX: 0, phaseY: 0, phaseZ: 0, tension: 0, spine: 0, energyAvg: 0, smoothBass: 0, smoothTreble: 0, timeSpeed: 0.001, morph: 0, lastBeatTime: 0, rotSpeed: 0.002, silenceTime: 0, trackSeedMutation: 0 };
+                    if (energy < 0.03) { window.danceState.silenceTime++; } else { if (window.danceState.silenceTime > 50) { window.danceState.trackSeedMutation += Math.floor(Math.random() * 500) + 137; transitionFlash = 1.0; } window.danceState.silenceTime = 0; }
+                    
+                    window.danceState.smoothBass += (bass - window.danceState.smoothBass) * 0.08;
+                    window.danceState.smoothTreble += (treble - window.danceState.smoothTreble) * 0.08;
+                    window.danceState.energyAvg += (energy - window.danceState.energyAvg) * 0.02; 
+                    
+                    beatThreshold = Math.max(0.2, beatThreshold * 0.92); isBeat = false;
+                    if (instantBass > beatThreshold) {
+                        isBeat = true; beatThreshold = Math.min(1.0, instantBass * 1.5); 
+                        let now = Date.now(); if (now - window.danceState.lastBeatTime > 2000 && instantBass > 0.8) { window.danceState.morph += Math.PI / 4; window.danceState.lastBeatTime = now; }
+                    }
 
-                for(let i=0; i<gridDim; i++) {
-                    for(let j=0; j<gridDim; j++) {
-                        let idx = i*gridDim + j; 
-                        let u = (j / (gridDim - 1)) * Math.PI * 2; 
-                        let v = (i / (gridDim - 1)) * Math.PI;
-                        
-                        let audioIdx = Math.floor((idx / pCount) * (analyser.frequencyBinCount * 0.5)); 
-                        // Снижен порог реакции, чтобы форма оживала даже на тихой музыке
-                        let rawF = dataArray[audioIdx] / 255.0; 
-                        let fSharp = Math.pow(rawF, 1.5); 
-                        let waveRipple = (timeDataArray[audioIdx]/128.0 - 1.0); 
-                        
-                        let tx = pOrig[idx*3], ty = pOrig[idx*3+1], tz = pOrig[idx*3+2];
+                    flightSpeed += window.danceState.smoothBass * 40.0 + (transitionFlash * 50.0);
+                    window.danceState.rotSpeed += ((isBeat ? (0.01 + instantBass * 0.1) : 0.002) - window.danceState.rotSpeed) * 0.05;
+                    let targetTimeSpeed = (window.danceState.energyAvg < 0.15) ? 0.0005 : (0.0015 + window.danceState.energyAvg * 0.01);
+                    if (isBeat && window.danceState.energyAvg > 0.3) targetTimeSpeed += 0.02; 
+                    window.danceState.timeSpeed += (targetTimeSpeed - window.danceState.timeSpeed) * 0.05;
+                    window.danceState.time += window.danceState.timeSpeed;
+                    
+                    let dt = window.danceState.time;
+                    window.danceState.phaseY += (mid * 0.02);
+                    window.danceState.tension += (sharpBass - window.danceState.tension) * 0.05; 
+                    window.danceState.spine += ((smoothedCentroid * 1.5) - window.danceState.spine) * 0.03;
 
-                        // Обработка геометрии (просыпается при energy > 0.002 вместо 0.01)
-                        if (energy > 0.002) {
-                            
-                            if (currentVisMode === 0) { // 1. SYMBIOSIS (Original Base)
-                                let R = 15 + sharpBass * 20 + Math.sin(v * freqV + evolveMid) * (8 + mid * 10);
-                                let twist = u + Math.sin(v * freqU + evolveTreble) * (Math.sin(evolveBass) * 4);
-                                let flare = Math.abs(Math.cos(u * (4 + shapeChaos*2) + t)) * (10 + sharpMid * 15);
-                                let currentRadius = R + flare + fSharp * 15;
-                                tx = Math.cos(twist) * Math.sin(v) * currentRadius; tz = Math.sin(twist) * Math.sin(v) * currentRadius;
-                                ty = Math.cos(v) * currentRadius * (0.6 + shapeChaos * 0.4) + Math.cos(v * freqV) * (15 + shapeChaos * 10) + Math.sin(u * freqU + evolveMid) * (5 + treble * 25);
-                                let rippleForce = waveRipple * (5 + treble * 30); 
-                                tx += Math.cos(v*20) * rippleForce; ty += Math.sin(u*20) * rippleForce; tz += Math.cos(u*20) * rippleForce;
-                            
-                            } else if (currentVisMode === 1) { // 2. QUANTUM STAR
-                                let R = 10 + sharpBass * 25;
-                                let starFlare = Math.pow(Math.abs(Math.sin(u * 5 + t * 2.0) * Math.sin(v * 5 - t)), 4.0) * (20 + sharpMid * 30);
-                                let currentRadius = R + starFlare + fSharp * 20;
-                                tx = Math.cos(u) * Math.sin(v) * currentRadius; tz = Math.sin(u) * Math.sin(v) * currentRadius; ty = Math.cos(v) * currentRadius;
-                                let rippleForce = waveRipple * (8 + treble * 40);
-                                tx += Math.sin(v*30) * rippleForce; ty += Math.cos(u*30) * rippleForce; tz += Math.sin(u*30) * rippleForce;
-                            
-                            } else if (currentVisMode === 2) { // 3. HYPNOTIC WALTZ
-                                let R = 18 + sharpBass * 15;
-                                let waltz = Math.sin(u * 3 + evolveMid) * Math.cos(v * 3 + evolveBass) * (5 + mid * 15);
-                                let currentRadius = R + waltz + fSharp * 10;
-                                let twist = u + Math.sin(v * 2.0 + t) * 2.0;
-                                tx = Math.cos(twist) * Math.sin(v) * currentRadius; tz = Math.sin(twist) * Math.sin(v) * currentRadius; ty = Math.cos(v) * currentRadius * 1.5;
-                                let rippleForce = waveRipple * (3 + treble * 20);
-                                tx += Math.cos(v*10) * rippleForce; ty += Math.sin(u*10) * rippleForce; tz += Math.cos(u*10) * rippleForce;
-                            
-                            } else if (currentVisMode === 3) { // 4. NEURAL CORE
-                                let R = 12 + sharpBass * 10;
-                                let neural = Math.sin(u * 8 + evolveTreble) * Math.sin(v * 8 + evolveMid) * (6 + sharpMid * 20);
-                                let currentRadius = R + neural + fSharp * 12;
-                                tx = Math.cos(u) * Math.sin(v) * currentRadius; tz = Math.sin(u) * Math.sin(v) * currentRadius; ty = Math.cos(v) * currentRadius;
-                                let rippleForce = waveRipple * (10 + treble * 35);
-                                tx += Math.sin(u*15) * rippleForce; ty += Math.cos(v*15) * rippleForce; tz += Math.sin(v*15) * rippleForce;
-                            
-                            } else if (currentVisMode === 4) { // 5. LIVING ARCHETYPES
-                                let R = 5 + sharpBass * 10;
-                                let spiral = u * 3.0 + v * 2.0 + t;
-                                let ribbonWidth = (10 + mid * 20) * Math.sin(v);
-                                tx = (R + ribbonWidth * Math.cos(v * 4 + evolveMid)) * Math.cos(spiral);
-                                tz = (R + ribbonWidth * Math.cos(v * 4 + evolveMid)) * Math.sin(spiral);
-                                ty = ((v / Math.PI) - 0.5) * 60.0 + Math.sin(spiral * 2.0) * (5 + treble * 15);
-                                let rippleForce = waveRipple * (4 + treble * 25);
-                                tx += Math.cos(spiral*5) * rippleForce; ty += Math.sin(spiral*5) * rippleForce; tz += Math.cos(spiral*5) * rippleForce;
-                            
-                            } else if (currentVisMode === 5) { // 6. SOLAR FLARE
-                                let R = 14 + sharpBass * 30;
-                                let flare = Math.tan(Math.sin(u * 6 + t) * Math.cos(v * 6 - t)) * (2 + sharpMid * 10);
-                                flare = Math.max(-10, Math.min(25, flare)); 
-                                let currentRadius = R + flare + fSharp * 25;
-                                tx = Math.cos(u) * Math.sin(v) * currentRadius; tz = Math.sin(u) * Math.sin(v) * currentRadius; ty = Math.cos(v) * currentRadius;
-                                let rippleForce = waveRipple * (12 + treble * 50);
-                                tx += Math.cos(v*25) * rippleForce; ty += Math.sin(u*25) * rippleForce; tz += Math.cos(u*25) * rippleForce;
-                            
-                            } else if (currentVisMode === 6) { // 7. ETHEREAL GHOST
-                                let R = 20 + sharpBass * 10;
-                                let ghost = Math.sin(u * 2 + t * 0.5) * Math.cos(v * 2 + t * 0.3) * (15 + mid * 25);
-                                let currentRadius = R + ghost + fSharp * 8;
-                                tx = Math.cos(u) * Math.sin(v) * currentRadius; tz = Math.sin(u) * Math.sin(v) * currentRadius; ty = Math.cos(v) * currentRadius * 1.2;
-                                let rippleForce = waveRipple * (2 + treble * 10);
-                                tx += Math.sin(v*5) * rippleForce; ty += Math.cos(u*5) * rippleForce; tz += Math.sin(u*5) * rippleForce;
-                            
-                            } else if (currentVisMode === 7) { // 8. CYBER MATRIX
-                                let R = 15 + sharpBass * 15;
-                                let matrixU = Math.round(u * 6.0) / 6.0; let matrixV = Math.round(v * 6.0) / 6.0;
-                                let block = Math.sin(matrixU * 10 + evolveMid) * Math.cos(matrixV * 10 + evolveBass) * (5 + mid * 10);
-                                let currentRadius = R + block + fSharp * 10;
-                                tx = Math.cos(matrixU) * Math.sin(matrixV) * currentRadius; tz = Math.sin(matrixU) * Math.sin(matrixV) * currentRadius; ty = Math.cos(matrixV) * currentRadius;
-                                let rippleForce = waveRipple * (5 + treble * 15);
-                                tx += Math.cos(u*20) * rippleForce; ty += Math.sin(v*20) * rippleForce; tz += Math.cos(u*20) * rippleForce;
+                    let currentFov = baseFov - (instantBass * 12); 
+                    if (transitionFlash > 0) { currentFov += transitionFlash * 25.0; transitionFlash -= 0.02; }
 
-                            } else if (currentVisMode === 8) { // 9. DEEP OCEAN
-                                let R = 8 + sharpBass * 12;
-                                let tentacles = Math.pow(Math.sin(u * 8 + evolveMid), 2) * (10 + mid * 20);
-                                let currentRadius = R + tentacles * (v / Math.PI) + fSharp * 15;
-                                let twist = u + Math.sin(v * 3.0 - t * 1.5) * 1.5;
-                                tx = Math.cos(twist) * Math.sin(v) * currentRadius; tz = Math.sin(twist) * Math.sin(v) * currentRadius; ty = Math.cos(v) * (R + fSharp*10) + Math.cos(v * 2 + t) * 5;
-                                let rippleForce = waveRipple * (3 + treble * 20);
-                                tx += Math.sin(v*10) * rippleForce; ty += Math.cos(u*10) * rippleForce; tz += Math.sin(u*10) * rippleForce;
+                    const dynamicHue = (currentStationHash + window.danceState.trackSeedMutation + smoothedCentroid * 1000 + energy * 300) % 360;
+                    if (logoIcon) { logoIcon.style.transform = `scale(${1 + instantBass})`; logoBg.style.boxShadow = `0 0 ${10 + instantBass*80}px hsl(${dynamicHue}, 100%, 50%)`; }
 
-                            } else if (currentVisMode === 9) { // 10. FRACTAL FLOWER
-                                let R = 5 + sharpBass * 8;
-                                let petals = Math.abs(Math.sin(u * 5)) * Math.sin(v * 3 - t) * (15 + sharpMid * 20);
-                                let currentRadius = R + petals + fSharp * 12;
-                                let openAnim = Math.sin(t * 0.5) * 0.5 + 0.5; // Плавное раскрытие
-                                tx = Math.cos(u) * Math.sin(v * openAnim) * currentRadius; tz = Math.sin(u) * Math.sin(v * openAnim) * currentRadius; ty = Math.cos(v) * currentRadius * (1.0 + openAnim);
-                                let rippleForce = waveRipple * (4 + treble * 30);
-                                tx += Math.cos(u*15) * rippleForce; ty += Math.sin(v*15) * rippleForce; tz += Math.cos(u*15) * rippleForce;
+                    if (isBeat && instantBass > 0.6) { strobeLight.intensity = 1.0 + instantBass * 2.5; sunLight.intensity = 1.5 + instantBass * 2.0; } 
+                    else if (instantTreble > 0.5) { strobeLight.intensity = instantTreble * 1.0; sunLight.intensity = 0.8 + instantTreble * 1.5; } 
+                    else { strobeLight.intensity += (0 - strobeLight.intensity) * 0.1; sunLight.intensity += (0.2 - sunLight.intensity) * 0.05; }
+
+                    // --- ФИЗИКА УЕКЛОНЕНИЯ ОТ ПЛАНЕТ ---
+                    let avoidX = 0, avoidY = 0;
+                    for(let i=0; i<NUM_PLANETS; i++) {
+                        let p = planets[i];
+                        // Если планета близко и летит на нас
+                        if (p.position.z > -2500 && p.position.z < 200) {
+                            let dx = globeGroup.position.x - p.position.x;
+                            let dy = globeGroup.position.y - p.position.y;
+                            let distSq = dx*dx + dy*dy;
+                            let safeRadius = p.userData.baseScale * 3.5; // Дистанция уклонения
+                            
+                            if (distSq < safeRadius * safeRadius) {
+                                let dist = Math.sqrt(distSq);
+                                if (dist === 0) { dx = 1; dist = 1; }
+                                let force = (safeRadius - dist) / safeRadius;
+                                // Мощный толчок в сторону от планеты
+                                avoidX += (dx / dist) * force * 150;
+                                avoidY += (dy / dist) * force * 150;
                             }
                         }
-
-                        let lerpFactor = fSharp > 0.4 ? 0.35 : 0.08; 
-                        if(energy <= 0.002) lerpFactor = 0.02; 
-                        
-                        positions[idx*3] += (tx - positions[idx*3]) * lerpFactor; 
-                        positions[idx*3+1] += (ty - positions[idx*3+1]) * lerpFactor; 
-                        positions[idx*3+2] += (tz - positions[idx*3+2]) * lerpFactor;
-                        
-                        colorObj.setHSL((dynamicHue + idx*0.02 + waveRipple*40)/360, 1.0, energy > 0.002 ? (0.15 + fSharp*0.85) : 0.02);
-                        colors[idx*3] += (colorObj.r - colors[idx*3]) * lerpFactor; 
-                        colors[idx*3+1] += (colorObj.g - colors[idx*3+1]) * lerpFactor; 
-                        colors[idx*3+2] += (colorObj.b - colors[idx*3+2]) * lerpFactor;
                     }
-                }
-                quantumPoints.geometry.attributes.position.needsUpdate = true; 
-                quantumPoints.geometry.attributes.color.needsUpdate = true;
-                quantumLines.material.opacity = energy < 0.002 ? 0 : Math.min(0.8, energy * 1.5);
-                
-                globeGroup.rotation.x += currentRotX; 
-                globeGroup.rotation.y += currentRotY; 
-                globeGroup.rotation.z += currentRotZ;
 
-                radioRings.forEach((r, idx) => {
-                    r.mesh.rotation.x += r.speed * (1 + bass * 5); 
-                    r.mesh.rotation.y += r.speed * (1 + mid * 5); 
-                    const ringPositions = r.mesh.geometry.attributes.position.array;
-                    r.mesh.material.color.setHSL((dynamicHue + idx*40)/360, 1.0, 0.4 + bass*0.6); 
-                    r.mesh.material.opacity = 0.15 + energy;
+                    // Базовый дрейф корабля + Физика уклонения
+                    targetShipX = Math.sin(globalFlightTime * 1.5) * 15 + avoidX;
+                    targetShipY = Math.cos(globalFlightTime * 1.2) * 10 + avoidY;
                     
-                    for(let j=0; j<256; j++) {
-                        const angle = (j / 256) * Math.PI * 2; 
-                        const freqVal = dataArray[j*4] / 255.0; 
-                        const waveVal = (timeDataArray[j*8]/128.0 - 1.0); 
-                        const dynamicRadius = r.baseRadius + Math.pow(freqVal, 2) * (3 + idx) + (waveVal * (1 + sharpBass*4));
-                        ringPositions[j*3] = Math.cos(angle) * dynamicRadius; 
-                        ringPositions[j*3+1] = Math.sin(angle) * dynamicRadius; 
-                        ringPositions[j*3+2] = Math.sin(angle * (5 + idx*2) + t*5) * (freqVal * 5 + waveVal);
-                    }
-                    r.mesh.geometry.attributes.position.needsUpdate = true;
-                });
+                    globeGroup.position.x += (targetShipX - globeGroup.position.x) * 0.05;
+                    globeGroup.position.y += (targetShipY - globeGroup.position.y) * 0.05;
 
-            } else {
-                currentBassLevel += (0 - currentBassLevel) * 0.1; 
-                strobeLight.intensity += (0 - strobeLight.intensity) * 0.1; 
-                if (bloomPass) bloomPass.strength += (0.4 - bloomPass.strength) * 0.1; 
-                camera.fov += (baseFov - camera.fov) * 0.1; camera.updateProjectionMatrix();
-                
-                currentRotX += (0.0 - currentRotX) * 0.02; 
-                currentRotY += (0.001 - currentRotY) * 0.02; 
-                currentRotZ += (0.0 - currentRotZ) * 0.02;
-                
-                laserGroup.children.forEach((l) => { l.material.opacity *= 0.8; l.scale.y += (1 - l.scale.y) * 0.1; });
-                
-                radioRings.forEach(r => {
-                    r.mesh.rotation.x += r.speed; r.mesh.rotation.y += r.speed; 
-                    const pos = r.mesh.geometry.attributes.position.array; 
-                    r.mesh.material.opacity += (0 - r.mesh.material.opacity) * 0.1;
-                    for(let j=0; j<256; j++) { 
-                        const angle = (j / 256) * Math.PI * 2; 
-                        pos[j*3] += (Math.cos(angle) * r.baseRadius - pos[j*3]) * 0.1; 
-                        pos[j*3+1] += (Math.sin(angle) * r.baseRadius - pos[j*3+1]) * 0.1; 
-                        pos[j*3+2] += (0 - pos[j*3+2]) * 0.1; 
-                    }
-                    r.mesh.geometry.attributes.position.needsValue = true;
-                });
+                    // Крен корабля и камеры в зависимости от скорости уклонения
+                    let shipVelocityX = targetShipX - globeGroup.position.x;
+                    let targetBankAngle = -shipVelocityX * 0.02; // Крен при повороте
+                    currentBankAngle += (targetBankAngle - currentBankAngle) * 0.05;
+                    
+                    camera.fov += (currentFov - camera.fov) * 0.1;
+                    // Камера немного отстает от корабля для кинематографичности
+                    camera.position.x += (globeGroup.position.x * 0.6 - camera.position.x) * 0.05;
+                    camera.position.y += (globeGroup.position.y * 0.6 + 8 - camera.position.y) * 0.05;
+                    camera.rotation.z = currentBankAngle * 0.5;
+                    camera.updateProjectionMatrix();
 
-                const positions = quantumPoints.geometry.attributes.position.array; 
-                const colors = quantumPoints.geometry.attributes.color.array;
-                for(let i=0; i<pCount; i++) {
-                    positions[i*3] += (pOrig[i*3] - positions[i*3]) * 0.1; 
-                    positions[i*3+1] += (pOrig[i*3+1] - positions[i*3+1]) * 0.1; 
-                    positions[i*3+2] += (pOrig[i*3+2] - positions[i*3+2]) * 0.1;
-                    colors[i*3] += (0.05 - colors[i*3]) * 0.1; 
-                    colors[i*3+1] += (0.05 - colors[i*3+1]) * 0.1; 
-                    colors[i*3+2] += (0.1 - colors[i*3+2]) * 0.1;
+                    // --- ЦВЕТА ТУМАННОСТЕЙ ---
+                    let nCol = nebulasSystem.geometry.attributes.color.array; let nHue = (dynamicHue + window.danceState.time * 50) % 360;
+                    for(let i=0; i<50; i++) { colorObj.setHSL((nHue + i)%360 / 360, 0.8, 0.2 + instantBass * 0.4); nCol[i*3] = colorObj.r; nCol[i*3+1] = colorObj.g; nCol[i*3+2] = colorObj.b; }
+                    nebulasSystem.geometry.attributes.color.needsUpdate = true; nebulasSystem.material.opacity = 0.05 + window.danceState.energyAvg * 0.15 + instantBass * 0.1;
+
+                    // --- ДНК ОРГАНИЗМА (Легкая математика, 1024 точки вместо 4096) ---
+                    let stationSeed = currentStationHash + visualizerOffset + window.danceState.trackSeedMutation;
+                    const positions = quantumPoints.geometry.attributes.position.array; const colors = quantumPoints.geometry.attributes.color.array;
+                    let dnaA = ((stationSeed % 11) + 1) / 11.0, dnaB = (((stationSeed * 1.3) % 13) + 1) / 13.0, dnaC = (((stationSeed * 1.7) % 17) + 1) / 17.0, dnaD = (((stationSeed * 1.9) % 19) + 1) / 19.0, morph = window.danceState.morph;
+
+                    for(let i=0; i<gridDim; i++) {
+                        for(let j=0; j<gridDim; j++) {
+                            let idx = i*gridDim + j; let u = (j / (gridDim - 1)) * Math.PI * 2; let v = (i / (gridDim - 1)) * Math.PI;
+                            let audioIdx = Math.floor((idx / pCount) * (binCount * 0.8)); let rawF = dataArray[audioIdx] / 255.0; let fSharp = Math.pow(rawF, 2.5); let waveRipple = (timeDataArray[audioIdx] / 128.0 - 1.0); 
+                            let tx = pOrig[idx*3], ty = pOrig[idx*3+1], tz = pOrig[idx*3+2];
+                            if (energy > 0.01) {
+                                let baseR = 10 + window.danceState.tension * 5;
+                                let f1 = dnaA * 8 + Math.sin(morph * 0.1) * 2, f2 = dnaB * 8 + Math.cos(morph * 0.15) * 2, f3 = dnaC * 12 + Math.sin(morph * 0.05) * 3;
+                                let deform = Math.sin(u * f1 + dt * (1 + dnaD)) * Math.cos(v * f2 - dt * dnaA) * Math.sin((u+v)*f3);
+                                let audioImpact = (fSharp * 25) * (0.5 + Math.abs(deform)); let fluidFlow = waveRipple * (3.0 + dnaB * 5.0 + instantTreble * 10);
+                                let currentRadius = baseR + deform * (5 + instantBass * 10) + audioImpact;
+                                let twist = u + Math.sin(v * (2 + dnaC * 5) + dt) * (instantTreble * 3.0 + dnaA);
+                                tx = Math.cos(twist) * Math.sin(v) * currentRadius + Math.cos(v * 10 + dt * 3) * fluidFlow;
+                                ty = Math.cos(v) * currentRadius + (Math.sin(v * 2.0 + window.danceState.phaseY) * window.danceState.spine * 10.0) + Math.sin(u * 10 + dt * 3) * fluidFlow;
+                                tz = Math.sin(twist) * Math.sin(v) * currentRadius + Math.cos(u * 10 + dt * 3) * fluidFlow;
+                            }
+                            let lerpSpeed = 0.1 + (window.danceState.smoothBass * 0.5); if (fSharp > 0.5) lerpSpeed = 0.9; else if(transitionFlash > 0) lerpSpeed = 0.8; else if(energy <= 0.01) lerpSpeed = 0.02;
+                            positions[idx*3] += (tx - positions[idx*3]) * lerpSpeed; positions[idx*3+1] += (ty - positions[idx*3+1]) * lerpSpeed; positions[idx*3+2] += (tz - positions[idx*3+2]) * lerpSpeed;
+                            let l = energy > 0.01 ? (0.2 + fSharp * 1.5 + instantBass * 0.5) : 0.02; let hueShift = (waveRipple * 100) + (fSharp * 150) + (window.danceState.tension * 50);
+                            colorObj.setHSL((dynamicHue + hueShift)/360, 1.0, Math.min(1.0, l));
+                            colors[idx*3] += (colorObj.r - colors[idx*3]) * lerpSpeed; colors[idx*3+1] += (colorObj.g - colors[idx*3+1]) * lerpSpeed; colors[idx*3+2] += (colorObj.b - colors[idx*3+2]) * lerpSpeed;
+                        }
+                    }
+                    quantumPoints.geometry.attributes.position.needsUpdate = true; quantumPoints.geometry.attributes.color.needsUpdate = true;
+                    quantumLines.material.opacity = energy < 0.01 ? 0 : Math.min(0.9, energy * 2.0);
+                    
+                    // Корабль визуально кренится
+                    globeGroup.rotation.y += window.danceState.rotSpeed * (dnaA * 10); 
+                    globeGroup.rotation.z = currentBankAngle * 1.5 + (energy * 0.03); 
+                    
+                    radioRings.forEach((r, idx) => {
+                        r.mesh.rotation.x += r.speed * (1 + instantBass * 5); r.mesh.rotation.y += r.speed * (1 + mid * 5); const ringPositions = r.mesh.geometry.attributes.position.array;
+                        r.mesh.material.color.setHSL((dynamicHue + idx*50)/360, 1.0, 0.5 + instantBass * 0.8); r.mesh.material.opacity = 0.2 + energy;
+                        for(let j=0; j<128; j++) {
+                            const angle = (j / 128) * Math.PI * 2; const freqVal = dataArray[j*8] / 255.0; const waveVal = (timeDataArray[j*16]/128.0 - 1.0); 
+                            const dynamicRadius = r.baseRadius + Math.pow(freqVal, 2.5) * (8 + idx) + (waveVal * (2 + instantBass*4)) + (transitionFlash*3);
+                            ringPositions[j*3] = Math.cos(angle) * dynamicRadius; ringPositions[j*3+1] = Math.sin(angle) * dynamicRadius; ringPositions[j*3+2] = Math.sin(angle * (5 + idx*2) + Date.now()*0.005) * (freqVal * 8 + waveVal * 2);
+                        }
+                        r.mesh.geometry.attributes.position.needsUpdate = true;
+                    });
+
+                } else {
+                    currentBassLevel += (0 - currentBassLevel) * 0.1; if (logoIcon) { logoIcon.style.transform = `scale(1)`; logoBg.style.boxShadow = `0 0 10px rgba(var(--accent-rgb), 0.4)`; }
+                    strobeLight.intensity += (0 - strobeLight.intensity) * 0.1; sunLight.intensity += (0.1 - sunLight.intensity) * 0.05;
+                    
+                    camera.fov += (baseFov - camera.fov) * 0.1;
+                    camera.rotation.z += (0 - camera.rotation.z) * 0.05;
+                    camera.updateProjectionMatrix();
+
+                    radioRings.forEach(r => {
+                        r.mesh.rotation.x += r.speed; r.mesh.rotation.y += r.speed; const pos = r.mesh.geometry.attributes.position.array; r.mesh.material.opacity += (0 - r.mesh.material.opacity) * 0.1;
+                        for(let j=0; j<128; j++) { const angle = (j / 128) * Math.PI * 2; pos[j*3] += (Math.cos(angle) * r.baseRadius - pos[j*3]) * 0.1; pos[j*3+1] += (Math.sin(angle) * r.baseRadius - pos[j*3+1]) * 0.1; pos[j*3+2] += (0 - pos[j*3+2]) * 0.1; }
+                        r.mesh.geometry.attributes.position.needsUpdate = true;
+                    });
+                    const positions = quantumPoints.geometry.attributes.position.array; const colors = quantumPoints.geometry.attributes.color.array;
+                    for(let i=0; i<pCount; i++) {
+                        positions[i*3] += (pOrig[i*3] - positions[i*3]) * 0.1; positions[i*3+1] += (pOrig[i*3+1] - positions[i*3+1]) * 0.1; positions[i*3+2] += (pOrig[i*3+2] - positions[i*3+2]) * 0.1;
+                        colors[i*3] += (0.05 - colors[i*3]) * 0.1; colors[i*3+1] += (0.05 - colors[i*3+1]) * 0.1; colors[i*3+2] += (0.1 - colors[i*3+2]) * 0.1;
+                    }
+                    quantumPoints.geometry.attributes.position.needsUpdate = true; quantumPoints.geometry.attributes.color.needsUpdate = true;
+                    globeGroup.rotation.y += 0.0005; globeGroup.rotation.z += (0 - globeGroup.rotation.z) * 0.05; quantumLines.material.opacity += (0 - quantumLines.material.opacity) * 0.1;
                 }
-                quantumPoints.geometry.attributes.position.needsUpdate = true; 
-                quantumPoints.geometry.attributes.color.needsUpdate = true;
-                quantumLines.material.opacity += (0 - quantumLines.material.opacity) * 0.1; 
                 
-                globeGroup.rotation.x += currentRotX; 
-                globeGroup.rotation.y += currentRotY; 
-                globeGroup.rotation.z += currentRotZ;
+                // --- ГЛОБАЛЬНЫЙ ПОЛЕТ ---
+                let nPos = nebulasSystem.geometry.attributes.position.array;
+                for(let i=0; i<50; i++) {
+                    nPos[i*3+2] += flightSpeed * 0.8; 
+                    if(nPos[i*3+2] > 200) { nPos[i*3] = (Math.random()-0.5) * 4000; nPos[i*3+1] = (Math.random()-0.5) * 4000; nPos[i*3+2] = -8000; }
+                }
+                nebulasSystem.geometry.attributes.position.needsUpdate = true;
+
+                for(let i=0; i<NUM_GALAXIES; i++) {
+                    let g = galaxies[i]; g.position.z += flightSpeed;
+                    if (g.position.z > 200) { g.position.z = -8000 - Math.random() * 2000; g.position.x = (Math.random() - 0.5) * 3000; g.position.y = (Math.random() - 0.5) * 2000; }
+                    g.rotation.x += g.userData.baseRotX; g.rotation.y += g.userData.baseRotY; g.rotation.z += g.userData.baseRotZ + (bassImpact * 0.005);
+                    let scale = 1.0 + bassImpact * 0.05; g.scale.set(scale, scale, scale);
+                }
+
+                for(let i=0; i<NUM_PLANETS; i++) {
+                    let p = planets[i]; p.position.z += flightSpeed * 1.5; 
+                    if(p.position.z > 200) { p.position.z = -8000 - Math.random() * 3000; p.position.x = (Math.random()-0.5)*2500; p.position.y = (Math.random()-0.5)*1500; }
+                    p.rotation.y += p.userData.rotSpeedY + (bassImpact * 0.002);
+                    p.userData.atmos.material.opacity = (p.userData.type === 3 || p.userData.type === 1) ? (0.3 + bassImpact * 0.4) : (0.1 + bassImpact * 0.2);
+                }
+
+                let dPos = ambientDust.geometry.attributes.position.array;
+                for(let i=0; i<2000; i++) { dPos[i*3+2] += flightSpeed * 4.0; if(dPos[i*3+2] > 200) dPos[i*3+2] = -6000; }
+                ambientDust.geometry.attributes.position.needsUpdate = true;
+
+                renderer.render(scene, camera);
             }
-            composer.render();
+            animate();
         }
-        animate();
+
+        /* ================= ДОПОЛНИТЕЛЬНЫЕ ФУНКЦИИ ================= */
+        async function geolocateAndInit() {
+            try {
+                const sc = document.getElementById('filter-country'); if (sc) sc.value = ''; 
+                const sg = document.getElementById('filter-genre'); if (sg) sg.value = '';
+                const flagContainer = document.getElementById('location-flag-container'); if (flagContainer) flagContainer.classList.add('hidden');
+                const locText = document.getElementById('current-location-text'); if (locText) locText.innerText = '--';
+                await fetchStations(5000, '', '', '', true); 
+            } catch(e) { console.log(e); }
+        }
+
+        const onFilterChange = async (e) => {
+            const country = document.getElementById('filter-country').value, genre = document.getElementById('filter-genre').value, subgenreSelect = document.getElementById('filter-subgenre');
+            const flagContainer = document.getElementById('location-flag-container'), flagEl = document.getElementById('current-flag'), locText = document.getElementById('current-location-text');
+            if (e && e.target.id === 'filter-country') { if (country) { flagEl.innerText = getFlagEmojiByName(country); locText.innerText = country; flagContainer.classList.remove('hidden'); } else { flagContainer.classList.add('hidden'); locText.innerText = '--'; } }
+            if (e && e.target.id === 'filter-genre') { updateSubgenreCatalog(genre); }
+            await fetchStations(5000, country, '', subgenreSelect.value || genre, true); 
+        };
+
+        function mapStationObject(s, idx) { return { id: s.stationuuid || s.id || `st_${idx}`, name: s.name.trim() || 'Без названия', country: s.country || 'Global', url: s.url_resolved || s.url, favicon: s.favicon || '', tags: s.tags ? s.tags.split(',').slice(0, 2).join(', ') : 'Music', bitrate: s.bitrate || 0, clickcount: (s.clickcount || 0) + (likedStations[s.stationuuid || s.id] || 0), lat: parseFloat(s.geo_lat || s.lat), lon: parseFloat(s.geo_long || s.lon) }; }
+
+        async function fetchStations(limit = 5000, country = '', state = '', tag = '', autoPlay = false) {
+            isSpecialMode = false; isOnlyFavorites = false; isOnlyHistory = false; const loader = document.getElementById('list-loader'); if (loader) loader.style.display = 'flex';
+            let url = `${currentApiBase}/json/stations/search?limit=${limit}&order=clickcount&reverse=true&hidebroken=true`;
+            if (country) url += `&country=${encodeURIComponent(country)}`; if (tag) url += `&tag=${encodeURIComponent(tag)}`;
+            try {
+                const controller = new AbortController(), timeoutId = setTimeout(() => controller.abort(), 8000), res = await fetch(url, { signal: controller.signal }); clearTimeout(timeoutId);
+                allStationsMaster = (await res.json()).map((s, idx) => mapStationObject(s, idx)); 
+                const q = document.getElementById('input-search').value.toLowerCase().trim();
+                stationsData = q ? allStationsMaster.filter(st => st.name.toLowerCase().includes(q) || st.tags.toLowerCase().includes(q) || st.country.toLowerCase().includes(q)) : [...allStationsMaster];
+                updateStationCounts(); renderList(); 
+                if (autoPlay && stationsData.length > 0) selectStation(stationsData[0]); else if (stationsData.length === 0) showToast("Ничего не найдено.");
+            } catch (e) { showToast("⚠️ Ошибка API."); } finally { if (loader) loader.style.display = 'none'; }
+        }
+
+        function updateStationCounts() {
+            const isFiltered = document.getElementById('input-search').value || document.getElementById('filter-genre').value || document.getElementById('filter-country').value;
+            let displayStations = isFiltered ? stationsData.length : (globalStationCount > 0 ? globalStationCount : "> 50 000");
+            document.getElementById('left-stations-count').innerText = typeof displayStations === 'number' ? displayStations.toLocaleString('ru-RU') : displayStations; 
+            let totalListeners = stationsData.reduce((sum, st) => sum + (st.clickcount || 0), 0); if (!isFiltered) totalListeners = Math.floor(totalListeners * 1.15); 
+            document.getElementById('global-listeners-counter').innerText = totalListeners.toLocaleString('ru-RU');
+        }
+
+        function renderList() { const content = document.getElementById('stations-list-content'); content.style.height = `${stationsData.length * ITEM_HEIGHT}px`; renderVisibleItems(); renderPinnedActiveStation(); }
+
+        function renderPinnedActiveStation() {
+            const container = document.getElementById('active-station-pinned-container'); if (!currentStation) { container.classList.add('hidden'); return; }
+            container.classList.remove('hidden'); const st = currentStation, isFav = favorites.includes(st.id), imgSrc = st.favicon || `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='1.5'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Cpath d='M12 16v-4'/%3E%3Cpath d='M12 8h.01'/%3E%3C/svg%3E`;
+            container.innerHTML = `<div class="p-2.5 rounded-xl flex items-center gap-3 cursor-pointer pulsing-active bg-blue-600/20 border border-blue-500 w-full relative overflow-hidden shadow-[0_0_20px_var(--accent-glow)]"><div class="absolute inset-0 bg-gradient-to-r from-blue-500/10 to-transparent"></div><div class="relative shrink-0 z-10"><img src="${imgSrc}" class="w-12 h-12 rounded-lg object-cover bg-black/80 border border-white/20" alt="Logo" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=\\'http://www.w3.org/2000/svg\\' viewBox=\\'0 0 24 24\\' fill=\\'none\\' stroke=\\'white\\' stroke-width=\\'1.5\\'%3E%3Ccircle cx=\\'12\\' cy=\\'12\\' r=\\'10\\'/%3E%3Cpath d=\\'M12 16v-4\\'/%3E%3Cpath d=\\'M12 8h.01\\'/%3E%3C/svg%3E'"></div><div class="flex flex-col flex-1 overflow-hidden z-10"><div class="flex items-center gap-1.5"><span class="text-sm font-extrabold text-white truncate">${st.name}</span><span class="flex h-2 w-2 relative shrink-0"><span class="animate-ping absolute inline-flex h-full w-full rounded-full dynamic-bg bg-blue-400 opacity-75"></span><span class="relative inline-flex rounded-full h-2 w-2 dynamic-bg bg-blue-500"></span></span></div><span class="text-[10px] text-gray-300 truncate">${st.tags} • ${st.country}</span></div><div class="flex flex-col items-end gap-1 shrink-0 z-10"><button class="btn-fav text-gray-300 hover:text-red-500 transition p-1 flex flex-col items-center" onclick="toggleFavorite(event, '${st.id}')"><i data-lucide="heart" class="w-4 h-4 ${isFav ? 'text-red-500 fill-red-500' : ''}"></i><span class="text-[9px] mt-1">${st.clickcount.toLocaleString('ru-RU')}</span></button></div></div>`;
+            lucide.createIcons();
+        }
+
+        function handleScroll() { if (scrollTimeout) cancelAnimationFrame(scrollTimeout); scrollTimeout = requestAnimationFrame(renderVisibleItems); }
+        
+        function renderVisibleItems() {
+            const container = document.getElementById('stations-list'), content = document.getElementById('stations-list-content'), scrollTop = container.scrollTop, clientHeight = container.clientHeight;
+            const startIndex = Math.max(0, Math.floor(scrollTop / ITEM_HEIGHT) - 5), endIndex = Math.min(stationsData.length - 1, Math.ceil((scrollTop + clientHeight) / ITEM_HEIGHT) + 5);
+            content.innerHTML = ''; const fragment = document.createDocumentFragment();
+            for (let i = startIndex; i <= endIndex; i++) {
+                const st = stationsData[i]; if (!st) continue;
+                const el = document.createElement('div'), isPlayingNode = currentStation?.id === st.id, isFav = favorites.includes(st.id), borderClass = isPlayingNode ? 'active-station-card opacity-50' : 'border-transparent hover:bg-white/5 station-item';
+                el.id = `station-card-${st.id}`; el.className = `p-2.5 rounded-xl flex items-center gap-3 cursor-pointer transition-all border ${borderClass} absolute w-full`; el.style.top = `${i * ITEM_HEIGHT}px`; el.style.height = `${ITEM_HEIGHT - 6}px`;
+                const imgSrc = st.favicon ? st.favicon : `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%234b5563' stroke-width='1.5'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Cpath d='M12 16v-4'/%3E%3Cpath d='M12 8h.01'/%3E%3C/svg%3E`;
+                el.innerHTML = `<div class="relative shrink-0"><img src="${imgSrc}" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=\\'http://www.w3.org/2000/svg\\' viewBox=\\'0 0 24 24\\' fill=\\'none\\' stroke=\\'%234b5563\\' stroke-width=\\'1.5\\'%3E%3Ccircle cx=\\'12\\' cy=\\'12\\' r=\\'10\\'/%3E%3Cpath d=\\'M12 16v-4\\'/%3E%3Cpath d=\\'M12 8h.01\\'/%3E%3C/svg%3E'" class="w-10 h-10 rounded-lg object-cover bg-black/50 border border-white/10" alt="Logo"></div><div class="flex flex-col flex-1 overflow-hidden"><div class="flex items-center gap-1.5"><span class="text-xs font-bold text-white truncate">${st.name}</span></div><span class="text-[10px] text-gray-400 truncate">${st.tags} • ${st.country}</span></div><div class="flex flex-col items-end shrink-0 justify-center"><button class="btn-fav text-gray-500 hover:text-red-500 hover:scale-110 transition p-1 flex items-center gap-1" onclick="toggleFavorite(event, '${st.id}')"><span class="text-[10px]">${st.clickcount.toLocaleString('ru-RU')}</span><i data-lucide="heart" class="w-3.5 h-3.5 ${isFav ? 'text-red-500 fill-red-500' : ''}"></i></button></div>`;
+                el.onclick = (e) => { if (!e.target.closest('.btn-fav')) selectStation(st); }; fragment.appendChild(el);
+            }
+            content.appendChild(fragment); lucide.createIcons();
+        }
+
+        function toggleFavorite(e, stId) { if (e) e.stopPropagation(); if (favorites.includes(stId)) { favorites = favorites.filter(id => id !== stId); showToast("Удалено из избранного"); } else { favorites.push(stId); showToast("Добавлено в избранное ❤"); } localStorage.setItem('radio_favs', JSON.stringify(favorites)); updateFavCurrentBtn(); renderList(); }
+        function updateFavCurrentBtn() { const btn = document.getElementById('btn-fav-current'); if (!currentStation) return; btn.innerHTML = `<i data-lucide="heart" class="w-3 h-3 ${favorites.includes(currentStation.id) ? 'text-red-500 fill-red-500' : ''}"></i>`; lucide.createIcons(); }
+        function addToHistory(st) { historyStations = historyStations.filter(s => s.id !== st.id); historyStations.unshift(st); if (historyStations.length > 15) historyStations.pop(); localStorage.setItem('radio_history', JSON.stringify(historyStations)); }
+
+        function prepareStation(st) {
+            currentStation = st; currentStationIndex = stationsData.findIndex(s => s.id === st.id); addToHistory(st); 
+            currentStationHash = st.id.split('').reduce((a, b) => a + b.charCodeAt(0), 0);
+            document.getElementById('player-title').innerText = st.name; document.getElementById('player-location').innerText = `${st.country} • ${st.tags}`;
+            document.getElementById('player-logo').src = st.favicon || `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='1'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Cpath d='M12 16v-4'/%3E%3Cpath d='M12 8h.01'/%3E%3C/svg%3E`;
+            const colorHex = '#3b82f6', rgb = '59, 130, 246'; document.documentElement.style.setProperty('--accent-primary', colorHex); document.documentElement.style.setProperty('--accent-rgb', rgb);
+            updateFavCurrentBtn(); renderList(); const likeText = document.getElementById('btn-like-text'); if (likeText) likeText.innerText = st.clickcount.toLocaleString('ru-RU');
+            setTimeout(() => { const container = document.getElementById('stations-list'); if (container) { const targetScroll = currentStationIndex * ITEM_HEIGHT - container.clientHeight / 2 + ITEM_HEIGHT / 2; container.scrollTo({ top: Math.max(0, targetScroll), behavior: 'smooth' }); } }, 150);
+        }
+
+        function playNextStation() { if (stationsData.length === 0) return; let idx = currentStation ? stationsData.findIndex(s => s.id === currentStation.id) : -1; let nextIndex = (idx === -1) ? 0 : (idx + 1) % stationsData.length; selectStation(stationsData[nextIndex]); }
+        function playPrevStation() { if (stationsData.length === 0) return; let idx = currentStation ? stationsData.findIndex(s => s.id === currentStation.id) : -1; if (idx === -1 || idx === 0) idx = stationsData.length; let prevIndex = (idx - 1) % stationsData.length; selectStation(stationsData[prevIndex]); }
+        
+        function syncVolume(val) { lastVolume = parseFloat(val); audio.volume = lastVolume; const iconName = lastVolume == 0 ? 'volume-x' : 'volume-2'; const dIcon = document.getElementById('icon-volume-desktop'); const mIcon = document.getElementById('icon-volume-mobile'); if(dIcon) dIcon.setAttribute('data-lucide', iconName); if(mIcon) mIcon.setAttribute('data-lucide', iconName); lucide.createIcons(); }
+        function toggleMute() { let newVal = audio.volume > 0 ? 0 : (lastVolume || 0.8); syncVolume(newVal); let dVol = document.getElementById('master-volume-desktop'), mVol = document.getElementById('master-volume-mobile'); if(dVol) dVol.value = newVal; if(mVol) mVol.value = newVal; }
+
+        function setupWebAudio() {
+            if (audioCtx) return; try {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)(); analyser = audioCtx.createAnalyser(); analyser.fftSize = 2048; analyser.smoothingTimeConstant = 0.85;
+                compressor = audioCtx.createDynamicsCompressor(); compressor.threshold.setValueAtTime(-24, audioCtx.currentTime); compressor.knee.setValueAtTime(30, audioCtx.currentTime); compressor.ratio.setValueAtTime(12, audioCtx.currentTime); compressor.attack.setValueAtTime(0.003, audioCtx.currentTime); compressor.release.setValueAtTime(0.25, audioCtx.currentTime); 
+                bassFilter = audioCtx.createBiquadFilter(); bassFilter.type = 'lowshelf'; bassFilter.frequency.setValueAtTime(250, audioCtx.currentTime); bassFilter.gain.setValueAtTime(3.5, audioCtx.currentTime); 
+                midFilter = audioCtx.createBiquadFilter(); midFilter.type = 'peaking'; midFilter.frequency.setValueAtTime(1000, audioCtx.currentTime); midFilter.Q.setValueAtTime(1, audioCtx.currentTime);
+                trebleFilter = audioCtx.createBiquadFilter(); trebleFilter.type = 'highshelf'; trebleFilter.frequency.setValueAtTime(4000, audioCtx.currentTime); trebleFilter.gain.setValueAtTime(2.0, audioCtx.currentTime); 
+                const source = audioCtx.createMediaElementSource(audio); 
+                source.connect(compressor); compressor.connect(bassFilter); bassFilter.connect(midFilter); midFilter.connect(trebleFilter); trebleFilter.connect(analyser); analyser.connect(audioCtx.destination);
+                dataArray = new Uint8Array(analyser.frequencyBinCount); timeDataArray = new Uint8Array(analyser.fftSize); 
+            } catch (e) { corsEnabled = false; }
+        }
+
+        function initEqualizer() {
+            eqCanvas = document.getElementById('equalizer-canvas'); eqCtx = eqCanvas.getContext('2d');
+            function resizeCanvas() { eqCanvas.width = eqCanvas.offsetWidth; eqCanvas.height = eqCanvas.offsetHeight; } resizeCanvas(); window.addEventListener('resize', resizeCanvas);
+            const barCount = 128; 
+            function renderEqualizer() {
+                eqAnimationId = requestAnimationFrame(renderEqualizer); eqCtx.clearRect(0, 0, eqCanvas.width, eqCanvas.height);
+                if (analyser && isAudioActuallyPlaying && corsEnabled && dataArray) try { analyser.getByteFrequencyData(dataArray); } catch (e) { corsEnabled = false; }
+                const width = eqCanvas.width, height = eqCanvas.height, barWidth = width / barCount, colorStr = getComputedStyle(document.documentElement).getPropertyValue('--accent-primary').trim() || '#3b82f6';
+                let eqGradient = eqCtx.createLinearGradient(0, height, 0, 0); eqGradient.addColorStop(0, colorStr); eqGradient.addColorStop(1, '#ffffff');
+                for (let i = 0; i < barCount; i++) {
+                    let barHeight = 2;
+                    if (isAudioActuallyPlaying && analyser && dataArray && corsEnabled) { let rawVal = dataArray[i * Math.floor((analyser.frequencyBinCount * 0.75) / barCount)] / 255; barHeight = Math.pow(rawVal, 0.8) * (height * 1.1); barHeight = Math.max(2, Math.min(height, barHeight)); } 
+                    eqCtx.fillStyle = eqGradient; eqCtx.fillRect(i * barWidth + 1, height - barHeight, barWidth - 1, barHeight);
+                }
+            }
+            renderEqualizer();
+        }
+
+        function toggleFavoritesMode(btn) { isOnlyFavorites = !isOnlyFavorites; stationsData = isOnlyFavorites ? allStationsMaster.filter(st => favorites.includes(st.id)) : [...allStationsMaster]; updateStationCounts(); renderList(); btn.classList.toggle('bg-red-600'); btn.classList.toggle('text-white'); }
+        function toggleHistoryMode(btn) { isOnlyHistory = !isOnlyHistory; stationsData = isOnlyHistory ? [...historyStations] : [...allStationsMaster]; updateStationCounts(); renderList(); btn.classList.toggle('bg-blue-600'); btn.classList.toggle('text-white'); }
+
+        function setupEvents() {
+            document.getElementById('btn-play').onclick = togglePlay; document.getElementById('btn-next').onclick = playNextStation; document.getElementById('btn-prev').onclick = playPrevStation; 
+            const volDesktop = document.getElementById('master-volume-desktop'), volMobile = document.getElementById('master-volume-mobile');
+            if(volDesktop) { volDesktop.addEventListener('input', e => syncVolume(e.target.value)); }
+            if(volMobile) { volMobile.addEventListener('input', e => syncVolume(e.target.value)); volMobile.addEventListener('touchmove', e => syncVolume(e.target.value), {passive: true}); }
+            document.getElementById('filter-country').addEventListener('change', onFilterChange); document.getElementById('filter-genre').addEventListener('change', onFilterChange); 
+            const subgenreEl = document.getElementById('filter-subgenre'); if(subgenreEl) subgenreEl.addEventListener('change', onFilterChange);
+            document.getElementById('input-search').addEventListener('input', e => { 
+                const q = e.target.value.toLowerCase().trim(); if(q) stationsData = allStationsMaster.filter(st => st.name.toLowerCase().includes(q) || st.tags.toLowerCase().includes(q) || st.country.toLowerCase().includes(q)); 
+                else stationsData = [...allStationsMaster]; updateStationCounts(); renderList(); 
+                clearTimeout(searchTimeout); if(stationsData.length > 0) { searchTimeout = setTimeout(() => { selectStation(stationsData[0]); }, 500); } 
+            });
+        }
+
+        function showToast(msg) {
+            const container = document.getElementById('toast-container'), el = document.createElement('div'); el.className = 'bg-black/90 backdrop-blur-md border border-white/20 px-4 py-2 rounded-full text-xs text-white shadow-2xl transition-all duration-300 transform translate-y-[-20px] opacity-0 flex items-center gap-2 pointer-events-auto dynamic-bg'; el.innerHTML = `<i data-lucide="info" class="w-4 h-4 text-white"></i> ${msg}`; container.appendChild(el); lucide.createIcons(); requestAnimationFrame(() => { el.classList.remove('translate-y-[-20px]', 'opacity-0'); el.classList.add('translate-y-0', 'opacity-100'); }); setTimeout(() => { el.classList.remove('translate-y-0', 'opacity-100'); el.classList.add('translate-y-[-20px]', 'opacity-0'); setTimeout(() => el.remove(), 300); }, 3000);
+        }
     </script>
 </body>
 </html>
