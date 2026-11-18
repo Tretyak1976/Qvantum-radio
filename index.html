@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>REALITY RADIO 3D :: FESTIVAL SHOW (OPTIMIZED & PHYSICS)</title>
+    <title>REALITY RADIO 3D :: FESTIVAL SHOW (UPGRADED)</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -12,9 +12,16 @@
         }
     </script>
     <script src="https://unpkg.com/lucide@latest"></script>
-    <!-- Базовый Three.js (БЕЗ тяжелой постобработки для макс. производительности) -->
+    <!-- Базовый Three.js -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <!-- Эффекты постобработки (Bloom) -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/EffectComposer.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/RenderPass.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/ShaderPass.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/CopyShader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/LuminosityHighPassShader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/UnrealBloomPass.js"></script>
 
     <style>
         :root { --accent-primary: #3b82f6; --accent-glow: rgba(59, 130, 246, 0.6); --accent-rgb: 59, 130, 246; --accent-gradient: linear-gradient(135deg, rgba(var(--accent-rgb), 0.25) 0%, rgba(16, 185, 129, 0.2) 100%); transition: --accent-primary 0.3s ease, --accent-glow 0.3s ease; }
@@ -66,10 +73,14 @@
             <div class="pt-2 border-t border-white/10 flex items-center justify-between">
                 <div class="flex items-center gap-4">
                     <div class="flex flex-col border-r border-white/10 pr-3">
-                        <span class="text-[9px] font-bold text-gray-400 uppercase tracking-wider">Станций</span>
+                        <span class="text-[9px] font-bold text-gray-400 uppercase tracking-wider">Всего станций</span>
+                        <span id="global-stations-count" class="text-xs font-mono font-extrabold text-blue-400 tracking-wider">0</span> 
+                    </div>
+                    <div class="flex flex-col border-r border-white/10 pr-3 pl-3">
+                        <span class="text-[9px] font-bold text-gray-400 uppercase tracking-wider">Найдено</span>
                         <span id="left-stations-count" class="text-xs font-mono font-extrabold dynamic-text text-blue-400 tracking-wider">0</span> 
                     </div>
-                    <div class="flex flex-col">
+                    <div class="flex flex-col pl-3">
                         <span class="text-[9px] font-bold text-gray-400 uppercase tracking-wider flex items-center gap-1">
                             <span class="relative flex h-2 w-2"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span><span class="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span></span>
                             Слушают
@@ -77,7 +88,6 @@
                         <span id="global-listeners-counter" class="text-xs font-mono font-extrabold text-red-400 tracking-wider">0</span> 
                     </div>
                 </div>
-                <span id="current-location-text" class="text-[10px] font-bold text-white truncate max-w-[100px] text-right">--</span>
             </div>
         </div>
 
@@ -93,9 +103,9 @@
                         <select id="filter-genre" class="w-full bg-black/60 border border-white/10 rounded-xl pl-3 pr-8 py-2 text-xs text-white focus:outline-none transition cursor-pointer hover:border-white/30 focus:border-[var(--accent-primary)]"><option value="">Все жанры</option></select>
                         <select id="filter-subgenre" disabled class="w-full bg-black/60 border border-white/10 rounded-xl pl-3 pr-8 py-2 text-xs text-white focus:outline-none transition cursor-pointer disabled:opacity-40 hover:border-white/30 focus:border-[var(--accent-primary)]"><option value="">Все поджанры</option></select>
                     </div>
-                    <div class="flex items-center gap-2">
-                        <select id="filter-country" class="w-full bg-black/60 border border-white/10 rounded-xl pl-3 pr-8 py-2 text-xs text-white focus:outline-none transition cursor-pointer hover:border-white/30 focus:border-[var(--accent-primary)]"><option value="">Загрузка стран...</option></select>
-                        <button id="btn-more-countries" class="shrink-0 bg-black/60 border border-white/10 rounded-xl w-9 h-9 flex items-center justify-center text-gray-400 hover:text-white transition" onclick="toggleMinorCountries()" title="Показать остальные страны"><i data-lucide="plus" class="w-4 h-4"></i></button>
+                    <div class="grid grid-cols-2 gap-2">
+                        <select id="filter-country" class="w-full bg-black/60 border border-white/10 rounded-xl pl-3 pr-8 py-2 text-xs text-white focus:outline-none transition cursor-pointer hover:border-white/30 focus:border-[var(--accent-primary)]"><option value="">Все страны</option></select>
+                        <select id="filter-city" disabled class="w-full bg-black/60 border border-white/10 rounded-xl pl-3 pr-8 py-2 text-xs text-white focus:outline-none transition cursor-pointer disabled:opacity-40 hover:border-white/30 focus:border-[var(--accent-primary)]"><option value="">Все города</option></select>
                     </div>
                 </div>
 
@@ -119,6 +129,7 @@
         <aside class="w-full glass-panel h-full pointer-events-auto flex flex-col shadow-2xl overflow-hidden relative">
             <div class="p-3 border-b border-white/10 flex items-center justify-between bg-black/40 shrink-0">
                 <h2 class="text-xs font-bold uppercase tracking-wider flex items-center gap-2 text-gray-200"><i data-lucide="radio" class="w-4 h-4 dynamic-text text-blue-400"></i> Эфирная сетка</h2>
+                <span id="right-stations-count" class="text-xs font-bold text-gray-400">0</span>
             </div>
             <div id="active-station-pinned-container" class="hidden shrink-0 border-b border-white/20 bg-black/60 p-2 z-40"></div>
             <div id="stations-list-container" class="flex-1 relative scroll-smooth p-2">
@@ -160,21 +171,16 @@
                 </div>
 
                 <div class="hidden md:flex md:w-1/3 md:flex-1 items-center justify-end gap-3 min-w-0">
-                    <button title="ZEN Режим (F)" class="text-gray-400 hover:text-white transition p-2 rounded-xl border border-white/10 bg-white/5 ml-2" onclick="isUIHidden = !isUIHidden; setZenMode(isUIHidden);"><i data-lucide="maximize" class="w-4 h-4"></i></button>
                     <div class="flex items-center gap-2 bg-black/40 p-2 rounded-xl border border-white/10">
                         <button class="text-gray-400 hover:text-white transition p-0.5" onclick="toggleMute()"><i data-lucide="volume-2" id="icon-volume-desktop" class="w-4 h-4"></i></button>
                         <input type="range" id="master-volume-desktop" min="0" max="1" step="0.01" value="0.8" class="w-24">
                     </div>
                 </div>
             </div>
-
-            <!-- ПОЛОСА 2D ЭКВАЛАЙЗЕРА -->
-            <div id="equalizer-container" class="w-full h-8 bg-black/60 rounded-xl overflow-hidden border border-white/10 relative flex items-center transition-all duration-500">
-                <canvas id="equalizer-canvas" class="w-full h-full block"></canvas>
-            </div>
         </div>
     </footer>
 
+    <!-- НАДЕЖНЫЙ АУДИО ПЛЕЕР -->
     <audio id="audio-player" crossorigin="anonymous" preload="none"></audio>
 
     <script>
@@ -188,54 +194,50 @@
             'jazz': ['smooth jazz', 'bebop', 'swing', 'big band', 'blues'],
             'electronic': ['ambient', 'dubstep', 'drum and bass', 'synthwave', 'chillout', 'lo-fi'],
             'chillout': ['lounge', 'ambient', 'lo-fi', 'new age', 'meditation'],
-            'news': ['world news', 'local news', 'business', 'sports news', 'weather'],
-            'talk': ['interview', 'comedy', 'podcast', 'politics', 'education'],
-            'classical': ['symphony', 'baroque', 'romantic', 'opera', 'piano', 'contemporary'],
-            'hiphop': ['rap', 'trap', 'old school', 'rnb', 'lo-fi hip hop'],
-            'folk': ['country', 'bluegrass', 'celtic', 'latin', 'world']
+            'hiphop': ['rap', 'trap', 'rnb', 'old school', 'lofi hiphop'],
+            'classical': ['baroque', 'romantic', 'symphony', 'opera', 'piano'],
+            'country': ['bluegrass', 'honky tonk', 'contemporary country', 'americana'],
+            'world': ['latin', 'reggae', 'afrobeat', 'celtic', 'flamenco', 'salsa']
         };
 
-        const GENRE_LABELS = {
-            'pop': 'Поп-музыка', 'dance': 'Танцевальная', 'rock': 'Рок', 'jazz': 'Джаз / Блюз',
-            'electronic': 'Электронная', 'chillout': 'Чиллаут', 'news': 'Новостные', 'talk': 'Разговорные',
-            'classical': 'Классическая музыка', 'hiphop': 'Хип-Хоп / R&B', 'folk': 'Фолк / Этно'
+        const CITY_MAP = {
+            'Germany': ['Berlin', 'Munich', 'Hamburg', 'Cologne', 'Frankfurt', 'Stuttgart', 'Dusseldorf', 'Leipzig', 'Dortmund', 'Essen'],
+            'USA': ['New York', 'Los Angeles', 'Chicago', 'Houston', 'Phoenix', 'Philadelphia', 'San Antonio', 'San Diego', 'Dallas', 'San Jose'],
+            'France': ['Paris', 'Marseille', 'Lyon', 'Toulouse', 'Nice', 'Nantes', 'Strasbourg', 'Montpellier', 'Bordeaux', 'Lille']
         };
 
-        let stationsData = [], allStationsMaster = [], currentStationIndex = -1, currentStation = null;
-        let isHQOnly = false, isOnlyFavorites = false, isOnlyHistory = false, lastVolume = 0.8, isUIHidden = false;
+        let stationsData = [], allStationsMaster = [], currentStationIndex = -1, currentStation = null, autoRotateGlobe = true;
+        let isHQOnly = false, isOnlyFavorites = false, isOnlyHistory = false, lastVolume = 0.8;
         
         let favorites = JSON.parse(localStorage.getItem('radio_favs') || '[]');
         let historyStations = JSON.parse(localStorage.getItem('radio_history') || '[]');
         let likedStations = JSON.parse(localStorage.getItem('radio_likes') || '{}');
+        let userLikesMap = JSON.parse(localStorage.getItem('radio_user_likes') || '{}');
 
+        // AUDIO ENGINE
         const audio = document.getElementById('audio-player');
         let isPlaying = false, isAudioActuallyPlaying = false, isBuffering = false;            
         let corsEnabled = true;
 
-        let idleTimer = null, currentBassLevel = 0, currentGlobalListeners = 0; 
+        let currentBassLevel = 0; 
         const ITEM_HEIGHT = 65; let scrollTimeout, searchTimeout, playErrorCount = 0, MAX_PLAY_ERRORS = 3; 
         let currentApiBase = 'https://de1.api.radio-browser.info', currentStationHash = 0;
 
-        // 3D SHOW ENGINE (Optimized)
-        let scene, camera, renderer, controls, globeGroup, pointsMesh;
-        let sunLight, strobeLight;
-        let quantumPoints, quantumLines, radioWavesGroup, radioRings = [];
-        let eqCanvas, eqCtx, eqAnimationId, audioCtx, analyser, dataArray, timeDataArray;
+        // 3D SHOW ENGINE
+        let scene, camera, renderer, composer, bloomPass, controls, globeGroup, pointsMesh;
+        let earthMesh, nightMesh, atmosHalo, sunLight, strobeLight;
+        let quantumPoints, quantumLines, laserGroup, radioWavesGroup, radioRings = [];
+        let audioCtx, analyser, dataArray, timeDataArray, bassFilter, midFilter, trebleFilter, compressor;
         let leftPanelVisible = true;
         
-        // Оптимизированный космос
-        const NUM_GALAXIES = 5; // Снижено для FPS
-        let galaxies = [];
-        const NUM_PLANETS = 8; // Снижено для FPS
-        let planets = [];
-        let ambientDust;
-        let nebulasSystem;
-        
-        // STATE
-        let visualizerOffset = 0, smoothedCentroid = 0.5, beatThreshold = 0.5, isBeat = false, transitionFlash = 0.0; 
+        let visualizerOffset = 0; 
+        let smoothedCentroid = 0.5;
+        let beatThreshold = 0.5, isBeat = false; 
+        let transitionFlash = 0.0; // Для эффекта Взрыва/Скачка
+        let isUIHidden = false; // Состояние дзен-режима
+        let idleTimer = null; // Таймер бездействия мыши
 
-        // ОПТИМИЗИРОВАННАЯ СЕТКА КОРАБЛЯ (в 4 раза быстрее)
-        const gridDim = 32, pCount = gridDim * gridDim;
+        const gridDim = 48, pCount = gridDim * gridDim;
         const pOrig = new Float32Array(pCount * 3), lineIndices = [];
         for(let i=0; i<gridDim; i++){
             for(let j=0; j<gridDim; j++){
@@ -245,59 +247,72 @@
             }
         }
 
-        /* ================= ФУНКЦИИ ИНТЕРФЕЙСА ================= */
-        async function resolveFastestApiServer() { currentApiBase = 'https://de1.api.radio-browser.info'; return true; }
-        async function fetchAPILists() { return true; }
-        function loadStaticCatalogs() {
-            const genreSelect = document.getElementById('filter-genre');
-            if (genreSelect) { genreSelect.innerHTML = '<option value="">Все жанры</option>'; for (const [key, label] of Object.entries(GENRE_LABELS)) { genreSelect.innerHTML += `<option value="${key}">${label}</option>`; } }
-            const countrySelect = document.getElementById('filter-country');
-            if (countrySelect) { const commonCountries = ['Russia', 'USA', 'Germany', 'France', 'UK', 'Japan', 'Ukraine', 'Belarus']; countrySelect.innerHTML = '<option value="">Все страны</option>'; commonCountries.forEach(c => { countrySelect.innerHTML += `<option value="${c}">${c}</option>`; }); }
-        }
-        function updateSubgenreCatalog(genre) {
-            const sub = document.getElementById('filter-subgenre'); if (!sub) return;
-            if (!genre || !GENRE_MAP[genre]) { sub.innerHTML = '<option value="">Все поджанры</option>'; sub.disabled = true; return; }
-            sub.innerHTML = '<option value="">Все поджанры</option>'; GENRE_MAP[genre].forEach(sg => { sub.innerHTML += `<option value="${sg}">${sg}</option>`; }); sub.disabled = false;
-        }
-        function toggleLeftPanel() {
-            leftPanelVisible = !leftPanelVisible; const left = document.getElementById('ui-left'), showBtn = document.getElementById('btn-show-left');
-            if (!leftPanelVisible) { left.classList.add('zen-hidden-left'); if(showBtn) showBtn.classList.remove('hidden'); } 
-            else { left.classList.remove('zen-hidden-left'); if(showBtn) showBtn.classList.add('hidden'); }
-        }
-        function toggleMinorCountries() { showToast("Эта функция будет доступна в полной версии"); }
-        function toggleHQFilter(btn) {
-            isHQOnly = !isHQOnly; btn.classList.toggle('bg-blue-600'); btn.classList.toggle('text-white');
-            showToast(isHQOnly ? "Режим HQ включен" : "Режим HQ выключен"); fetchStations(5000, document.getElementById('filter-country').value, '', document.getElementById('filter-genre').value, true);
-        }
-        function likeCurrentStation() {
-            if (!currentStation) return; let count = (likedStations[currentStation.id] || 0) + 1; likedStations[currentStation.id] = count; localStorage.setItem('radio_likes', JSON.stringify(likedStations));
-            const likeText = document.getElementById('btn-like-text'); if (likeText) likeText.innerText = (currentStation.clickcount + count).toLocaleString('ru-RU'); showToast("Лайк отправлен!");
-        }
-        function getFlagEmojiByName(country) { return "🌍"; }
-
         window.addEventListener('DOMContentLoaded', async () => {
-            lucide.createIcons(); init3DEarth(); initEqualizer(); setupZenMode(); setupAudioEvents(); 
-            try { await resolveFastestApiServer(); await fetchAPILists(); loadStaticCatalogs(); setupEvents(); await geolocateAndInit(); } 
-            catch (error) { document.getElementById('list-loader').style.display = 'none'; console.error(error); }
+            lucide.createIcons();
+            init3DEarth();
+            setupZenMode(); // Активируем управление скрытием по мыши
+            setupAudioEvents(); 
+            
+            try {
+                await resolveFastestApiServer();
+                await fetchAPILists(); 
+                loadStaticCatalogs(); 
+                setupEvents();
+                await geolocateAndInit(); 
+            } catch (error) { document.getElementById('list-loader').style.display = 'none'; }
             document.getElementById('stations-list').addEventListener('scroll', handleScroll);
         });
 
+        // ZEN Mode Logic: Авто-скрытие при неактивности
         function setZenMode(active) {
-            isUIHidden = active; const left = document.getElementById('ui-left'), right = document.getElementById('ui-right'), showBtn = document.getElementById('btn-show-left'), player = document.getElementById('ui-player');
+            isUIHidden = active;
+            const left = document.getElementById('ui-left');
+            const right = document.getElementById('ui-right');
+            const showBtn = document.getElementById('btn-show-left');
+            const controls = document.getElementById('player-controls-wrap');
+
             if (active) {
-                left.classList.add('zen-hidden-left'); right.classList.add('zen-hidden-right');
-                if(showBtn) showBtn.classList.add('zen-hidden-left'); if(player) player.classList.add('zen-hidden-bottom'); document.body.style.cursor = 'none';
+                left.classList.add('ui-hidden-left');
+                right.classList.add('ui-hidden-right');
+                if(showBtn) showBtn.classList.add('ui-hidden-left');
+                if (controls) { controls.style.opacity = '0'; controls.style.height = '0'; controls.style.overflow = 'hidden'; }
+                document.body.style.cursor = 'none';
             } else {
-                if(leftPanelVisible) left.classList.remove('zen-hidden-left'); if(!leftPanelVisible && showBtn) showBtn.classList.remove('zen-hidden-left');
-                right.classList.remove('zen-hidden-right'); if(player) player.classList.remove('zen-hidden-bottom'); document.body.style.cursor = 'default';
+                if(leftPanelVisible) left.classList.remove('ui-hidden-left');
+                if(!leftPanelVisible && showBtn) showBtn.classList.remove('ui-hidden-left');
+                right.classList.remove('ui-hidden-right');
+                if (controls) { controls.style.opacity = '1'; controls.style.height = 'auto'; controls.style.overflow = 'visible'; }
+                document.body.style.cursor = 'default';
             }
         }
 
-        function resetZenTimer() { if (isUIHidden) setZenMode(false); clearTimeout(idleTimer); if (!document.activeElement.matches('select, input')) { idleTimer = setTimeout(() => { setZenMode(true); }, 5000); } }
+        function resetZenTimer() {
+            if (isUIHidden) setZenMode(false);
+            clearTimeout(idleTimer);
+            // Если фокус в селекте или инпуте - не скрываем интерфейс
+            if (!document.activeElement.matches('select, input')) {
+                idleTimer = setTimeout(() => { setZenMode(true); }, 5000); // 5 секунд
+            }
+        }
+
         function setupZenMode() {
-            window.addEventListener('mousemove', resetZenTimer); window.addEventListener('mousedown', resetZenTimer); window.addEventListener('touchstart', resetZenTimer);
-            window.addEventListener('keydown', (e) => { if (e.key.toLowerCase() === 'f' || e.code === 'KeyF') { isUIHidden = !isUIHidden; setZenMode(isUIHidden); } else { resetZenTimer(); } });
-            document.querySelectorAll('select, input').forEach(el => { el.addEventListener('focus', () => clearTimeout(idleTimer)); el.addEventListener('blur', resetZenTimer); }); resetZenTimer();
+            window.addEventListener('mousemove', resetZenTimer);
+            window.addEventListener('mousedown', resetZenTimer);
+            window.addEventListener('touchstart', resetZenTimer);
+            window.addEventListener('keydown', (e) => {
+                if (e.key.toLowerCase() === 'f' || e.code === 'KeyF') {
+                    isUIHidden = !isUIHidden;
+                    setZenMode(isUIHidden);
+                } else {
+                    resetZenTimer();
+                }
+            });
+            const inputs = document.querySelectorAll('select, input');
+            inputs.forEach(el => {
+                el.addEventListener('focus', () => clearTimeout(idleTimer));
+                el.addEventListener('blur', resetZenTimer);
+            });
+            resetZenTimer();
         }
 
         function setupAudioEvents() {
@@ -306,65 +321,173 @@
             audio.addEventListener('pause', () => { isAudioActuallyPlaying = false; isBuffering = false; zeroAudioArrays(); updatePlayBtn(); });
             audio.addEventListener('error', () => { isAudioActuallyPlaying = false; isBuffering = false; zeroAudioArrays(); handlePlayError(); });
         }
-        function zeroAudioArrays() { if(dataArray) dataArray.fill(0); if(timeDataArray) timeDataArray.fill(128); }
+
+        function zeroAudioArrays() {
+            if(dataArray) dataArray.fill(0);
+            if(timeDataArray) timeDataArray.fill(128);
+        }
 
         async function selectStation(st) { 
-            prepareStation(st); setupWebAudio(); if (audioCtx && audioCtx.state === 'suspended') await audioCtx.resume();
-            transitionFlash = 1.0; visualizerOffset += Math.floor(Math.random() * 1000) + 137; if (window.danceState) window.danceState.silenceTime = 0; 
-            audio.pause(); audio.removeAttribute('src'); audio.load(); isAudioActuallyPlaying = false; isBuffering = true; isPlaying = true; zeroAudioArrays(); updatePlayBtn();
-            audio.crossOrigin = "anonymous"; audio.src = st.url; audio.load();
+            prepareStation(st); 
+            setupWebAudio();
+            if (audioCtx && audioCtx.state === 'suspended') await audioCtx.resume();
+            
+            // ИСПРАВЛЕНО: Вспышка стала мягкой (0.15 вместо 1.0)
+            transitionFlash = 0.15; 
+            visualizerOffset += 33; 
+            
+            audio.pause();
+            audio.removeAttribute('src');
+            audio.load();
+
+            isAudioActuallyPlaying = false; isBuffering = true; isPlaying = true; 
+            zeroAudioArrays(); updatePlayBtn();
+
+            audio.crossOrigin = "anonymous";
+            audio.src = st.url;
+            audio.load();
             try { await audio.play(); } catch(e) { if (e.name !== 'AbortError') handlePlayError(); }
         }
 
         function togglePlay() { 
-            setupWebAudio(); if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume(); 
+            setupWebAudio(); 
+            if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume(); 
             if (!currentStation && stationsData.length > 0) return selectStation(stationsData[0]); 
             if (!audio.hasAttribute('src') || audio.src === "") return;
-            if (isPlaying) { audio.pause(); isPlaying = false; } else { isPlaying = true; isBuffering = true; updatePlayBtn(); audio.play().catch(e => { if(e.name !== 'AbortError') handlePlayError(); }); }
+            
+            if (isPlaying) { audio.pause(); isPlaying = false; } 
+            else { isPlaying = true; isBuffering = true; updatePlayBtn(); audio.play().catch(e => { if(e.name !== 'AbortError') handlePlayError(); }); }
         }
 
         function handlePlayError() {
             isPlaying = false; isBuffering = false; updatePlayBtn();
-            if (playErrorCount >= MAX_PLAY_ERRORS) { showToast("🚨 Ошибка потока."); audio.pause(); audio.removeAttribute('src'); return; }
-            playErrorCount++; showToast("⚠ Переподключение..."); setTimeout(playNextStation, 1000); 
+            if (playErrorCount >= MAX_PLAY_ERRORS) { showToast("🚨 Ошибка потока. Выберите другую станцию."); audio.pause(); audio.removeAttribute('src'); return; }
+            playErrorCount++; showToast("⚠️ Переподключение потока..."); 
+            // ИСПРАВЛЕНО: Быстрый перескок на следующую станцию, если текущая "мертвая" (300ms)
+            setTimeout(playNextStation, 300); 
         }
 
         function updatePlayBtn() { 
             const btn = document.getElementById('btn-play');
             if (isBuffering && isPlaying) btn.innerHTML = `<i data-lucide="loader-2" class="w-5 h-5 fill-white animate-spin"></i>`;
             else if (isPlaying) btn.innerHTML = `<i data-lucide="pause" class="w-5 h-5 fill-white"></i>`;
-            else btn.innerHTML = `<i data-lucide="play" class="w-5 h-5 fill-white ml-0.5"></i>`; lucide.createIcons(); 
+            else btn.innerHTML = `<i data-lucide="play" class="w-5 h-5 fill-white ml-0.5"></i>`;
+            lucide.createIcons(); 
         }
 
-        /* ================= 3D OPTIMIZED ENGINE ================= */
-        function createStarTexture() {
-            const c = document.createElement('canvas'); c.width = 32; c.height = 32; const ctx = c.getContext('2d'); const grad = ctx.createRadialGradient(16, 16, 0, 16, 16, 16);
-            grad.addColorStop(0, 'rgba(255,255,255,1)'); grad.addColorStop(0.2, 'rgba(255,255,255,0.8)'); grad.addColorStop(1, 'rgba(255,255,255,0)'); ctx.fillStyle = grad; ctx.fillRect(0,0,32,32); return new THREE.CanvasTexture(c);
+        async function resolveFastestApiServer() {
+            const API_SERVERS = ['https://de1.api.radio-browser.info', 'https://at1.api.radio-browser.info', 'https://nl1.api.radio-browser.info'];
+            for (const server of API_SERVERS) {
+                try {
+                    const c = new AbortController(); const t = setTimeout(() => c.abort(), 1200);
+                    const res = await fetch(`${server}/json/stats`, { signal: c.signal });
+                    clearTimeout(t);
+                    if (res.ok) { 
+                        globalStationCount = (await res.json()).stations; 
+                        document.getElementById('global-stations-count').innerText = globalStationCount.toLocaleString('ru-RU');
+                        currentApiBase = server; 
+                        return server; 
+                    }
+                } catch (e) { continue; }
+            }
+            return currentApiBase;
         }
-        function createCloudTexture() {
-            const c = document.createElement('canvas'); c.width = 64; c.height = 64; const ctx = c.getContext('2d'); const grad = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
-            grad.addColorStop(0, 'rgba(255,255,255,1)'); grad.addColorStop(0.3, 'rgba(255,255,255,0.5)'); grad.addColorStop(1, 'rgba(255,255,255,0)'); ctx.fillStyle = grad; ctx.fillRect(0,0,64,64); return new THREE.CanvasTexture(c);
+
+        async function fetchAPILists() {
+            try { const data = await (await fetch(`${currentApiBase}/json/countries`)).json();
+                dynamicCountries = data.filter(c => c.name && c.stationcount > 0).map(c => ({ name: c.name, iso: c.iso_3166_1, stationcount: c.stationcount }));
+            } catch (e) { console.log(e); }
+        }
+
+        function getFlagEmojiByISO(iso) { if (!iso) return '🌍'; return String.fromCodePoint(...iso.toUpperCase().split('').map(char => 127397 + char.charCodeAt(0))); }
+        function getFlagEmojiByName(name) { const c = dynamicCountries.find(x => x.name.toLowerCase() === name.toLowerCase()); return c && c.iso ? getFlagEmojiByISO(c.iso) : '🌍'; }
+
+        function renderCountries() {
+            const sc = document.getElementById('filter-country');
+            const selected = sc.value;
+            sc.innerHTML = '<option value="">Все страны</option>'; 
+            let filtered = showAllCountries ? dynamicCountries : dynamicCountries.filter(c => c.stationcount >= 300);
+            filtered.sort((a,b) => b.stationcount - a.stationcount).forEach(c => { 
+                sc.innerHTML += `<option value="${c.name}">${c.name} (${c.stationcount.toLocaleString('ru-RU')})</option>`; 
+            });
+            if (selected) sc.value = selected;
+        }
+        
+        function toggleMinorCountries() {
+            showAllCountries = !showAllCountries;
+            renderCountries();
+        }
+
+        function loadStaticCatalogs() {
+            renderCountries();
+            const sg = document.getElementById('filter-genre');
+            sg.innerHTML = '<option value="">Все жанры</option>'; Object.keys(GENRE_MAP).forEach(g => { sg.innerHTML += `<option value="${g}">${g.charAt(0).toUpperCase() + g.slice(1)}</option>`; });
+        }
+
+        function updateSubgenreCatalog(genre) {
+            const select = document.getElementById('filter-subgenre');
+            if (!genre || !GENRE_MAP[genre]) { select.innerHTML = '<option value="">Все поджанры</option>'; select.disabled = true; return; }
+            select.innerHTML = '<option value="">Все поджанры</option>'; GENRE_MAP[genre].forEach(sub => { select.innerHTML += `<option value="${sub}">${sub.charAt(0).toUpperCase() + sub.slice(1)}</option>`; }); select.disabled = false;
+        }
+
+        function updateCityCatalog(country) {
+            const select = document.getElementById('filter-city');
+            if (!country || !CITY_MAP[country]) { select.innerHTML = '<option value="">Все города</option>'; select.disabled = true; return; }
+            select.innerHTML = '<option value="">Все города</option>'; CITY_MAP[country].forEach(city => { select.innerHTML += `<option value="${city}">${city}</option>`; }); select.disabled = false;
+        }
+
+        function toggleLeftPanel() {
+            leftPanelVisible = !leftPanelVisible;
+            const leftPanel = document.getElementById('ui-left'), showBtn = document.getElementById('btn-show-left');
+            if(leftPanelVisible) { leftPanel.classList.remove('ui-hidden-left'); showBtn.classList.add('hidden'); } else { leftPanel.classList.add('ui-hidden-left'); showBtn.classList.remove('hidden'); }
+        }
+
+        function latLongToVector3(lat, lon, radius = 10.08) {
+            const phi = (90 - lat) * (Math.PI / 180), theta = (lon + 180) * (Math.PI / 180);
+            return new THREE.Vector3(-(radius * Math.sin(phi) * Math.cos(theta)), radius * Math.cos(phi), radius * Math.sin(phi) * Math.sin(theta));
         }
 
         function init3DEarth() {
             const container = document.getElementById('globe-container'); scene = new THREE.Scene();
-            scene.fog = new THREE.FogExp2(0x020205, 0.0006);
-            
             let isMobile = window.innerWidth < 768;
-            camera = new THREE.PerspectiveCamera(isMobile ? 65 : 45, window.innerWidth / window.innerHeight, 0.1, 8000);
+            camera = new THREE.PerspectiveCamera(isMobile ? 65 : 45, window.innerWidth / window.innerHeight, 0.1, 1000);
             camera.position.set(0, 0, isMobile ? 55 : 45); 
 
-            // Оптимизированный рендерер без Bloom (максимум FPS)
-            renderer = new THREE.WebGLRenderer({ antialias: false, alpha: false, powerPreference: "high-performance" });
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
             renderer.setSize(window.innerWidth, window.innerHeight); 
+            // ИСПРАВЛЕНИЕ ОПТИМИЗАЦИИ: ограничение пикселей для снижения нагрузки
             renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5)); 
             container.appendChild(renderer.domElement);
+            
+            const renderScene = new THREE.RenderPass(scene, camera);
+            bloomPass = new THREE.UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
+            bloomPass.threshold = 0.15;
+            bloomPass.strength = 0.8;
+            bloomPass.radius = 0.5;
+
+            composer = new THREE.EffectComposer(renderer);
+            composer.addPass(renderScene);
+            composer.addPass(bloomPass);
+
+            controls = new THREE.OrbitControls(camera, renderer.domElement); controls.enableDamping = true; controls.dampingFactor = 0.04; controls.rotateSpeed = 0.5; controls.minDistance = 20; controls.maxDistance = 150;
 
             globeGroup = new THREE.Group(); scene.add(globeGroup);
+            const tl = new THREE.TextureLoader();
+            earthMesh = new THREE.Mesh(new THREE.SphereGeometry(10, 64, 64), new THREE.MeshPhongMaterial({ map: tl.load('https://cdn.jsdelivr.net/gh/mrdoob/three.js@master/examples/textures/planets/earth_atmos_2048.jpg'), specularMap: tl.load('https://cdn.jsdelivr.net/gh/mrdoob/three.js@master/examples/textures/planets/earth_specular_2048.jpg'), specular: new THREE.Color(0x222222), shininess: 15 })); globeGroup.add(earthMesh);
+            nightMesh = new THREE.Mesh(new THREE.SphereGeometry(10.02, 64, 64), new THREE.MeshBasicMaterial({ map: tl.load('https://cdn.jsdelivr.net/gh/mrdoob/three.js@master/examples/textures/planets/earth_lights_2048.jpg'), blending: THREE.AdditiveBlending, transparent: true, opacity: 0.6 })); globeGroup.add(nightMesh);
             
-            // Наклоняем фигуру, чтобы она "летела" передом (носом вглубь экрана)
-            globeGroup.rotation.x = Math.PI / 2.5;
+            atmosHalo = new THREE.Mesh(new THREE.SphereGeometry(10.015, 64, 64), new THREE.MeshBasicMaterial({ color: 0x3b82f6, transparent: true, opacity: 0.1, blending: THREE.AdditiveBlending, side: THREE.BackSide })); 
+            globeGroup.add(atmosHalo);
             
+            const atmosPos = atmosHalo.geometry.attributes.position;
+            const atmosOrig = new Float32Array(atmosPos.count * 3);
+            for(let i=0; i<atmosPos.count; i++) {
+                atmosOrig[i*3] = atmosPos.getX(i);
+                atmosOrig[i*3+1] = atmosPos.getY(i);
+                atmosOrig[i*3+2] = atmosPos.getZ(i);
+            }
+            atmosHalo.userData.origPos = atmosOrig;
+
             const pGeo = new THREE.BufferGeometry(); const pPos = new Float32Array(pCount * 3); const pColor = new Float32Array(pCount * 3);
             for(let i=0; i<gridDim; i++) {
                 for(let j=0; j<gridDim; j++) {
@@ -379,101 +502,62 @@
             const pCanvas = document.createElement('canvas'); pCanvas.width = 16; pCanvas.height = 16; const pCtx = pCanvas.getContext('2d'); const pGrad = pCtx.createRadialGradient(8, 8, 0, 8, 8, 8);
             pGrad.addColorStop(0, 'rgba(255,255,255,1)'); pGrad.addColorStop(0.2, 'rgba(255,255,255,0.8)'); pGrad.addColorStop(1, 'rgba(0,0,0,0)'); pCtx.fillStyle = pGrad; pCtx.fillRect(0,0,16,16);
             
-            // AdditiveBlending заменяет тяжелый Bloom
-            quantumPoints = new THREE.Points(pGeo, new THREE.PointsMaterial({ size: 0.8, map: new THREE.CanvasTexture(pCanvas), vertexColors: true, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false })); globeGroup.add(quantumPoints);
+            quantumPoints = new THREE.Points(pGeo, new THREE.PointsMaterial({ size: 0.4, map: new THREE.CanvasTexture(pCanvas), vertexColors: true, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false })); globeGroup.add(quantumPoints);
             quantumLines = new THREE.LineSegments(pGeo, new THREE.LineBasicMaterial({ vertexColors: true, transparent: true, opacity: 0.35, blending: THREE.AdditiveBlending, depthWrite: false })); globeGroup.add(quantumLines);
 
-            strobeLight = new THREE.AmbientLight(0xffffff, 0.0); scene.add(strobeLight);
+            laserGroup = new THREE.Group();
+            const laserMat = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0, blending: THREE.AdditiveBlending });
+            for(let i=0; i<100; i++) {
+                const points = [new THREE.Vector3(0, 10, 0), new THREE.Vector3(0, 200, 0)];
+                const laser = new THREE.Line(new THREE.BufferGeometry().setFromPoints(points), laserMat.clone());
+                const phi = Math.acos(-1 + (2 * i) / 100); const theta = Math.sqrt(100 * Math.PI) * phi;
+                laser.rotation.set(phi, theta, 0); laser.userData = { phase: Math.random() * Math.PI * 2, speed: 0.02 + Math.random() * 0.03, basex: phi, basey: theta };
+                laserGroup.add(laser);
+            }
+            globeGroup.add(laserGroup);
+
+            strobeLight = new THREE.AmbientLight(0xffffff, 0); scene.add(strobeLight);
 
             radioWavesGroup = new THREE.Group(); globeGroup.add(radioWavesGroup);
-            for(let i=0; i<3; i++) { // Уменьшено до 3 колец
-                const ringGeo = new THREE.BufferGeometry(); ringGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(128 * 3), 3)); // 128 вместо 256
+            for(let i=0; i<4; i++) {
+                const ringGeo = new THREE.BufferGeometry(); ringGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(256 * 3), 3));
                 const ringMesh = new THREE.LineLoop(ringGeo, new THREE.LineBasicMaterial({ color: 0x3b82f6, transparent: true, opacity: 0, blending: THREE.AdditiveBlending }));
                 ringMesh.rotation.set(Math.random()*Math.PI, Math.random()*Math.PI, Math.random()*Math.PI);
-                radioRings.push({ mesh: ringMesh, baseRadius: 10.4 + i*0.8, speed: (Math.random()-0.5)*0.015 }); radioWavesGroup.add(ringMesh);
+                radioRings.push({ mesh: ringMesh, baseRadius: 10.4 + i*0.5, speed: (Math.random()-0.5)*0.015 }); radioWavesGroup.add(ringMesh);
             }
 
-            scene.add(new THREE.AmbientLight(0x050510, 2.0));
-            sunLight = new THREE.DirectionalLight(0xffffff, 1.0); sunLight.position.set(50, 50, 50); scene.add(sunLight);
+            const starsGeo = new THREE.BufferGeometry(), posArray = new Float32Array(3500 * 3);
+            for (let i = 0; i < 3500 * 3; i++) posArray[i] = (Math.random() - 0.5) * 350;
+            starsGeo.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+            scene.add(new THREE.Points(starsGeo, new THREE.PointsMaterial({ size: 0.15, color: 0xffffff, transparent: true, opacity: 0.75 })));
 
-            const starTex = createStarTexture(); const cloudTex = createCloudTexture();
-            
-            // Туманности (Легкая версия)
-            let nebGeo = new THREE.BufferGeometry(); let nebPos = new Float32Array(50 * 3); let nebCol = new Float32Array(50 * 3);
-            for(let i=0; i<50; i++) {
-                nebPos[i*3] = (Math.random()-0.5) * 4000; nebPos[i*3+1] = (Math.random()-0.5) * 4000; nebPos[i*3+2] = -Math.random() * 8000;
-                nebCol[i*3] = Math.random(); nebCol[i*3+1] = Math.random(); nebCol[i*3+2] = Math.random();
-            }
-            nebGeo.setAttribute('position', new THREE.BufferAttribute(nebPos, 3)); nebGeo.setAttribute('color', new THREE.BufferAttribute(nebCol, 3));
-            nebulasSystem = new THREE.Points(nebGeo, new THREE.PointsMaterial({ size: 1500, map: cloudTex, transparent: true, opacity: 0.1, blending: THREE.AdditiveBlending, vertexColors: true, depthWrite: false }));
-            scene.add(nebulasSystem);
-
-            // Галактики (Мало полигонов)
-            for(let i=0; i<NUM_GALAXIES; i++) {
-                let starsCount = 1000; let gGeo = new THREE.BufferGeometry(); let gPos = new Float32Array(starsCount * 3); let gCol = new Float32Array(starsCount * 3);
-                let branches = Math.floor(Math.random() * 3) + 2; let spin = (Math.random() - 0.5) * 12; let size = 200 + Math.random() * 400; 
-                for(let j=0; j<starsCount; j++) {
-                    let r = Math.random() * size; r = Math.pow(r/size, 1.5) * size; 
-                    let finalAngle = ((j % branches) / branches) * Math.PI * 2 + r * spin * 0.003 + (Math.random() - 0.5) * (0.5 + (r/size)*5.0);
-                    gPos[j*3] = Math.cos(finalAngle) * r; gPos[j*3+1] = (Math.random() - 0.5) * (size - r) * 0.2; gPos[j*3+2] = Math.sin(finalAngle) * r;
-                    gCol[j*3] = 1.0; gCol[j*3+1] = 1.0; gCol[j*3+2] = 1.0;
-                }
-                gGeo.setAttribute('position', new THREE.BufferAttribute(gPos, 3)); gGeo.setAttribute('color', new THREE.BufferAttribute(gCol, 3));
-                let galaxy = new THREE.Points(gGeo, new THREE.PointsMaterial({ size: 8.0, map: starTex, transparent: true, opacity: 0.9, blending: THREE.AdditiveBlending, vertexColors: true, depthWrite: false }));
-                galaxy.position.set((Math.random()-0.5)*3000, (Math.random()-0.5)*2000, -Math.random()*8000 - 500); galaxy.rotation.set(Math.random()*Math.PI, Math.random()*Math.PI, Math.random()*Math.PI);
-                galaxy.userData = { baseRotX: (Math.random() - 0.5) * 0.001, baseRotY: (Math.random() - 0.5) * 0.001, baseRotZ: (Math.random() - 0.5) * 0.001, hueOffset: Math.random() * 360 };
-                scene.add(galaxy); galaxies.push(galaxy);
-            }
-
-            // Планеты (Дешевые материалы)
-            const planetGeo = new THREE.SphereGeometry(1, 24, 24); const ringGeo = new THREE.RingGeometry(1.4, 2.4, 32);
-            for(let i=0; i<NUM_PLANETS; i++) {
-                let pGroup = new THREE.Group(); let type = Math.floor(Math.random() * 4); let pColor = new THREE.Color();
-                if(type === 0) pColor.setHSL(Math.random(), 0.6, 0.4); else if(type === 1) pColor.setHex(0xff3300); else if(type === 2) pColor.setHex(0x00ffff); else pColor.setHSL(Math.random(), 1.0, 0.5); 
-                let planetMat = new THREE.MeshPhongMaterial({ color: pColor, emissive: type === 1 || type === 3 ? pColor : 0x000000, emissiveIntensity: 0.2 });
-                let pMesh = new THREE.Mesh(planetGeo, planetMat); pGroup.add(pMesh);
-                
-                let pAtmos = new THREE.Mesh(new THREE.SphereGeometry(1.08, 16, 16), new THREE.MeshBasicMaterial({ color: type === 1 ? 0xff0000 : pColor, transparent: true, opacity: 0.2, blending: THREE.AdditiveBlending, side: THREE.BackSide })); pGroup.add(pAtmos);
-                if (type === 0 || Math.random() > 0.6) {
-                    let ring = new THREE.Mesh(ringGeo, new THREE.MeshBasicMaterial({ color: pColor, transparent: true, opacity: 0.4, blending: THREE.AdditiveBlending, side: THREE.DoubleSide }));
-                    ring.rotation.x = Math.PI / 2 + (Math.random()-0.5)*0.8; ring.rotation.y = (Math.random()-0.5)*0.5; pGroup.add(ring);
-                }
-                let scale = 150 + Math.random() * 300; pGroup.scale.set(scale, scale, scale);
-                pGroup.position.set((Math.random()-0.5)*2500, (Math.random()-0.5)*1500, -Math.random()*8000 - 800);
-                pGroup.userData = { hueOffset: Math.random()*360, rotSpeedY: (Math.random()-0.5)*0.003, type: type, atmos: pAtmos, baseScale: scale };
-                scene.add(pGroup); planets.push(pGroup);
-            }
-
-            // Пыль (2000 вместо 15000)
-            let dGeo = new THREE.BufferGeometry(); let dPos = new Float32Array(2000 * 3);
-            for(let i=0; i<2000; i++){ dPos[i*3] = (Math.random()-0.5)*3500; dPos[i*3+1] = (Math.random()-0.5)*3500; dPos[i*3+2] = -Math.random()*6000; }
-            dGeo.setAttribute('position', new THREE.BufferAttribute(dPos, 3));
-            ambientDust = new THREE.Points(dGeo, new THREE.PointsMaterial({ size: 4.0, map: starTex, transparent: true, opacity: 0.8, blending: THREE.AdditiveBlending, color: 0xffffff })); scene.add(ambientDust);
+            scene.add(new THREE.AmbientLight(0xffffff, 0.2));
+            sunLight = new THREE.DirectionalLight(0xffffff, 1.0); sunLight.position.set(50, 20, 30); scene.add(sunLight);
 
             window.addEventListener('resize', () => { 
-                let m = window.innerWidth < 768; camera.aspect = window.innerWidth / window.innerHeight; camera.fov = m ? 65 : 45; 
+                let m = window.innerWidth < 768; 
+                camera.aspect = window.innerWidth / window.innerHeight; 
+                camera.fov = m ? 65 : 45; 
                 if(m && camera.position.z < 55) camera.position.setZ(55); 
-                camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth, window.innerHeight); 
+                camera.updateProjectionMatrix(); 
+                renderer.setSize(window.innerWidth, window.innerHeight); 
+                if (composer) composer.setSize(window.innerWidth, window.innerHeight);
             });
 
             const colorObj = new THREE.Color(), logoIcon = document.getElementById('logo-icon'), logoBg = document.getElementById('logo-icon-bg');
             const baseFov = window.innerWidth < 768 ? 65 : 45;
-            let globalFlightTime = 0;
-            let currentBankAngle = 0; // Крен
-            let targetShipX = 0, targetShipY = 0;
+            let frameCounter = 0; // Для прореживания вычислений (Оптимизация)
 
             function animate() {
-                requestAnimationFrame(animate); 
-                globalFlightTime += 0.003;
-
-                let flightSpeed = 3.0; 
-                let bassImpact = 0;
+                requestAnimationFrame(animate); controls.update();
+                frameCounter++;
+                if (autoRotateGlobe) { globeGroup.rotation.y += 0.0005; }
 
                 if (isPlaying && isAudioActuallyPlaying && analyser && dataArray && timeDataArray) {
                     analyser.getByteFrequencyData(dataArray); analyser.getByteTimeDomainData(timeDataArray);
                     let bass = 0, mid = 0, treble = 0, energy = 0, centroid = 0, weightSum = 0;
                     
-                    const binCount = analyser.frequencyBinCount;
+                    const binCount = analyser.frequencyBinCount; 
                     for(let i=0; i<binCount; i++) {
                         let val = dataArray[i] / 255.0; energy += val; centroid += val * i; weightSum += val;
                         if(i < 32) bass += val; else if(i < 360) mid += val; else treble += val; 
@@ -481,151 +565,168 @@
                     bass /= 32; mid /= 328; treble /= (binCount - 360); energy /= binCount; if(weightSum > 0) centroid /= weightSum;
                     let normalizedCentroid = centroid / binCount; smoothedCentroid += (normalizedCentroid - smoothedCentroid) * 0.05;
 
-                    let instantBass = Math.pow(bass, 1.5);
-                    let instantTreble = Math.pow(treble, 1.5);
-                    bassImpact = instantBass;
-
-                    const sharpBass = Math.pow(bass, 3);
+                    const sharpBass = Math.pow(bass, 3), sharpMid = Math.pow(mid, 2);
                     currentBassLevel += (sharpBass - currentBassLevel) * 0.2; 
                     
-                    if (!window.danceState) window.danceState = { time: 0, phaseX: 0, phaseY: 0, phaseZ: 0, tension: 0, spine: 0, energyAvg: 0, smoothBass: 0, smoothTreble: 0, timeSpeed: 0.001, morph: 0, lastBeatTime: 0, rotSpeed: 0.002, silenceTime: 0, trackSeedMutation: 0 };
-                    if (energy < 0.03) { window.danceState.silenceTime++; } else { if (window.danceState.silenceTime > 50) { window.danceState.trackSeedMutation += Math.floor(Math.random() * 500) + 137; transitionFlash = 1.0; } window.danceState.silenceTime = 0; }
-                    
-                    window.danceState.smoothBass += (bass - window.danceState.smoothBass) * 0.08;
-                    window.danceState.smoothTreble += (treble - window.danceState.smoothTreble) * 0.08;
-                    window.danceState.energyAvg += (energy - window.danceState.energyAvg) * 0.02; 
-                    
-                    beatThreshold = Math.max(0.2, beatThreshold * 0.92); isBeat = false;
-                    if (instantBass > beatThreshold) {
-                        isBeat = true; beatThreshold = Math.min(1.0, instantBass * 1.5); 
-                        let now = Date.now(); if (now - window.danceState.lastBeatTime > 2000 && instantBass > 0.8) { window.danceState.morph += Math.PI / 4; window.danceState.lastBeatTime = now; }
+                    let currentBloom = 0.5 + (energy * 1.5) + (sharpBass * 1.5);
+                    let currentFov = baseFov - (sharpBass * 10);
+
+                    // ИСПРАВЛЕНИЕ: Мягкое затухание вспышки
+                    if (transitionFlash > 0) {
+                        currentBloom += transitionFlash * 2.0;
+                        currentFov += transitionFlash * 5.0;
+                        transitionFlash -= 0.005; 
                     }
 
-                    flightSpeed += window.danceState.smoothBass * 40.0 + (transitionFlash * 50.0);
-                    window.danceState.rotSpeed += ((isBeat ? (0.01 + instantBass * 0.1) : 0.002) - window.danceState.rotSpeed) * 0.05;
-                    let targetTimeSpeed = (window.danceState.energyAvg < 0.15) ? 0.0005 : (0.0015 + window.danceState.energyAvg * 0.01);
-                    if (isBeat && window.danceState.energyAvg > 0.3) targetTimeSpeed += 0.02; 
-                    window.danceState.timeSpeed += (targetTimeSpeed - window.danceState.timeSpeed) * 0.05;
-                    window.danceState.time += window.danceState.timeSpeed;
-                    
-                    let dt = window.danceState.time;
-                    window.danceState.phaseY += (mid * 0.02);
-                    window.danceState.tension += (sharpBass - window.danceState.tension) * 0.05; 
-                    window.danceState.spine += ((smoothedCentroid * 1.5) - window.danceState.spine) * 0.03;
-
-                    let currentFov = baseFov - (instantBass * 12); 
-                    if (transitionFlash > 0) { currentFov += transitionFlash * 25.0; transitionFlash -= 0.02; }
-
-                    const dynamicHue = (currentStationHash + window.danceState.trackSeedMutation + smoothedCentroid * 1000 + energy * 300) % 360;
-                    if (logoIcon) { logoIcon.style.transform = `scale(${1 + instantBass})`; logoBg.style.boxShadow = `0 0 ${10 + instantBass*80}px hsl(${dynamicHue}, 100%, 50%)`; }
-
-                    if (isBeat && instantBass > 0.6) { strobeLight.intensity = 1.0 + instantBass * 2.5; sunLight.intensity = 1.5 + instantBass * 2.0; } 
-                    else if (instantTreble > 0.5) { strobeLight.intensity = instantTreble * 1.0; sunLight.intensity = 0.8 + instantTreble * 1.5; } 
-                    else { strobeLight.intensity += (0 - strobeLight.intensity) * 0.1; sunLight.intensity += (0.2 - sunLight.intensity) * 0.05; }
-
-                    // --- ФИЗИКА УЕКЛОНЕНИЯ ОТ ПЛАНЕТ ---
-                    let avoidX = 0, avoidY = 0;
-                    for(let i=0; i<NUM_PLANETS; i++) {
-                        let p = planets[i];
-                        // Если планета близко и летит на нас
-                        if (p.position.z > -2500 && p.position.z < 200) {
-                            let dx = globeGroup.position.x - p.position.x;
-                            let dy = globeGroup.position.y - p.position.y;
-                            let distSq = dx*dx + dy*dy;
-                            let safeRadius = p.userData.baseScale * 3.5; // Дистанция уклонения
-                            
-                            if (distSq < safeRadius * safeRadius) {
-                                let dist = Math.sqrt(distSq);
-                                if (dist === 0) { dx = 1; dist = 1; }
-                                let force = (safeRadius - dist) / safeRadius;
-                                // Мощный толчок в сторону от планеты
-                                avoidX += (dx / dist) * force * 150;
-                                avoidY += (dy / dist) * force * 150;
-                            }
-                        }
+                    if (bloomPass) {
+                        bloomPass.strength = currentBloom;
+                        bloomPass.radius = 0.4 + (sharpBass * 0.6);
                     }
 
-                    // Базовый дрейф корабля + Физика уклонения
-                    targetShipX = Math.sin(globalFlightTime * 1.5) * 15 + avoidX;
-                    targetShipY = Math.cos(globalFlightTime * 1.2) * 10 + avoidY;
-                    
-                    globeGroup.position.x += (targetShipX - globeGroup.position.x) * 0.05;
-                    globeGroup.position.y += (targetShipY - globeGroup.position.y) * 0.05;
-
-                    // Крен корабля и камеры в зависимости от скорости уклонения
-                    let shipVelocityX = targetShipX - globeGroup.position.x;
-                    let targetBankAngle = -shipVelocityX * 0.02; // Крен при повороте
-                    currentBankAngle += (targetBankAngle - currentBankAngle) * 0.05;
-                    
-                    camera.fov += (currentFov - camera.fov) * 0.1;
-                    // Камера немного отстает от корабля для кинематографичности
-                    camera.position.x += (globeGroup.position.x * 0.6 - camera.position.x) * 0.05;
-                    camera.position.y += (globeGroup.position.y * 0.6 + 8 - camera.position.y) * 0.05;
-                    camera.rotation.z = currentBankAngle * 0.5;
+                    if (sharpBass > 0.8) {
+                        camera.fov = currentFov;
+                        camera.position.x = (Math.random() - 0.5) * sharpBass * 1.5;
+                        camera.position.y = (Math.random() - 0.5) * sharpBass * 1.5;
+                    } else {
+                        camera.fov += (baseFov - camera.fov) * 0.1;
+                        camera.position.x += (0 - camera.position.x) * 0.1;
+                        camera.position.y += (0 - camera.position.y) * 0.1;
+                    }
                     camera.updateProjectionMatrix();
 
-                    // --- ЦВЕТА ТУМАННОСТЕЙ ---
-                    let nCol = nebulasSystem.geometry.attributes.color.array; let nHue = (dynamicHue + window.danceState.time * 50) % 360;
-                    for(let i=0; i<50; i++) { colorObj.setHSL((nHue + i)%360 / 360, 0.8, 0.2 + instantBass * 0.4); nCol[i*3] = colorObj.r; nCol[i*3+1] = colorObj.g; nCol[i*3+2] = colorObj.b; }
-                    nebulasSystem.geometry.attributes.color.needsUpdate = true; nebulasSystem.material.opacity = 0.05 + window.danceState.energyAvg * 0.15 + instantBass * 0.1;
+                    beatThreshold = Math.max(0.2, beatThreshold * 0.95);
+                    isBeat = false;
+                    if (sharpBass > beatThreshold) {
+                        isBeat = true;
+                        beatThreshold = Math.min(1.0, sharpBass * 1.2); 
+                    }
 
-                    // --- ДНК ОРГАНИЗМА (Легкая математика, 1024 точки вместо 4096) ---
-                    let stationSeed = currentStationHash + visualizerOffset + window.danceState.trackSeedMutation;
-                    const positions = quantumPoints.geometry.attributes.position.array; const colors = quantumPoints.geometry.attributes.color.array;
-                    let dnaA = ((stationSeed % 11) + 1) / 11.0, dnaB = (((stationSeed * 1.3) % 13) + 1) / 13.0, dnaC = (((stationSeed * 1.7) % 17) + 1) / 17.0, dnaD = (((stationSeed * 1.9) % 19) + 1) / 19.0, morph = window.danceState.morph;
+                    const dynamicHue = (currentStationHash + smoothedCentroid * 800 + energy * 200) % 360;
+                    if (logoIcon) { const s = 1 + (sharpBass * 0.8); logoIcon.style.transform = `scale(${s})`; logoBg.style.boxShadow = `0 0 ${10 + sharpBass*60}px hsl(${dynamicHue}, 100%, 50%)`; }
+
+                    let laserPower = Math.pow(treble, 2) * 1.5 + sharpBass; const t = Date.now() * 0.003;
+                    laserGroup.children.forEach((l, i) => {
+                        let choreo = currentStationHash % 4; 
+                        if (isBeat && Math.random() > 0.8) {
+                            l.material.color.setHSL(Math.random(), 1.0, 0.7); 
+                        } else {
+                            l.material.color.setHSL((dynamicHue + i*3)%360 / 360, 1.0, 0.6);
+                        }
+
+                        if(sharpBass > 0.5 || laserPower > 0.4) { l.material.opacity = Math.min(1.0, laserPower); l.scale.y = 1 + sharpBass * 2; } else { l.material.opacity *= 0.85; l.scale.y += (1 - l.scale.y) * 0.1; }
+                        if (choreo === 0) { l.rotation.x = l.userData.basex + Math.sin(t * l.userData.speed + l.userData.phase) * (0.2 + sharpBass*0.4); l.rotation.y = l.userData.basey + Math.cos(t * l.userData.speed + l.userData.phase) * (0.2 + sharpBass*0.4); } 
+                        else if (choreo === 1) { l.rotation.x = l.userData.basex + Math.sin(t * 0.5) * 0.3; l.rotation.z = Math.cos(t * 0.5) * 0.3; } 
+                        else if (choreo === 2) { l.rotation.x = l.userData.basex + Math.sin(t + l.userData.phase) * sharpBass; }
+                        else { l.rotation.y = l.userData.basey + Math.cos(t * 2) * (0.5 * sharpBass); }
+                    });
+
+                    if (isBeat && sharpBass > 0.6) { 
+                        strobeLight.intensity = 5.0; 
+                        sunLight.intensity = 4.0; 
+                    } else { 
+                        strobeLight.intensity += (0 - strobeLight.intensity) * 0.2; 
+                        sunLight.intensity += (1.0 - sunLight.intensity) * 0.1; 
+                    }
+
+                    // ОПТИМИЗАЦИЯ: Деформация сферы происходит не каждый кадр
+                    if (frameCounter % 2 === 0) {
+                        atmosHalo.material.opacity = 0.1 + (sharpBass * 0.6);
+                        const aPos = atmosHalo.geometry.attributes.position;
+                        const aOrig = atmosHalo.userData.origPos;
+                        for(let i=0; i<aPos.count; i++) {
+                            let aIdx = (i * 13) % binCount; 
+                            let fVal = dataArray[aIdx] / 255.0;
+                            let deformScale = 1.0 + Math.pow(fVal, 3) * 0.1 + (sharpBass * 0.05); 
+                            aPos.setXYZ(i, aOrig[i*3] * deformScale, aOrig[i*3+1] * deformScale, aOrig[i*3+2] * deformScale);
+                        }
+                        aPos.needsUpdate = true;
+                    }
+
+                    const positions = quantumPoints.geometry.attributes.position.array; 
+                    const colors = quantumPoints.geometry.attributes.color.array;
+                    
+                    let evolveT = t * 0.2;
+                    let driftX = Math.sin(evolveT) * 2;
+                    let driftY = Math.cos(evolveT * 1.3) * 2;
+                    
+                    let stationSeed = currentStationHash % 1000;
+                    // ИСПРАВЛЕНИЕ: Форма дышит в унисон с музыкой, не повторяясь, опираясь на timeData
+                    let chaosFactor = (stationSeed / 1000) + (Math.sin(t*0.05) * 0.5);
+                    let shapeMod = visualizerOffset + stationSeed;
 
                     for(let i=0; i<gridDim; i++) {
                         for(let j=0; j<gridDim; j++) {
                             let idx = i*gridDim + j; let u = (j / (gridDim - 1)) * Math.PI * 2; let v = (i / (gridDim - 1)) * Math.PI;
-                            let audioIdx = Math.floor((idx / pCount) * (binCount * 0.8)); let rawF = dataArray[audioIdx] / 255.0; let fSharp = Math.pow(rawF, 2.5); let waveRipple = (timeDataArray[audioIdx] / 128.0 - 1.0); 
+                            let audioIdx = Math.floor((idx / pCount) * (binCount * 0.5)); let rawF = dataArray[audioIdx] / 255.0; let fSharp = Math.pow(rawF, 2); let waveRipple = (timeDataArray[audioIdx]/128.0 - 1.0); 
                             let tx = pOrig[idx*3], ty = pOrig[idx*3+1], tz = pOrig[idx*3+2];
+
                             if (energy > 0.01) {
-                                let baseR = 10 + window.danceState.tension * 5;
-                                let f1 = dnaA * 8 + Math.sin(morph * 0.1) * 2, f2 = dnaB * 8 + Math.cos(morph * 0.15) * 2, f3 = dnaC * 12 + Math.sin(morph * 0.05) * 3;
-                                let deform = Math.sin(u * f1 + dt * (1 + dnaD)) * Math.cos(v * f2 - dt * dnaA) * Math.sin((u+v)*f3);
-                                let audioImpact = (fSharp * 25) * (0.5 + Math.abs(deform)); let fluidFlow = waveRipple * (3.0 + dnaB * 5.0 + instantTreble * 10);
-                                let currentRadius = baseR + deform * (5 + instantBass * 10) + audioImpact;
-                                let twist = u + Math.sin(v * (2 + dnaC * 5) + dt) * (instantTreble * 3.0 + dnaA);
-                                tx = Math.cos(twist) * Math.sin(v) * currentRadius + Math.cos(v * 10 + dt * 3) * fluidFlow;
-                                ty = Math.cos(v) * currentRadius + (Math.sin(v * 2.0 + window.danceState.phaseY) * window.danceState.spine * 10.0) + Math.sin(u * 10 + dt * 3) * fluidFlow;
-                                tz = Math.sin(twist) * Math.sin(v) * currentRadius + Math.cos(u * 10 + dt * 3) * fluidFlow;
+                                let R = 15 + sharpBass * 20 + Math.sin(v * (3 + chaosFactor * 4) + shapeMod) * 8;
+                                let twist = u + Math.sin(v * (2 + chaosFactor * 5) + t) * (shapeMod % 8);
+                                let flare = Math.abs(Math.cos(u * (3 + (shapeMod % 9)) + t)) * (10 + sharpMid * 15);
+                                
+                                // Мягкое расширение при смене станции
+                                let currentRadius = R + flare + fSharp * 15 + (transitionFlash * 5);
+
+                                tx = Math.cos(twist) * Math.sin(v) * currentRadius;
+                                tz = Math.sin(twist) * Math.sin(v) * currentRadius;
+                                
+                                let yDrift = Math.cos(v * (1 + chaosFactor*4)) * 30;
+                                ty = yDrift + Math.sin(u * (4 + (shapeMod%5)) + t * 3) * (5 + treble * 20);
+
+                                let rippleForce = waveRipple * (5 + treble * 25); 
+                                tx += Math.cos(v*20 + driftX) * rippleForce; 
+                                ty += Math.sin(u*20 + driftY) * rippleForce; 
+                                tz += Math.cos(u*20 + driftX) * rippleForce;
                             }
-                            let lerpSpeed = 0.1 + (window.danceState.smoothBass * 0.5); if (fSharp > 0.5) lerpSpeed = 0.9; else if(transitionFlash > 0) lerpSpeed = 0.8; else if(energy <= 0.01) lerpSpeed = 0.02;
-                            positions[idx*3] += (tx - positions[idx*3]) * lerpSpeed; positions[idx*3+1] += (ty - positions[idx*3+1]) * lerpSpeed; positions[idx*3+2] += (tz - positions[idx*3+2]) * lerpSpeed;
-                            let l = energy > 0.01 ? (0.2 + fSharp * 1.5 + instantBass * 0.5) : 0.02; let hueShift = (waveRipple * 100) + (fSharp * 150) + (window.danceState.tension * 50);
-                            colorObj.setHSL((dynamicHue + hueShift)/360, 1.0, Math.min(1.0, l));
-                            colors[idx*3] += (colorObj.r - colors[idx*3]) * lerpSpeed; colors[idx*3+1] += (colorObj.g - colors[idx*3+1]) * lerpSpeed; colors[idx*3+2] += (colorObj.b - colors[idx*3+2]) * lerpSpeed;
+
+                            let lerpFactor = fSharp > 0.4 ? 0.35 : 0.08; 
+                            if(transitionFlash > 0) lerpFactor = 0.15; // Мягкое перетекание при вспышке
+                            if(energy <= 0.01) lerpFactor = 0.02; 
+                            
+                            positions[idx*3] += (tx - positions[idx*3]) * lerpFactor; 
+                            positions[idx*3+1] += (ty - positions[idx*3+1]) * lerpFactor; 
+                            positions[idx*3+2] += (tz - positions[idx*3+2]) * lerpFactor;
+                            
+                            let l = energy > 0.01 ? (0.15 + fSharp*0.85) : 0.02; 
+                            colorObj.setHSL((dynamicHue + idx*0.02 + waveRipple*40)/360, 1.0, l);
+                            colors[idx*3] += (colorObj.r - colors[idx*3]) * lerpFactor; 
+                            colors[idx*3+1] += (colorObj.g - colors[idx*3+1]) * lerpFactor; 
+                            colors[idx*3+2] += (colorObj.b - colors[idx*3+2]) * lerpFactor;
                         }
                     }
                     quantumPoints.geometry.attributes.position.needsUpdate = true; quantumPoints.geometry.attributes.color.needsUpdate = true;
-                    quantumLines.material.opacity = energy < 0.01 ? 0 : Math.min(0.9, energy * 2.0);
-                    
-                    // Корабль визуально кренится
-                    globeGroup.rotation.y += window.danceState.rotSpeed * (dnaA * 10); 
-                    globeGroup.rotation.z = currentBankAngle * 1.5 + (energy * 0.03); 
-                    
+                    quantumLines.material.opacity = energy < 0.01 ? 0 : Math.min(0.8, energy * 1.5);
+                    quantumPoints.rotation.y += 0.002 + (energy * 0.05); quantumPoints.rotation.z += (energy * 0.02); quantumLines.rotation.copy(quantumPoints.rotation);
+
                     radioRings.forEach((r, idx) => {
-                        r.mesh.rotation.x += r.speed * (1 + instantBass * 5); r.mesh.rotation.y += r.speed * (1 + mid * 5); const ringPositions = r.mesh.geometry.attributes.position.array;
-                        r.mesh.material.color.setHSL((dynamicHue + idx*50)/360, 1.0, 0.5 + instantBass * 0.8); r.mesh.material.opacity = 0.2 + energy;
-                        for(let j=0; j<128; j++) {
-                            const angle = (j / 128) * Math.PI * 2; const freqVal = dataArray[j*8] / 255.0; const waveVal = (timeDataArray[j*16]/128.0 - 1.0); 
-                            const dynamicRadius = r.baseRadius + Math.pow(freqVal, 2.5) * (8 + idx) + (waveVal * (2 + instantBass*4)) + (transitionFlash*3);
-                            ringPositions[j*3] = Math.cos(angle) * dynamicRadius; ringPositions[j*3+1] = Math.sin(angle) * dynamicRadius; ringPositions[j*3+2] = Math.sin(angle * (5 + idx*2) + Date.now()*0.005) * (freqVal * 8 + waveVal * 2);
+                        r.mesh.rotation.x += r.speed * (1 + bass * 5); r.mesh.rotation.y += r.speed * (1 + mid * 5); const ringPositions = r.mesh.geometry.attributes.position.array;
+                        r.mesh.material.color.setHSL((dynamicHue + idx*40)/360, 1.0, 0.4 + bass*0.6); r.mesh.material.opacity = 0.15 + energy;
+                        for(let j=0; j<256; j++) {
+                            const angle = (j / 256) * Math.PI * 2; 
+                            const freqVal = dataArray[j*4] / 255.0; 
+                            const waveVal = (timeDataArray[j*8]/128.0 - 1.0); 
+                            const dynamicRadius = r.baseRadius + Math.pow(freqVal, 2) * (3 + idx) + (waveVal * (1 + sharpBass*4));
+                            ringPositions[j*3] = Math.cos(angle) * dynamicRadius; ringPositions[j*3+1] = Math.sin(angle) * dynamicRadius; ringPositions[j*3+2] = Math.sin(angle * (5 + idx*2) + Date.now()*0.005) * (freqVal * 5 + waveVal);
                         }
                         r.mesh.geometry.attributes.position.needsUpdate = true;
                     });
 
                 } else {
                     currentBassLevel += (0 - currentBassLevel) * 0.1; if (logoIcon) { logoIcon.style.transform = `scale(1)`; logoBg.style.boxShadow = `0 0 10px rgba(var(--accent-rgb), 0.4)`; }
-                    strobeLight.intensity += (0 - strobeLight.intensity) * 0.1; sunLight.intensity += (0.1 - sunLight.intensity) * 0.05;
+                    strobeLight.intensity += (0 - strobeLight.intensity) * 0.1; sunLight.intensity += (1.0 - sunLight.intensity) * 0.1;
+                    
+                    if (bloomPass) bloomPass.strength += (0.4 - bloomPass.strength) * 0.1;
                     
                     camera.fov += (baseFov - camera.fov) * 0.1;
-                    camera.rotation.z += (0 - camera.rotation.z) * 0.05;
+                    camera.position.x += (0 - camera.position.x) * 0.1;
+                    camera.position.y += (0 - camera.position.y) * 0.1;
                     camera.updateProjectionMatrix();
 
+                    laserGroup.children.forEach((l) => { l.material.opacity *= 0.8; l.scale.y += (1 - l.scale.y) * 0.1; });
                     radioRings.forEach(r => {
                         r.mesh.rotation.x += r.speed; r.mesh.rotation.y += r.speed; const pos = r.mesh.geometry.attributes.position.array; r.mesh.material.opacity += (0 - r.mesh.material.opacity) * 0.1;
-                        for(let j=0; j<128; j++) { const angle = (j / 128) * Math.PI * 2; pos[j*3] += (Math.cos(angle) * r.baseRadius - pos[j*3]) * 0.1; pos[j*3+1] += (Math.sin(angle) * r.baseRadius - pos[j*3+1]) * 0.1; pos[j*3+2] += (0 - pos[j*3+2]) * 0.1; }
+                        for(let j=0; j<256; j++) { const angle = (j / 256) * Math.PI * 2; pos[j*3] += (Math.cos(angle) * r.baseRadius - pos[j*3]) * 0.1; pos[j*3+1] += (Math.sin(angle) * r.baseRadius - pos[j*3+1]) * 0.1; pos[j*3+2] += (0 - pos[j*3+2]) * 0.1; }
                         r.mesh.geometry.attributes.position.needsUpdate = true;
                     });
                     const positions = quantumPoints.geometry.attributes.position.array; const colors = quantumPoints.geometry.attributes.color.array;
@@ -634,81 +735,97 @@
                         colors[i*3] += (0.05 - colors[i*3]) * 0.1; colors[i*3+1] += (0.05 - colors[i*3+1]) * 0.1; colors[i*3+2] += (0.1 - colors[i*3+2]) * 0.1;
                     }
                     quantumPoints.geometry.attributes.position.needsUpdate = true; quantumPoints.geometry.attributes.color.needsUpdate = true;
-                    globeGroup.rotation.y += 0.0005; globeGroup.rotation.z += (0 - globeGroup.rotation.z) * 0.05; quantumLines.material.opacity += (0 - quantumLines.material.opacity) * 0.1;
+                    quantumPoints.rotation.y += 0.0005; quantumLines.rotation.copy(quantumPoints.rotation); quantumLines.material.opacity += (0 - quantumLines.material.opacity) * 0.1;
+                    
+                    const aPos = atmosHalo.geometry.attributes.position;
+                    const aOrig = atmosHalo.userData.origPos;
+                    for(let i=0; i<aPos.count; i++) { aPos.setXYZ(i, aOrig[i*3], aOrig[i*3+1], aOrig[i*3+2]); }
+                    aPos.needsUpdate = true;
                 }
                 
-                // --- ГЛОБАЛЬНЫЙ ПОЛЕТ ---
-                let nPos = nebulasSystem.geometry.attributes.position.array;
-                for(let i=0; i<50; i++) {
-                    nPos[i*3+2] += flightSpeed * 0.8; 
-                    if(nPos[i*3+2] > 200) { nPos[i*3] = (Math.random()-0.5) * 4000; nPos[i*3+1] = (Math.random()-0.5) * 4000; nPos[i*3+2] = -8000; }
-                }
-                nebulasSystem.geometry.attributes.position.needsUpdate = true;
-
-                for(let i=0; i<NUM_GALAXIES; i++) {
-                    let g = galaxies[i]; g.position.z += flightSpeed;
-                    if (g.position.z > 200) { g.position.z = -8000 - Math.random() * 2000; g.position.x = (Math.random() - 0.5) * 3000; g.position.y = (Math.random() - 0.5) * 2000; }
-                    g.rotation.x += g.userData.baseRotX; g.rotation.y += g.userData.baseRotY; g.rotation.z += g.userData.baseRotZ + (bassImpact * 0.005);
-                    let scale = 1.0 + bassImpact * 0.05; g.scale.set(scale, scale, scale);
-                }
-
-                for(let i=0; i<NUM_PLANETS; i++) {
-                    let p = planets[i]; p.position.z += flightSpeed * 1.5; 
-                    if(p.position.z > 200) { p.position.z = -8000 - Math.random() * 3000; p.position.x = (Math.random()-0.5)*2500; p.position.y = (Math.random()-0.5)*1500; }
-                    p.rotation.y += p.userData.rotSpeedY + (bassImpact * 0.002);
-                    p.userData.atmos.material.opacity = (p.userData.type === 3 || p.userData.type === 1) ? (0.3 + bassImpact * 0.4) : (0.1 + bassImpact * 0.2);
-                }
-
-                let dPos = ambientDust.geometry.attributes.position.array;
-                for(let i=0; i<2000; i++) { dPos[i*3+2] += flightSpeed * 4.0; if(dPos[i*3+2] > 200) dPos[i*3+2] = -6000; }
-                ambientDust.geometry.attributes.position.needsUpdate = true;
-
-                renderer.render(scene, camera);
+                composer.render();
             }
             animate();
         }
 
-        /* ================= ДОПОЛНИТЕЛЬНЫЕ ФУНКЦИИ ================= */
         async function geolocateAndInit() {
             try {
-                const sc = document.getElementById('filter-country'); if (sc) sc.value = ''; 
-                const sg = document.getElementById('filter-genre'); if (sg) sg.value = '';
-                const flagContainer = document.getElementById('location-flag-container'); if (flagContainer) flagContainer.classList.add('hidden');
-                const locText = document.getElementById('current-location-text'); if (locText) locText.innerText = '--';
-                await fetchStations(5000, '', '', '', true); 
-            } catch(e) { console.log(e); }
+                const geoRes = await fetch('https://ipapi.co/json/'); const geoData = await geoRes.json();
+                let userCountry = geoData.country_name; const countrySelect = document.getElementById('filter-country');
+                if (dynamicCountries.some(c => c.name.toLowerCase() === userCountry.toLowerCase())) {
+                    countrySelect.value = dynamicCountries.find(c => c.name.toLowerCase() === userCountry.toLowerCase()).name;
+                    await onFilterChange({target: {id: 'filter-country'}}, false); 
+                    setTimeout(async () => { await fetchStations(5000, userCountry, '', '', true); }, 800);
+                } else { await fetchStations(5000, '', '', '', true); }
+            } catch(e) { await fetchStations(5000, '', '', '', true); }
         }
 
         const onFilterChange = async (e) => {
-            const country = document.getElementById('filter-country').value, genre = document.getElementById('filter-genre').value, subgenreSelect = document.getElementById('filter-subgenre');
+            const country = document.getElementById('filter-country').value, genre = document.getElementById('filter-genre').value, subgenreSelect = document.getElementById('filter-subgenre'), citySelect = document.getElementById('filter-city');
             const flagContainer = document.getElementById('location-flag-container'), flagEl = document.getElementById('current-flag'), locText = document.getElementById('current-location-text');
-            if (e && e.target.id === 'filter-country') { if (country) { flagEl.innerText = getFlagEmojiByName(country); locText.innerText = country; flagContainer.classList.remove('hidden'); } else { flagContainer.classList.add('hidden'); locText.innerText = '--'; } }
+            
+            if (e && e.target.id === 'filter-country') { 
+                if (country) { 
+                    flagEl.innerText = getFlagEmojiByName(country); locText.innerText = country; flagContainer.classList.remove('hidden'); 
+                    updateCityCatalog(country);
+                } else { 
+                    flagContainer.classList.add('hidden'); locText.innerText = '--'; 
+                    citySelect.innerHTML = '<option value="">Все города</option>'; citySelect.disabled = true;
+                } 
+            }
             if (e && e.target.id === 'filter-genre') { updateSubgenreCatalog(genre); }
-            await fetchStations(5000, country, '', subgenreSelect.value || genre, true); 
+            
+            const city = citySelect.value;
+            let tagParam = subgenreSelect.value || genre;
+            // ИСПРАВЛЕНИЕ: Симбиоз поиска. Теперь город передается как параметр state
+            let stateParam = city || '';
+
+            await fetchStations(5000, country, stateParam, tagParam, true); 
         };
 
-        function mapStationObject(s, idx) { return { id: s.stationuuid || s.id || `st_${idx}`, name: s.name.trim() || 'Без названия', country: s.country || 'Global', url: s.url_resolved || s.url, favicon: s.favicon || '', tags: s.tags ? s.tags.split(',').slice(0, 2).join(', ') : 'Music', bitrate: s.bitrate || 0, clickcount: (s.clickcount || 0) + (likedStations[s.stationuuid || s.id] || 0), lat: parseFloat(s.geo_lat || s.lat), lon: parseFloat(s.geo_long || s.lon) }; }
+        function mapStationObject(s, idx) { return { id: s.stationuuid || s.id || `st_${idx}`, name: s.name.trim() || 'Без названия', country: s.country || 'Global', state: s.state || '', url: s.url_resolved || s.url, favicon: s.favicon || '', tags: s.tags ? s.tags.split(',').slice(0, 2).join(', ') : 'Music', bitrate: s.bitrate || 0, clickcount: (s.clickcount || 0) + (likedStations[s.stationuuid || s.id] || 0), lat: parseFloat(s.geo_lat || s.lat), lon: parseFloat(s.geo_long || s.lon) }; }
 
         async function fetchStations(limit = 5000, country = '', state = '', tag = '', autoPlay = false) {
             isSpecialMode = false; isOnlyFavorites = false; isOnlyHistory = false; const loader = document.getElementById('list-loader'); if (loader) loader.style.display = 'flex';
             let url = `${currentApiBase}/json/stations/search?limit=${limit}&order=clickcount&reverse=true&hidebroken=true`;
-            if (country) url += `&country=${encodeURIComponent(country)}`; if (tag) url += `&tag=${encodeURIComponent(tag)}`;
+            if (country) url += `&country=${encodeURIComponent(country)}`; 
+            if (state) url += `&state=${encodeURIComponent(state)}`;
+            if (tag) url += `&tag=${encodeURIComponent(tag)}`;
+            
             try {
                 const controller = new AbortController(), timeoutId = setTimeout(() => controller.abort(), 8000), res = await fetch(url, { signal: controller.signal }); clearTimeout(timeoutId);
                 allStationsMaster = (await res.json()).map((s, idx) => mapStationObject(s, idx)); 
                 const q = document.getElementById('input-search').value.toLowerCase().trim();
-                stationsData = q ? allStationsMaster.filter(st => st.name.toLowerCase().includes(q) || st.tags.toLowerCase().includes(q) || st.country.toLowerCase().includes(q)) : [...allStationsMaster];
+                stationsData = q ? allStationsMaster.filter(st => st.name.toLowerCase().includes(q) || st.tags.toLowerCase().includes(q) || st.country.toLowerCase().includes(q) || st.state.toLowerCase().includes(q)) : [...allStationsMaster];
                 updateStationCounts(); renderList(); 
                 if (autoPlay && stationsData.length > 0) selectStation(stationsData[0]); else if (stationsData.length === 0) showToast("Ничего не найдено.");
             } catch (e) { showToast("⚠️ Ошибка API."); } finally { if (loader) loader.style.display = 'none'; }
         }
 
+        function drawGlobePoints(stations) {
+            if (pointsMesh) { globeGroup.remove(pointsMesh); pointsMesh.geometry.dispose(); pointsMesh.material.dispose(); pointsMesh = null; }
+            const geo = new THREE.BufferGeometry(), pos = [];
+            stations.forEach(s => { if(s.lat !== undefined && s.lon !== undefined && !isNaN(s.lat) && !isNaN(s.lon)) { const v = latLongToVector3(s.lat, s.lon, 10.02); pos.push(v.x, v.y, v.z); } });
+            geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); pointsMesh = new THREE.Points(geo, new THREE.PointsMaterial({ size: 0.12, color: 0x3b82f6, transparent: true, opacity: 0.8 })); globeGroup.add(pointsMesh);
+        }
+
+        let flyToAnimationId;
+        function flyTo(lat, lon) {
+            if (lat === undefined || lon === undefined || isNaN(lat) || isNaN(lon)) return; if (flyToAnimationId) cancelAnimationFrame(flyToAnimationId);
+            const phi = (90 - lat) * (Math.PI / 180), theta = (lon + 180) * (Math.PI / 180), targetRotX = phi - Math.PI/2, targetRotY = -theta - Math.PI/2, startRotX = globeGroup.rotation.x, startRotY = globeGroup.rotation.y, startTime = performance.now();
+            function step(now) { const prog = Math.min((now - startTime) / 1000, 1), ease = 1 - Math.pow(1 - prog, 3); globeGroup.rotation.x = startRotX + (targetRotX - startRotX) * ease; globeGroup.rotation.y = startRotY + (targetRotY - startRotY) * ease; if (prog < 1) flyToAnimationId = requestAnimationFrame(step); else { flyToAnimationId = null; autoRotateGlobe = true; } }
+            autoRotateGlobe = false; flyToAnimationId = requestAnimationFrame(step);
+        }
+
         function updateStationCounts() {
-            const isFiltered = document.getElementById('input-search').value || document.getElementById('filter-genre').value || document.getElementById('filter-country').value;
-            let displayStations = isFiltered ? stationsData.length : (globalStationCount > 0 ? globalStationCount : "> 50 000");
-            document.getElementById('left-stations-count').innerText = typeof displayStations === 'number' ? displayStations.toLocaleString('ru-RU') : displayStations; 
-            let totalListeners = stationsData.reduce((sum, st) => sum + (st.clickcount || 0), 0); if (!isFiltered) totalListeners = Math.floor(totalListeners * 1.15); 
+            const count = stationsData.length;
+            document.getElementById('left-stations-count').innerText = count.toLocaleString('ru-RU'); 
+            document.getElementById('right-stations-count').innerText = count.toLocaleString('ru-RU'); 
+            
+            let totalListeners = stationsData.reduce((sum, st) => sum + (st.clickcount || 0), 0);
             document.getElementById('global-listeners-counter').innerText = totalListeners.toLocaleString('ru-RU');
+            
+            drawGlobePoints(stationsData); 
         }
 
         function renderList() { const content = document.getElementById('stations-list-content'); content.style.height = `${stationsData.length * ITEM_HEIGHT}px`; renderVisibleItems(); renderPinnedActiveStation(); }
@@ -737,7 +854,7 @@
             content.appendChild(fragment); lucide.createIcons();
         }
 
-        function toggleFavorite(e, stId) { if (e) e.stopPropagation(); if (favorites.includes(stId)) { favorites = favorites.filter(id => id !== stId); showToast("Удалено из избранного"); } else { favorites.push(stId); showToast("Добавлено в избранное ❤"); } localStorage.setItem('radio_favs', JSON.stringify(favorites)); updateFavCurrentBtn(); renderList(); }
+        function toggleFavorite(e, stId) { if (e) e.stopPropagation(); if (favorites.includes(stId)) { favorites = favorites.filter(id => id !== stId); showToast("Удалено из избранного"); } else { favorites.push(stId); showToast("Добавлено в избранное ❤️"); } localStorage.setItem('radio_favs', JSON.stringify(favorites)); updateFavCurrentBtn(); renderList(); }
         function updateFavCurrentBtn() { const btn = document.getElementById('btn-fav-current'); if (!currentStation) return; btn.innerHTML = `<i data-lucide="heart" class="w-3 h-3 ${favorites.includes(currentStation.id) ? 'text-red-500 fill-red-500' : ''}"></i>`; lucide.createIcons(); }
         function addToHistory(st) { historyStations = historyStations.filter(s => s.id !== st.id); historyStations.unshift(st); if (historyStations.length > 15) historyStations.pop(); localStorage.setItem('radio_history', JSON.stringify(historyStations)); }
 
@@ -747,67 +864,148 @@
             document.getElementById('player-title').innerText = st.name; document.getElementById('player-location').innerText = `${st.country} • ${st.tags}`;
             document.getElementById('player-logo').src = st.favicon || `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='1'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Cpath d='M12 16v-4'/%3E%3Cpath d='M12 8h.01'/%3E%3C/svg%3E`;
             const colorHex = '#3b82f6', rgb = '59, 130, 246'; document.documentElement.style.setProperty('--accent-primary', colorHex); document.documentElement.style.setProperty('--accent-rgb', rgb);
-            updateFavCurrentBtn(); renderList(); const likeText = document.getElementById('btn-like-text'); if (likeText) likeText.innerText = st.clickcount.toLocaleString('ru-RU');
-            setTimeout(() => { const container = document.getElementById('stations-list'); if (container) { const targetScroll = currentStationIndex * ITEM_HEIGHT - container.clientHeight / 2 + ITEM_HEIGHT / 2; container.scrollTo({ top: Math.max(0, targetScroll), behavior: 'smooth' }); } }, 150);
+            updateFavCurrentBtn(); renderList(); if (st.lat !== undefined && st.lon !== undefined) flyTo(st.lat, st.lon);
+            const likeText = document.getElementById('btn-like-text'); if (likeText) likeText.innerText = st.clickcount.toLocaleString('ru-RU');
+            
+            setTimeout(() => {
+                const container = document.getElementById('stations-list');
+                if (container) {
+                    const targetScroll = currentStationIndex * ITEM_HEIGHT - container.clientHeight / 2 + ITEM_HEIGHT / 2;
+                    container.scrollTo({ top: Math.max(0, targetScroll), behavior: 'smooth' });
+                }
+            }, 150);
         }
 
         function playNextStation() { if (stationsData.length === 0) return; let idx = currentStation ? stationsData.findIndex(s => s.id === currentStation.id) : -1; let nextIndex = (idx === -1) ? 0 : (idx + 1) % stationsData.length; selectStation(stationsData[nextIndex]); }
         function playPrevStation() { if (stationsData.length === 0) return; let idx = currentStation ? stationsData.findIndex(s => s.id === currentStation.id) : -1; if (idx === -1 || idx === 0) idx = stationsData.length; let prevIndex = (idx - 1) % stationsData.length; selectStation(stationsData[prevIndex]); }
         
-        function syncVolume(val) { lastVolume = parseFloat(val); audio.volume = lastVolume; const iconName = lastVolume == 0 ? 'volume-x' : 'volume-2'; const dIcon = document.getElementById('icon-volume-desktop'); const mIcon = document.getElementById('icon-volume-mobile'); if(dIcon) dIcon.setAttribute('data-lucide', iconName); if(mIcon) mIcon.setAttribute('data-lucide', iconName); lucide.createIcons(); }
-        function toggleMute() { let newVal = audio.volume > 0 ? 0 : (lastVolume || 0.8); syncVolume(newVal); let dVol = document.getElementById('master-volume-desktop'), mVol = document.getElementById('master-volume-mobile'); if(dVol) dVol.value = newVal; if(mVol) mVol.value = newVal; }
+        function syncVolume(val) { 
+            lastVolume = parseFloat(val); 
+            audio.volume = lastVolume; 
+            const iconName = lastVolume == 0 ? 'volume-x' : 'volume-2'; 
+            const dIcon = document.getElementById('icon-volume-desktop');
+            const mIcon = document.getElementById('icon-volume-mobile');
+            if(dIcon) dIcon.setAttribute('data-lucide', iconName); 
+            if(mIcon) mIcon.setAttribute('data-lucide', iconName); 
+            lucide.createIcons(); 
+        }
+        
+        function toggleMute() { 
+            let newVal = audio.volume > 0 ? 0 : (lastVolume || 0.8);
+            syncVolume(newVal); 
+            let dVol = document.getElementById('master-volume-desktop');
+            let mVol = document.getElementById('master-volume-mobile');
+            if(dVol) dVol.value = newVal; 
+            if(mVol) mVol.value = newVal; 
+        }
 
         function setupWebAudio() {
             if (audioCtx) return; try {
-                audioCtx = new (window.AudioContext || window.webkitAudioContext)(); analyser = audioCtx.createAnalyser(); analyser.fftSize = 2048; analyser.smoothingTimeConstant = 0.85;
-                compressor = audioCtx.createDynamicsCompressor(); compressor.threshold.setValueAtTime(-24, audioCtx.currentTime); compressor.knee.setValueAtTime(30, audioCtx.currentTime); compressor.ratio.setValueAtTime(12, audioCtx.currentTime); compressor.attack.setValueAtTime(0.003, audioCtx.currentTime); compressor.release.setValueAtTime(0.25, audioCtx.currentTime); 
-                bassFilter = audioCtx.createBiquadFilter(); bassFilter.type = 'lowshelf'; bassFilter.frequency.setValueAtTime(250, audioCtx.currentTime); bassFilter.gain.setValueAtTime(3.5, audioCtx.currentTime); 
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)(); 
+                analyser = audioCtx.createAnalyser(); 
+                analyser.fftSize = 2048; 
+                analyser.smoothingTimeConstant = 0.85;
+                
+                compressor = audioCtx.createDynamicsCompressor();
+                compressor.threshold.setValueAtTime(-24, audioCtx.currentTime); 
+                compressor.knee.setValueAtTime(30, audioCtx.currentTime); 
+                compressor.ratio.setValueAtTime(12, audioCtx.currentTime); 
+                compressor.attack.setValueAtTime(0.003, audioCtx.currentTime); 
+                compressor.release.setValueAtTime(0.25, audioCtx.currentTime); 
+
+                bassFilter = audioCtx.createBiquadFilter(); bassFilter.type = 'lowshelf'; bassFilter.frequency.setValueAtTime(250, audioCtx.currentTime);
+                bassFilter.gain.setValueAtTime(3.5, audioCtx.currentTime); 
+                
                 midFilter = audioCtx.createBiquadFilter(); midFilter.type = 'peaking'; midFilter.frequency.setValueAtTime(1000, audioCtx.currentTime); midFilter.Q.setValueAtTime(1, audioCtx.currentTime);
-                trebleFilter = audioCtx.createBiquadFilter(); trebleFilter.type = 'highshelf'; trebleFilter.frequency.setValueAtTime(4000, audioCtx.currentTime); trebleFilter.gain.setValueAtTime(2.0, audioCtx.currentTime); 
+                
+                trebleFilter = audioCtx.createBiquadFilter(); trebleFilter.type = 'highshelf'; trebleFilter.frequency.setValueAtTime(4000, audioCtx.currentTime);
+                trebleFilter.gain.setValueAtTime(2.0, audioCtx.currentTime); 
+                
                 const source = audioCtx.createMediaElementSource(audio); 
-                source.connect(compressor); compressor.connect(bassFilter); bassFilter.connect(midFilter); midFilter.connect(trebleFilter); trebleFilter.connect(analyser); analyser.connect(audioCtx.destination);
-                dataArray = new Uint8Array(analyser.frequencyBinCount); timeDataArray = new Uint8Array(analyser.fftSize); 
+                
+                source.connect(compressor); 
+                compressor.connect(bassFilter); 
+                bassFilter.connect(midFilter); 
+                midFilter.connect(trebleFilter); 
+                trebleFilter.connect(analyser); 
+                analyser.connect(audioCtx.destination);
+                
+                dataArray = new Uint8Array(analyser.frequencyBinCount); 
+                timeDataArray = new Uint8Array(analyser.fftSize); 
             } catch (e) { corsEnabled = false; }
         }
 
-        function initEqualizer() {
-            eqCanvas = document.getElementById('equalizer-canvas'); eqCtx = eqCanvas.getContext('2d');
-            function resizeCanvas() { eqCanvas.width = eqCanvas.offsetWidth; eqCanvas.height = eqCanvas.offsetHeight; } resizeCanvas(); window.addEventListener('resize', resizeCanvas);
-            const barCount = 128; 
-            function renderEqualizer() {
-                eqAnimationId = requestAnimationFrame(renderEqualizer); eqCtx.clearRect(0, 0, eqCanvas.width, eqCanvas.height);
-                if (analyser && isAudioActuallyPlaying && corsEnabled && dataArray) try { analyser.getByteFrequencyData(dataArray); } catch (e) { corsEnabled = false; }
-                const width = eqCanvas.width, height = eqCanvas.height, barWidth = width / barCount, colorStr = getComputedStyle(document.documentElement).getPropertyValue('--accent-primary').trim() || '#3b82f6';
-                let eqGradient = eqCtx.createLinearGradient(0, height, 0, 0); eqGradient.addColorStop(0, colorStr); eqGradient.addColorStop(1, '#ffffff');
-                for (let i = 0; i < barCount; i++) {
-                    let barHeight = 2;
-                    if (isAudioActuallyPlaying && analyser && dataArray && corsEnabled) { let rawVal = dataArray[i * Math.floor((analyser.frequencyBinCount * 0.75) / barCount)] / 255; barHeight = Math.pow(rawVal, 0.8) * (height * 1.1); barHeight = Math.max(2, Math.min(height, barHeight)); } 
-                    eqCtx.fillStyle = eqGradient; eqCtx.fillRect(i * barWidth + 1, height - barHeight, barWidth - 1, barHeight);
-                }
-            }
-            renderEqualizer();
+        // ИСПРАВЛЕНО: Кнопка лайков теперь работает корректно
+        function likeCurrentStation() { 
+            if (!currentStation) return; 
+            const stId = currentStation.id; 
+            if (userLikesMap[stId]) return showToast("⚠️ Вы уже поставили лайк!"); 
+            fetch(`${currentApiBase}/json/stations/vote/${currentStation.id}`, { method: 'POST' }).catch(()=>{}); 
+            userLikesMap[stId] = true; 
+            localStorage.setItem('radio_user_likes', JSON.stringify(userLikesMap)); 
+            likedStations[stId] = (likedStations[stId] || 0) + 1; 
+            localStorage.setItem('radio_likes', JSON.stringify(likedStations)); 
+            currentStation.clickcount += 1; 
+            const likeText = document.getElementById('btn-like-text'); 
+            if(likeText) likeText.innerText = currentStation.clickcount.toLocaleString('ru-RU'); 
+            renderList(); 
+            showToast(`👍 Лайк засчитан!`); 
         }
 
-        function toggleFavoritesMode(btn) { isOnlyFavorites = !isOnlyFavorites; stationsData = isOnlyFavorites ? allStationsMaster.filter(st => favorites.includes(st.id)) : [...allStationsMaster]; updateStationCounts(); renderList(); btn.classList.toggle('bg-red-600'); btn.classList.toggle('text-white'); }
-        function toggleHistoryMode(btn) { isOnlyHistory = !isOnlyHistory; stationsData = isOnlyHistory ? [...historyStations] : [...allStationsMaster]; updateStationCounts(); renderList(); btn.classList.toggle('bg-blue-600'); btn.classList.toggle('text-white'); }
-
         function setupEvents() {
-            document.getElementById('btn-play').onclick = togglePlay; document.getElementById('btn-next').onclick = playNextStation; document.getElementById('btn-prev').onclick = playPrevStation; 
-            const volDesktop = document.getElementById('master-volume-desktop'), volMobile = document.getElementById('master-volume-mobile');
-            if(volDesktop) { volDesktop.addEventListener('input', e => syncVolume(e.target.value)); }
-            if(volMobile) { volMobile.addEventListener('input', e => syncVolume(e.target.value)); volMobile.addEventListener('touchmove', e => syncVolume(e.target.value), {passive: true}); }
-            document.getElementById('filter-country').addEventListener('change', onFilterChange); document.getElementById('filter-genre').addEventListener('change', onFilterChange); 
-            const subgenreEl = document.getElementById('filter-subgenre'); if(subgenreEl) subgenreEl.addEventListener('change', onFilterChange);
+            document.getElementById('btn-play').onclick = togglePlay; 
+            document.getElementById('btn-next').onclick = playNextStation; 
+            document.getElementById('btn-prev').onclick = playPrevStation; 
+            
+            const volDesktop = document.getElementById('master-volume-desktop');
+            const volMobile = document.getElementById('master-volume-mobile');
+            if(volDesktop) {
+                volDesktop.addEventListener('input', e => syncVolume(e.target.value));
+            }
+            if(volMobile) {
+                volMobile.addEventListener('input', e => syncVolume(e.target.value));
+                volMobile.addEventListener('touchmove', e => syncVolume(e.target.value), {passive: true});
+            }
+
+            document.getElementById('filter-country').addEventListener('change', onFilterChange); 
+            document.getElementById('filter-genre').addEventListener('change', onFilterChange); 
+            
+            const subgenreEl = document.getElementById('filter-subgenre');
+            if(subgenreEl) subgenreEl.addEventListener('change', onFilterChange);
+
+            const cityEl = document.getElementById('filter-city');
+            if(cityEl) cityEl.addEventListener('change', onFilterChange);
+
             document.getElementById('input-search').addEventListener('input', e => { 
-                const q = e.target.value.toLowerCase().trim(); if(q) stationsData = allStationsMaster.filter(st => st.name.toLowerCase().includes(q) || st.tags.toLowerCase().includes(q) || st.country.toLowerCase().includes(q)); 
-                else stationsData = [...allStationsMaster]; updateStationCounts(); renderList(); 
-                clearTimeout(searchTimeout); if(stationsData.length > 0) { searchTimeout = setTimeout(() => { selectStation(stationsData[0]); }, 500); } 
+                const q = e.target.value.toLowerCase().trim(); 
+                // ИСПРАВЛЕНО: Поиск по всей базе (имя, теги, страна, город)
+                if(q) stationsData = allStationsMaster.filter(st => st.name.toLowerCase().includes(q) || st.tags.toLowerCase().includes(q) || st.country.toLowerCase().includes(q) || st.state.toLowerCase().includes(q)); 
+                else stationsData = [...allStationsMaster]; 
+                updateStationCounts(); 
+                renderList(); 
+                clearTimeout(searchTimeout); 
+                if(stationsData.length > 0) { searchTimeout = setTimeout(() => { selectStation(stationsData[0]); }, 500); } 
             });
         }
 
         function showToast(msg) {
             const container = document.getElementById('toast-container'), el = document.createElement('div'); el.className = 'bg-black/90 backdrop-blur-md border border-white/20 px-4 py-2 rounded-full text-xs text-white shadow-2xl transition-all duration-300 transform translate-y-[-20px] opacity-0 flex items-center gap-2 pointer-events-auto dynamic-bg'; el.innerHTML = `<i data-lucide="info" class="w-4 h-4 text-white"></i> ${msg}`; container.appendChild(el); lucide.createIcons(); requestAnimationFrame(() => { el.classList.remove('translate-y-[-20px]', 'opacity-0'); el.classList.add('translate-y-0', 'opacity-100'); }); setTimeout(() => { el.classList.remove('translate-y-0', 'opacity-100'); el.classList.add('translate-y-[-20px]', 'opacity-0'); setTimeout(() => el.remove(), 300); }, 3000);
         }
+
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js').then(reg => {
+                    console.log('Quantum ServiceWorker registered:', reg.scope);
+                }).catch(err => console.error('SW Registration failed:', err));
+            });
+        }
+
+        function setAppHeight() {
+            const doc = document.documentElement;
+            doc.style.setProperty('--app-height', `${window.innerHeight}px`);
+        }
+        window.addEventListener('resize', setAppHeight);
+        setAppHeight();
     </script>
 </body>
 </html>
